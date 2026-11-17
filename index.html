@@ -280,6 +280,17 @@
             font-weight: 700;
             color: #60a5fa;
             margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .ai-badge {
+            background: #2563eb;
+            color: #ffffff;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 700;
         }
         .ai-text {
             font-size: 13px;
@@ -288,7 +299,7 @@
             white-space: pre-line;
         }
 
-        /* 카드 그리드 */
+        /* 6종목 카드 그리드 */
         .stock-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(430px, 1fr));
@@ -297,8 +308,8 @@
         .card {
             background: #1e293b;
             border: 1px solid #334155;
-            border-radius: 10px;
-            padding: 16px;
+            border-radius: 12px;
+            padding: 18px;
             cursor: pointer;
             transition: all 0.2s;
             position: relative;
@@ -312,7 +323,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
         .card-name-box {
             display: flex;
@@ -320,7 +331,7 @@
             gap: 8px;
         }
         .card-name {
-            font-size: 17px;
+            font-size: 18px;
             font-weight: 700;
         }
         .card-tag {
@@ -331,6 +342,15 @@
             border-radius: 4px;
             font-weight: 600;
         }
+        .gemini-badge {
+            background: rgba(96, 165, 250, 0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(96, 165, 250, 0.3);
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 700;
+        }
         .fav-star-btn {
             background: none;
             border: none;
@@ -340,20 +360,24 @@
             transition: color 0.2s;
         }
         .fav-star-btn.active {
-            color: #facc15; /* 노란색 별 */
+            color: #facc15;
         }
         .card-price {
-            font-size: 18px;
+            font-size: 19px;
             font-weight: 800;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
         .card-reason {
             font-size: 12px;
-            color: #94a3b8;
-            line-height: 1.4;
+            color: #cbd5e1;
+            line-height: 1.5;
+            background: #0f172a;
+            padding: 8px 10px;
+            border-radius: 6px;
+            border-left: 2px solid #38bdf8;
         }
 
-        /* KOSPI 전체 종목 테이블 뷰 */
+        /* KOSPI Top 50 테이블 뷰 */
         .all-table-box {
             background: #1e293b;
             border: 1px solid #334155;
@@ -430,11 +454,11 @@
             <span class="badge">Live AI Market Intelligence</span>
             <h1>📈 AI 주식 종합 예측 & 분석 에이전트</h1>
             <p class="desc">
-                주요 증시 지표 · KOSPI 전 종목 순위 · 주도주 AI 분석 · 실시간 관심 종목 관리
+                주요 증시 지표 · Google Gemini 추천 주도주 6종목 · KOSPI 시총 Top 50 실시간 순위
             </p>
             <div class="live-status-bar">
                 <span class="live-dot"></span>
-                <span>실시간 전산망 데이터 자동 갱신 중 (<span id="last-updated">수신 중...</span>)</span>
+                <span>실시간 데이터 자동 갱신 중 (<span id="last-updated">수신 중...</span>)</span>
             </div>
         </header>
 
@@ -481,28 +505,31 @@
             </div>
 
             <div class="ai-analysis-box">
-                <div class="ai-title">🤖 Google Gemini AI 종합 예측 진단</div>
+                <div class="ai-title">
+                    <span>🤖 Google Gemini AI 심층 추천 리포트</span>
+                    <span id="rep-gemini-badge" class="ai-badge">추천 분석</span>
+                </div>
                 <div id="ai-text" class="ai-text">분석 결과를 불러오는 중입니다...</div>
             </div>
         </div>
 
         <!-- 3. 탭 네비게이션 -->
         <div class="tab-bar">
-            <button class="tab-btn active" id="tab-lead" onclick="switchTab('lead')">🔥 오늘의 주도주 (8종목)</button>
-            <button class="tab-btn" id="tab-all" onclick="switchTab('all')">📋 KOSPI 전체 종목 (시총 Top 30)</button>
+            <button class="tab-btn active" id="tab-lead" onclick="switchTab('lead')">🔥 Gemini 추천 주도주 (6종목)</button>
+            <button class="tab-btn" id="tab-all" onclick="switchTab('all')">📋 KOSPI 전체 종목 (시총 Top 50)</button>
             <button class="tab-btn" id="tab-fav" onclick="switchTab('fav')">⭐ 내 관심 종목 (<span id="fav-count">0</span>)</button>
         </div>
 
-        <!-- 4-1. 오늘의 주도주 뷰 -->
+        <!-- 4-1. Gemini 추천 주도주 6종목 뷰 -->
         <div id="view-lead" class="stock-grid"></div>
 
-        <!-- 4-2. KOSPI 전 종목 뷰 -->
+        <!-- 4-2. KOSPI 시총 Top 50 뷰 -->
         <div id="view-all" class="all-table-box" style="display:none;">
             <table class="table-view">
                 <thead>
                     <tr>
                         <th>관심</th>
-                        <th>종목명 / 코드</th>
+                        <th>순위 / 종목명</th>
                         <th>현재가</th>
                         <th>전일대비</th>
                         <th>등락률</th>
@@ -523,7 +550,6 @@
             stocks: {}
         };
 
-        // 로컬스토리지에서 관심 종목(Favorites) 불러오기
         let favorites = JSON.parse(localStorage.getItem('my_favorite_stocks') || '["삼성전자", "SK하이닉스"]');
 
         async function init() {
@@ -534,8 +560,8 @@
                 
                 document.getElementById('last-updated').innerText = fullData.updated_at || "실시간 수신";
                 renderIndexes();
-                renderLeadStocks();
-                renderKospiAll();
+                renderLeadStocks6();
+                renderKospiTop50();
                 renderFavorites();
                 updateFavCount();
             } catch (err) {
@@ -550,7 +576,6 @@
             return 'color-even';
         }
 
-        // 1. 주요 증시 지표 4대 전광판 렌더링
         function renderIndexes() {
             const container = document.getElementById('index-grid');
             container.innerHTML = '';
@@ -567,8 +592,8 @@
             });
         }
 
-        // 2. 오늘의 주도주 렌더링
-        function renderLeadStocks() {
+        // Gemini 추천 6종목 렌더링
+        function renderLeadStocks6() {
             const container = document.getElementById('view-lead');
             container.innerHTML = '';
             const stocks = fullData.stocks || {};
@@ -580,6 +605,8 @@
                 const rate = price.change_rate || '0.00';
                 const colorClass = getColorClass(sign, rate);
                 const isFav = favorites.includes(name);
+                const gemini = item.analysis || {};
+                const recom = gemini.recommendation || "분할 매수";
 
                 const card = document.createElement('div');
                 card.className = 'card';
@@ -588,6 +615,7 @@
                         <div class="card-name-box">
                             <span class="card-name" onclick="selectStock('${name}')">${name}</span>
                             <span class="card-tag">${item.tag || '주도주'}</span>
+                            <span class="gemini-badge">Gemini: ${recom}</span>
                         </div>
                         <button class="fav-star-btn ${isFav ? 'active' : ''}" onclick="toggleFavorite(event, '${name}')">★</button>
                     </div>
@@ -598,15 +626,15 @@
                         </span>
                     </div>
                     <p class="card-reason" onclick="selectStock('${name}')">
-                        ${item.analysis?.analysis ? item.analysis.analysis.split('\n')[0].replace('현재 주가는 ', '').slice(0, 75) + '...' : '시장 데이터 분석 완료.'}
+                        <strong>💡 AI 추천 의견:</strong> ${gemini.analysis ? gemini.analysis.split('\n')[2] || gemini.analysis.split('\n')[0] : '시장 데이터 분석 완료.'}
                     </p>
                 `;
                 container.appendChild(card);
             });
         }
 
-        // 3. KOSPI 전 종목 (Top 30) 렌더링
-        function renderKospiAll() {
+        // KOSPI Top 50 렌더링
+        function renderKospiTop50() {
             const tbody = document.getElementById('all-tbody');
             tbody.innerHTML = '';
             const list = fullData.kospi_all || [];
@@ -617,7 +645,11 @@
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td><button class="fav-star-btn ${isFav ? 'active' : ''}" onclick="toggleFavorite(event, '${item.name}')">★</button></td>
-                    <td onclick="selectStock('${item.name}')"><strong>${item.name}</strong> <span style="font-size:12px; color:#94a3b8;">(${item.code})</span></td>
+                    <td onclick="selectStock('${item.name}')">
+                        <span style="color:#60a5fa; font-weight:700; margin-right:6px;">#${item.rank}</span>
+                        <strong>${item.name}</strong> 
+                        <span style="font-size:12px; color:#94a3b8;">(${item.code})</span>
+                    </td>
                     <td onclick="selectStock('${item.name}')"><strong>${item.price}원</strong></td>
                     <td onclick="selectStock('${item.name}')" class="${colorClass}">${item.sign} ${item.change}원</td>
                     <td onclick="selectStock('${item.name}')" class="${colorClass}"><strong>${item.rate}%</strong></td>
@@ -626,7 +658,6 @@
             });
         }
 
-        // 4. 내 관심 종목 렌더링
         function renderFavorites() {
             const container = document.getElementById('view-fav');
             container.innerHTML = '';
@@ -637,10 +668,8 @@
             }
 
             favorites.forEach(name => {
-                // lead 또는 all 에서 데이터 탐색
                 let item = fullData.stocks ? fullData.stocks[name] : null;
                 let price = item ? item.price : null;
-                let code = item ? item.code : "";
                 let tag = item ? item.tag : "관심 종목";
 
                 if (!price) {
@@ -653,7 +682,6 @@
                             sign: foundInAll.sign,
                             market: "KOSPI"
                         };
-                        code = foundInAll.code;
                     }
                 }
 
@@ -675,7 +703,7 @@
                                 ${price.sign} ${price.change_val}원 (${price.change_rate}%)
                             </span>
                         </div>
-                        <p class="card-reason" onclick="selectStock('${name}')">내 관심 종목 리스트에 등록된 종목입니다.</p>
+                        <p class="card-reason" onclick="selectStock('${name}')">내 관심 종목에 등록된 종목입니다. 클릭하여 상세 리포트를 확인하세요.</p>
                     `;
                     container.appendChild(card);
                 }
@@ -691,8 +719,8 @@
             }
             localStorage.setItem('my_favorite_stocks', JSON.stringify(favorites));
             updateFavCount();
-            renderLeadStocks();
-            renderKospiAll();
+            renderLeadStocks6();
+            renderKospiTop50();
             renderFavorites();
         }
 
@@ -765,9 +793,9 @@
                     newsList.innerHTML = `<li class="news-item">최신 뉴스 데이터 준비 중</li>`;
                 }
 
+                document.getElementById('rep-gemini-badge').innerText = analysis.recommendation || "추천 분석";
                 document.getElementById('ai-text').innerText = analysis.analysis || "분석 리포트가 생성되었습니다.";
             } else {
-                // KOSPI All 목록에서 클릭한 경우
                 const found = (fullData.kospi_all || []).find(s => s.name === name);
                 if (found) {
                     const colorClass = getColorClass(found.sign, found.rate);
@@ -785,7 +813,8 @@
                         <tr><td>시총순위</td><td>KOSPI ${found.rank}위</td></tr>
                     `;
                     document.getElementById('news-list').innerHTML = `<li class="news-item"><strong>${found.name} 실시간 거래 데이터 수신 완료</strong>정상 거래 중입니다.</li>`;
-                    document.getElementById('ai-text').innerText = `KOSPI 시가총액 상위 종목으로 현재 ${found.price}원(${found.sign} ${found.rate}%)에 거래 중입니다. 실시간 수급 모멘텀을 주시하세요.`;
+                    document.getElementById('rep-gemini-badge').innerText = "KOSPI 50대 종목";
+                    document.getElementById('ai-text').innerText = `KOSPI 시가총액 상위 ${found.rank}위 우량 종목입니다. 현재 ${found.price}원(${found.sign} ${found.rate}%)에 거래되고 있습니다.`;
                 }
             }
 
@@ -797,15 +826,12 @@
             document.getElementById('report-card').style.display = 'none';
         }
 
-        // 검색 처리
         document.getElementById('search-btn').addEventListener('click', () => {
             const query = document.getElementById('search-input').value.trim();
             if (!query) return;
 
-            // 주도주에서 먼저 찾기
             let matched = Object.keys(fullData.stocks || {}).find(k => k.includes(query) || (fullData.stocks[k].code === query));
             if (!matched) {
-                // KOSPI 30에서 찾기
                 const inAll = (fullData.kospi_all || []).find(s => s.name.includes(query) || s.code === query);
                 if (inAll) matched = inAll.name;
             }
@@ -813,7 +839,7 @@
             if (matched) {
                 selectStock(matched);
             } else {
-                alert(`'${query}' 종목을 찾을 수 없습니다. 종목명이나 6자리 코드를 확인해 주세요.`);
+                alert(`'${query}' 종목을 찾을 수 없습니다.`);
             }
         });
 
