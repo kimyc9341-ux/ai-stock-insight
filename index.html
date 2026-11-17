@@ -15,18 +15,18 @@
             background-color: #0b0f19;
             color: #f1f5f9;
             min-height: 100vh;
-            padding: 40px 20px;
+            padding: 30px 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
         .container {
-            max-width: 860px;
+            max-width: 940px;
             width: 100%;
         }
         .header {
             text-align: center;
-            margin-bottom: 28px;
+            margin-bottom: 24px;
         }
         .badge {
             display: inline-block;
@@ -36,24 +36,23 @@
             font-weight: 600;
             padding: 4px 14px;
             border-radius: 20px;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             border: 1px solid rgba(56, 189, 248, 0.3);
         }
         h1 {
-            font-size: 28px;
+            font-size: 26px;
             font-weight: 800;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             color: #ffffff;
             letter-spacing: -0.5px;
         }
         .desc {
             color: #94a3b8;
-            font-size: 15px;
-            line-height: 1.5;
+            font-size: 14px;
         }
         .live-status-bar {
-            margin-top: 10px;
-            font-size: 13px;
+            margin-top: 8px;
+            font-size: 12px;
             color: #22c55e;
             display: flex;
             align-items: center;
@@ -68,20 +67,50 @@
             display: inline-block;
             box-shadow: 0 0 8px #22c55e;
         }
-        /* 검색창 영역 */
+
+        /* 1. 주요 증시 4대 전광판 */
+        .index-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .index-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            transition: transform 0.2s;
+        }
+        .index-card:hover {
+            transform: translateY(-2px);
+            border-color: #475569;
+        }
+        .index-title {
+            font-size: 13px;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+        .index-val {
+            font-size: 18px;
+            font-weight: 800;
+        }
+        .index-change {
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        /* 2. 검색창 영역 */
         .search-section {
             background: #1e293b;
             border: 1px solid #334155;
-            border-radius: 14px;
-            padding: 20px;
-            margin-bottom: 28px;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        }
-        .search-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: #94a3b8;
-            margin-bottom: 10px;
         }
         .search-box {
             display: flex;
@@ -94,7 +123,7 @@
             border-radius: 8px;
             padding: 12px 16px;
             color: #ffffff;
-            font-size: 15px;
+            font-size: 14px;
             outline: none;
             transition: border-color 0.2s;
         }
@@ -106,7 +135,7 @@
             color: #ffffff;
             border: none;
             padding: 12px 24px;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 600;
             border-radius: 8px;
             cursor: pointer;
@@ -115,14 +144,53 @@
         .search-btn:hover {
             background: #1d4ed8;
         }
+
+        /* 3. 탭 메뉴 */
+        .tab-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 18px;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 8px;
+        }
+        .tab-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 15px;
+            font-weight: 700;
+            padding: 8px 18px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .tab-btn.active {
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.12);
+        }
+
         /* 상세 리포트 카드 */
         .report-card {
             background: #1e293b;
             border-radius: 14px;
-            border: 1px solid #334155;
+            border: 1px solid #38bdf8;
             padding: 24px;
-            margin-bottom: 30px;
+            margin-bottom: 24px;
             display: none;
+            position: relative;
+        }
+        .report-close-btn {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 20px;
+            cursor: pointer;
         }
         .report-header {
             display: flex;
@@ -130,10 +198,10 @@
             align-items: center;
             border-bottom: 1px solid #334155;
             padding-bottom: 16px;
-            margin-bottom: 20px;
+            margin-bottom: 18px;
         }
         .report-stock-name {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 800;
         }
         .report-stock-code {
@@ -145,18 +213,18 @@
             text-align: right;
         }
         .report-current-price {
-            font-size: 26px;
+            font-size: 24px;
             font-weight: 800;
         }
         .report-change {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 700;
         }
         .report-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
+            gap: 16px;
+            margin-bottom: 18px;
         }
         .sub-box {
             background: #0f172a;
@@ -165,21 +233,18 @@
             padding: 16px;
         }
         .sub-box-title {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 700;
             color: #38bdf8;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            margin-bottom: 10px;
         }
         .finance-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 13px;
+            font-size: 12px;
         }
         .finance-table th, .finance-table td {
-            padding: 6px 4px;
+            padding: 5px 4px;
             text-align: right;
             border-bottom: 1px solid #1e293b;
         }
@@ -191,10 +256,10 @@
             list-style: none;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
         }
         .news-item {
-            font-size: 13px;
+            font-size: 12px;
             line-height: 1.4;
             color: #cbd5e1;
             border-left: 2px solid #475569;
@@ -203,101 +268,159 @@
         .news-item strong {
             color: #f8fafc;
             display: block;
-            margin-bottom: 2px;
         }
         .ai-analysis-box {
             background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(15, 23, 42, 0.6));
             border: 1px solid #2563eb;
             border-radius: 10px;
-            padding: 18px;
+            padding: 16px;
         }
         .ai-title {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 700;
             color: #60a5fa;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            margin-bottom: 8px;
         }
         .ai-text {
-            font-size: 14px;
+            font-size: 13px;
             line-height: 1.6;
             color: #e2e8f0;
             white-space: pre-line;
         }
-        /* 8종목 그리드 */
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #334155;
-        }
-        .section-title {
-            font-size: 16px;
-            font-weight: 700;
-            color: #cbd5e1;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
+
+        /* 카드 그리드 */
         .stock-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-            gap: 16px;
+            grid-template-columns: repeat(auto-fill, minmax(430px, 1fr));
+            gap: 14px;
         }
         .card {
             background: #1e293b;
             border: 1px solid #334155;
-            border-radius: 12px;
-            padding: 18px;
+            border-radius: 10px;
+            padding: 16px;
             cursor: pointer;
             transition: all 0.2s;
+            position: relative;
         }
         .card:hover {
             transform: translateY(-2px);
             border-color: #38bdf8;
-            box-shadow: 0 4px 15px rgba(56, 189, 248, 0.15);
+            box-shadow: 0 4px 15px rgba(56, 189, 248, 0.12);
         }
         .card-header {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 8px;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .card-name-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         .card-name {
-            font-size: 18px;
+            font-size: 17px;
             font-weight: 700;
         }
         .card-tag {
             font-size: 11px;
             background: rgba(56, 189, 248, 0.12);
             color: #38bdf8;
-            padding: 2px 8px;
+            padding: 2px 6px;
             border-radius: 4px;
             font-weight: 600;
         }
+        .fav-star-btn {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: #475569;
+            transition: color 0.2s;
+        }
+        .fav-star-btn.active {
+            color: #facc15; /* 노란색 별 */
+        }
         .card-price {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 800;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
         .card-reason {
             font-size: 12px;
             color: #94a3b8;
             line-height: 1.4;
         }
-        /* 상승/하락 컬러 */
+
+        /* KOSPI 전체 종목 테이블 뷰 */
+        .all-table-box {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .table-view {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .table-view th {
+            background: #0f172a;
+            padding: 12px 14px;
+            color: #94a3b8;
+            font-weight: 600;
+            text-align: right;
+            border-bottom: 1px solid #334155;
+        }
+        .table-view th:first-child, .table-view td:first-child {
+            text-align: center;
+            width: 50px;
+        }
+        .table-view th:nth-child(2), .table-view td:nth-child(2) {
+            text-align: left;
+        }
+        .table-view td {
+            padding: 12px 14px;
+            text-align: right;
+            border-bottom: 1px solid #1e293b;
+        }
+        .table-view tr:hover td {
+            background: #16213e;
+            cursor: pointer;
+        }
+
+        /* 상승 / 하락 색상 */
         .color-up {
-            color: #ef4444 !important; /* 한국 상승 빨간색 */
+            color: #ef4444 !important;
         }
         .color-down {
-            color: #3b82f6 !important; /* 한국 하락 파란색 */
+            color: #3b82f6 !important;
         }
         .color-even {
             color: #94a3b8 !important;
+        }
+
+        .empty-box {
+            text-align: center;
+            padding: 40px;
+            color: #94a3b8;
+            font-size: 14px;
+            background: #1e293b;
+            border-radius: 10px;
+            border: 1px dashed #334155;
+        }
+
+        @media (max-width: 768px) {
+            .index-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .report-grid {
+                grid-template-columns: 1fr;
+            }
+            .stock-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -307,26 +430,28 @@
             <span class="badge">Live AI Market Intelligence</span>
             <h1>📈 AI 주식 종합 예측 & 분석 에이전트</h1>
             <p class="desc">
-                실시간 호가 데이터 · 재무제표 펀더멘털 · 시장 뉴스 · Google Gemini 추론을 결합하여<br>
-                국내 주도주의 상승 가능성과 핵심 투자 포인트를 심층 분석합니다.
+                주요 증시 지표 · KOSPI 전 종목 순위 · 주도주 AI 분석 · 실시간 관심 종목 관리
             </p>
             <div class="live-status-bar">
                 <span class="live-dot"></span>
-                <span>실시간 데이터 자동 갱신 중 (<span id="last-updated">수신 중...</span>)</span>
+                <span>실시간 전산망 데이터 자동 갱신 중 (<span id="last-updated">수신 중...</span>)</span>
             </div>
         </header>
 
-        <!-- 종목 검색 섹션 -->
+        <!-- 1. 주요 증시 4대 지표 전광판 -->
+        <div id="index-grid" class="index-grid"></div>
+
+        <!-- 2. 종목 검색 섹션 -->
         <div class="search-section">
-            <div class="search-title">🔍 종목 검색 및 AI 심층 리포트 (시세 + 재무 + 뉴스 + AI)</div>
             <div class="search-box">
-                <input type="text" id="search-input" class="search-input" placeholder="종목명 또는 코드 6자리 입력 (예: 삼성전자, SK하이닉스, NAVER)">
-                <button type="button" id="search-btn" class="search-btn">리포트 조회</button>
+                <input type="text" id="search-input" class="search-input" placeholder="종목명 또는 코드 입력 (실시간 검색 / 예: 삼성전자, 카카오, 현대차, 005930)">
+                <button type="button" id="search-btn" class="search-btn">종목 조회</button>
             </div>
         </div>
 
         <!-- 상세 리포트 팝업 영역 -->
         <div id="report-card" class="report-card">
+            <button class="report-close-btn" onclick="closeReport()">✕</button>
             <div class="report-header">
                 <div>
                     <div id="rep-name" class="report-stock-name">종목명</div>
@@ -339,60 +464,82 @@
             </div>
 
             <div class="report-grid">
-                <!-- 재무제표 요약 -->
                 <div class="sub-box">
                     <div class="sub-box-title">📊 핵심 재무제표 (최근 결산 실적)</div>
                     <table class="finance-table">
                         <thead>
-                            <tr id="finance-thead-tr">
-                                <th>구분</th>
-                                <th>2025.12</th>
-                                <th>2026.12(E)</th>
-                            </tr>
+                            <tr id="finance-thead-tr"></tr>
                         </thead>
                         <tbody id="finance-tbody"></tbody>
                     </table>
                 </div>
 
-                <!-- 최근 뉴스 이슈 -->
                 <div class="sub-box">
                     <div class="sub-box-title">📰 최근 시장 주요 뉴스 헤드라인</div>
                     <ul id="news-list" class="news-list"></ul>
                 </div>
             </div>
 
-            <!-- AI 종합 전망 -->
             <div class="ai-analysis-box">
                 <div class="ai-title">🤖 Google Gemini AI 종합 예측 진단</div>
                 <div id="ai-text" class="ai-text">분석 결과를 불러오는 중입니다...</div>
             </div>
         </div>
 
-        <div class="section-header">
-            <div class="section-title">🔥 오늘의 실시간 모니터링 8대 주도주</div>
-            <div style="font-size:12px; color:#94a3b8;">* 클릭 시 상세 AI 리포트가 펼쳐집니다.</div>
+        <!-- 3. 탭 네비게이션 -->
+        <div class="tab-bar">
+            <button class="tab-btn active" id="tab-lead" onclick="switchTab('lead')">🔥 오늘의 주도주 (8종목)</button>
+            <button class="tab-btn" id="tab-all" onclick="switchTab('all')">📋 KOSPI 전체 종목 (시총 Top 30)</button>
+            <button class="tab-btn" id="tab-fav" onclick="switchTab('fav')">⭐ 내 관심 종목 (<span id="fav-count">0</span>)</button>
         </div>
 
-        <!-- 8개 종목 그리드 컨테이너 -->
-        <div id="stock-grid" class="stock-grid"></div>
+        <!-- 4-1. 오늘의 주도주 뷰 -->
+        <div id="view-lead" class="stock-grid"></div>
+
+        <!-- 4-2. KOSPI 전 종목 뷰 -->
+        <div id="view-all" class="all-table-box" style="display:none;">
+            <table class="table-view">
+                <thead>
+                    <tr>
+                        <th>관심</th>
+                        <th>종목명 / 코드</th>
+                        <th>현재가</th>
+                        <th>전일대비</th>
+                        <th>등락률</th>
+                    </tr>
+                </thead>
+                <tbody id="all-tbody"></tbody>
+            </table>
+        </div>
+
+        <!-- 4-3. 내 관심 종목 뷰 -->
+        <div id="view-fav" class="stock-grid" style="display:none;"></div>
     </div>
 
     <script>
-        let liveStockData = {};
+        let fullData = {
+            indexes: [],
+            kospi_all: [],
+            stocks: {}
+        };
 
-        // 실시간 data/stocks.json 동적 로드
-        async function loadLiveData() {
+        // 로컬스토리지에서 관심 종목(Favorites) 불러오기
+        let favorites = JSON.parse(localStorage.getItem('my_favorite_stocks') || '["삼성전자", "SK하이닉스"]');
+
+        async function init() {
             try {
-                // 캐시 방지 타임스탬프
                 const res = await fetch('data/stocks.json?t=' + Date.now());
                 if (!res.ok) throw new Error("Fetch failed");
-                const json = await res.json();
+                fullData = await res.json();
                 
-                document.getElementById('last-updated').innerText = json.updated_at || "실시간 수신 완료";
-                liveStockData = json.stocks || {};
-                renderStockGrid();
+                document.getElementById('last-updated').innerText = fullData.updated_at || "실시간 수신";
+                renderIndexes();
+                renderLeadStocks();
+                renderKospiAll();
+                renderFavorites();
+                updateFavCount();
             } catch (err) {
-                console.warn("로컬 data/stocks.json 로드 실패, 백업 데이터 사용:", err);
+                console.error("데이터 로드 실패:", err);
                 document.getElementById('last-updated').innerText = "오프라인 모드";
             }
         }
@@ -403,96 +550,251 @@
             return 'color-even';
         }
 
-        function renderStockGrid() {
-            const grid = document.getElementById('stock-grid');
-            grid.innerHTML = '';
-
-            const stockKeys = Object.keys(liveStockData);
-            if (stockKeys.length === 0) return;
-
-            stockKeys.forEach(name => {
-                const item = liveStockData[name];
-                const price = item.price || {};
-                const pVal = price.price || '0';
-                const cVal = price.change_val || '0';
-                const sign = price.sign || '-';
-                const rate = price.change_rate || '0.00';
-                const colorClass = getColorClass(sign, rate);
-
+        // 1. 주요 증시 지표 4대 전광판 렌더링
+        function renderIndexes() {
+            const container = document.getElementById('index-grid');
+            container.innerHTML = '';
+            (fullData.indexes || []).forEach(idx => {
+                const colorClass = getColorClass(idx.sign, idx.rate);
                 const card = document.createElement('div');
-                card.className = 'card';
-                card.onclick = () => selectStock(name);
+                card.className = 'index-card';
                 card.innerHTML = `
-                    <div class="card-header">
-                        <span class="card-name">${name}</span>
-                        <span class="card-tag">${item.tag || '주도주'}</span>
-                    </div>
-                    <div class="card-price">
-                        ${pVal}원 
-                        <span class="${colorClass}" style="font-size:14px; margin-left:6px;">
-                            ${sign} ${cVal}원 (${rate}%)
-                        </span>
-                    </div>
-                    <p class="card-reason">${item.analysis?.analysis ? item.analysis.analysis.split('\n')[0].replace('현재 주가는 ', '').slice(0, 75) + '...' : '시장 데이터 분석 완료.'}</p>
+                    <div class="index-title">${idx.name}</div>
+                    <div class="index-val">${idx.price}</div>
+                    <div class="index-change ${colorClass}">${idx.sign} ${idx.change} (${idx.rate}%)</div>
                 `;
-                grid.appendChild(card);
+                container.appendChild(card);
             });
         }
 
+        // 2. 오늘의 주도주 렌더링
+        function renderLeadStocks() {
+            const container = document.getElementById('view-lead');
+            container.innerHTML = '';
+            const stocks = fullData.stocks || {};
+
+            Object.keys(stocks).forEach(name => {
+                const item = stocks[name];
+                const price = item.price || {};
+                const sign = price.sign || '-';
+                const rate = price.change_rate || '0.00';
+                const colorClass = getColorClass(sign, rate);
+                const isFav = favorites.includes(name);
+
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div class="card-name-box">
+                            <span class="card-name" onclick="selectStock('${name}')">${name}</span>
+                            <span class="card-tag">${item.tag || '주도주'}</span>
+                        </div>
+                        <button class="fav-star-btn ${isFav ? 'active' : ''}" onclick="toggleFavorite(event, '${name}')">★</button>
+                    </div>
+                    <div class="card-price" onclick="selectStock('${name}')">
+                        ${price.price || '0'}원 
+                        <span class="${colorClass}" style="font-size:14px; margin-left:6px;">
+                            ${sign} ${price.change_val || 0}원 (${rate}%)
+                        </span>
+                    </div>
+                    <p class="card-reason" onclick="selectStock('${name}')">
+                        ${item.analysis?.analysis ? item.analysis.analysis.split('\n')[0].replace('현재 주가는 ', '').slice(0, 75) + '...' : '시장 데이터 분석 완료.'}
+                    </p>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // 3. KOSPI 전 종목 (Top 30) 렌더링
+        function renderKospiAll() {
+            const tbody = document.getElementById('all-tbody');
+            tbody.innerHTML = '';
+            const list = fullData.kospi_all || [];
+
+            list.forEach(item => {
+                const colorClass = getColorClass(item.sign, item.rate);
+                const isFav = favorites.includes(item.name);
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><button class="fav-star-btn ${isFav ? 'active' : ''}" onclick="toggleFavorite(event, '${item.name}')">★</button></td>
+                    <td onclick="selectStock('${item.name}')"><strong>${item.name}</strong> <span style="font-size:12px; color:#94a3b8;">(${item.code})</span></td>
+                    <td onclick="selectStock('${item.name}')"><strong>${item.price}원</strong></td>
+                    <td onclick="selectStock('${item.name}')" class="${colorClass}">${item.sign} ${item.change}원</td>
+                    <td onclick="selectStock('${item.name}')" class="${colorClass}"><strong>${item.rate}%</strong></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 4. 내 관심 종목 렌더링
+        function renderFavorites() {
+            const container = document.getElementById('view-fav');
+            container.innerHTML = '';
+
+            if (favorites.length === 0) {
+                container.innerHTML = `<div class="empty-box" style="grid-column: 1 / -1;">등록된 관심 종목이 없습니다. 종목 옆의 별표(★)를 눌러 관심 종목에 등록해 보세요!</div>`;
+                return;
+            }
+
+            favorites.forEach(name => {
+                // lead 또는 all 에서 데이터 탐색
+                let item = fullData.stocks ? fullData.stocks[name] : null;
+                let price = item ? item.price : null;
+                let code = item ? item.code : "";
+                let tag = item ? item.tag : "관심 종목";
+
+                if (!price) {
+                    const foundInAll = (fullData.kospi_all || []).find(s => s.name === name);
+                    if (foundInAll) {
+                        price = {
+                            price: foundInAll.price,
+                            change_val: foundInAll.change,
+                            change_rate: foundInAll.rate,
+                            sign: foundInAll.sign,
+                            market: "KOSPI"
+                        };
+                        code = foundInAll.code;
+                    }
+                }
+
+                if (price) {
+                    const colorClass = getColorClass(price.sign, price.change_rate);
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                        <div class="card-header">
+                            <div class="card-name-box">
+                                <span class="card-name" onclick="selectStock('${name}')">${name}</span>
+                                <span class="card-tag">${tag}</span>
+                            </div>
+                            <button class="fav-star-btn active" onclick="toggleFavorite(event, '${name}')">★</button>
+                        </div>
+                        <div class="card-price" onclick="selectStock('${name}')">
+                            ${price.price}원 
+                            <span class="${colorClass}" style="font-size:14px; margin-left:6px;">
+                                ${price.sign} ${price.change_val}원 (${price.change_rate}%)
+                            </span>
+                        </div>
+                        <p class="card-reason" onclick="selectStock('${name}')">내 관심 종목 리스트에 등록된 종목입니다.</p>
+                    `;
+                    container.appendChild(card);
+                }
+            });
+        }
+
+        function toggleFavorite(event, name) {
+            event.stopPropagation();
+            if (favorites.includes(name)) {
+                favorites = favorites.filter(f => f !== name);
+            } else {
+                favorites.push(name);
+            }
+            localStorage.setItem('my_favorite_stocks', JSON.stringify(favorites));
+            updateFavCount();
+            renderLeadStocks();
+            renderKospiAll();
+            renderFavorites();
+        }
+
+        function updateFavCount() {
+            document.getElementById('fav-count').innerText = favorites.length;
+        }
+
+        function switchTab(tab) {
+            document.getElementById('tab-lead').classList.remove('active');
+            document.getElementById('tab-all').classList.remove('active');
+            document.getElementById('tab-fav').classList.remove('active');
+
+            document.getElementById('view-lead').style.display = 'none';
+            document.getElementById('view-all').style.display = 'none';
+            document.getElementById('view-fav').style.display = 'none';
+
+            if (tab === 'lead') {
+                document.getElementById('tab-lead').classList.add('active');
+                document.getElementById('view-lead').style.display = 'grid';
+            } else if (tab === 'all') {
+                document.getElementById('tab-all').classList.add('active');
+                document.getElementById('view-all').style.display = 'block';
+            } else if (tab === 'fav') {
+                document.getElementById('tab-fav').classList.add('active');
+                document.getElementById('view-fav').style.display = 'grid';
+            }
+        }
+
         function selectStock(name) {
-            const item = liveStockData[name];
-            if (!item) return;
-
+            const item = (fullData.stocks && fullData.stocks[name]) || null;
             const card = document.getElementById('report-card');
-            const price = item.price || {};
-            const finance = item.finance || {};
-            const news = item.news || [];
-            const analysis = item.analysis || {};
 
-            const sign = price.sign || '-';
-            const rate = price.change_rate || '0.00';
-            const colorClass = getColorClass(sign, rate);
+            if (item) {
+                const price = item.price || {};
+                const finance = item.finance || {};
+                const news = item.news || [];
+                const analysis = item.analysis || {};
+                const colorClass = getColorClass(price.sign, price.change_rate);
 
-            document.getElementById('rep-name').innerText = name;
-            document.getElementById('rep-code').innerText = `${item.code} · ${price.market || 'KRX'}`;
-            document.getElementById('rep-price').innerText = `${price.price || 0}원`;
-            
-            const repChange = document.getElementById('rep-change');
-            repChange.className = `report-change ${colorClass}`;
-            repChange.innerText = `${sign} ${price.change_val || 0}원 (${rate}%) [${price.market_status || '시장'}]`;
+                document.getElementById('rep-name').innerText = name;
+                document.getElementById('rep-code').innerText = `${item.code} · ${price.market || 'KRX'}`;
+                document.getElementById('rep-price').innerText = `${price.price || 0}원`;
+                
+                const repChange = document.getElementById('rep-change');
+                repChange.className = `report-change ${colorClass}`;
+                repChange.innerText = `${price.sign || '-'} ${price.change_val || 0}원 (${price.change_rate || '0.00'}%)`;
 
-            // 재무제표 렌더링
-            const theadTr = document.getElementById('finance-thead-tr');
-            const tbody = document.getElementById('finance-tbody');
-            const years = finance.years || ['전년도', '당해년'];
-            theadTr.innerHTML = `<th>구분</th>` + years.map(y => `<th>${y}</th>`).join('');
-            
-            if (finance.metrics && Object.keys(finance.metrics).length > 0) {
-                tbody.innerHTML = Object.entries(finance.metrics).map(([k, vals]) => {
-                    return `<tr><td>${k}</td>${vals.map(v => `<td>${v}</td>`).join('')}</tr>`;
-                }).join('');
+                const theadTr = document.getElementById('finance-thead-tr');
+                const tbody = document.getElementById('finance-tbody');
+                const years = finance.years || ['전년도', '당해년'];
+                theadTr.innerHTML = `<th>구분</th>` + years.map(y => `<th>${y}</th>`).join('');
+                
+                if (finance.metrics && Object.keys(finance.metrics).length > 0) {
+                    tbody.innerHTML = Object.entries(finance.metrics).map(([k, vals]) => {
+                        return `<tr><td>${k}</td>${vals.map(v => `<td>${v}</td>`).join('')}</tr>`;
+                    }).join('');
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="${years.length + 1}">재무제표 데이터 준비 중</td></tr>`;
+                }
+
+                const newsList = document.getElementById('news-list');
+                if (news && news.length > 0) {
+                    newsList.innerHTML = news.map(n => `
+                        <li class="news-item">
+                            <strong>[${n.office}] ${n.title}</strong>
+                            ${n.body ? n.body.slice(0, 85) + '...' : ''}
+                        </li>
+                    `).join('');
+                } else {
+                    newsList.innerHTML = `<li class="news-item">최신 뉴스 데이터 준비 중</li>`;
+                }
+
+                document.getElementById('ai-text').innerText = analysis.analysis || "분석 리포트가 생성되었습니다.";
             } else {
-                tbody.innerHTML = `<tr><td colspan="${years.length + 1}">재무제표 데이터 수신 대기 중</td></tr>`;
-            }
+                // KOSPI All 목록에서 클릭한 경우
+                const found = (fullData.kospi_all || []).find(s => s.name === name);
+                if (found) {
+                    const colorClass = getColorClass(found.sign, found.rate);
+                    document.getElementById('rep-name').innerText = found.name;
+                    document.getElementById('rep-code').innerText = `${found.code} · KOSPI 시총 ${found.rank}위`;
+                    document.getElementById('rep-price').innerText = `${found.price}원`;
+                    
+                    const repChange = document.getElementById('rep-change');
+                    repChange.className = `report-change ${colorClass}`;
+                    repChange.innerText = `${found.sign} ${found.change}원 (${found.rate}%)`;
 
-            // 뉴스 렌더링
-            const newsList = document.getElementById('news-list');
-            if (news && news.length > 0) {
-                newsList.innerHTML = news.map(n => `
-                    <li class="news-item">
-                        <strong>[${n.office}] ${n.title}</strong>
-                        ${n.body ? n.body.slice(0, 85) + '...' : ''}
-                    </li>
-                `).join('');
-            } else {
-                newsList.innerHTML = `<li class="news-item">최신 뉴스 데이터가 없습니다.</li>`;
+                    document.getElementById('finance-thead-tr').innerHTML = `<th>구분</th><th>실시간 지표</th>`;
+                    document.getElementById('finance-tbody').innerHTML = `
+                        <tr><td>시가총액</td><td>${found.marketValue || '-'}억원</td></tr>
+                        <tr><td>시총순위</td><td>KOSPI ${found.rank}위</td></tr>
+                    `;
+                    document.getElementById('news-list').innerHTML = `<li class="news-item"><strong>${found.name} 실시간 거래 데이터 수신 완료</strong>정상 거래 중입니다.</li>`;
+                    document.getElementById('ai-text').innerText = `KOSPI 시가총액 상위 종목으로 현재 ${found.price}원(${found.sign} ${found.rate}%)에 거래 중입니다. 실시간 수급 모멘텀을 주시하세요.`;
+                }
             }
-
-            // AI 진단 렌더링
-            document.getElementById('ai-text').innerText = analysis.analysis || "분석 리포트 생성 중...";
 
             card.style.display = 'block';
             card.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function closeReport() {
+            document.getElementById('report-card').style.display = 'none';
         }
 
         // 검색 처리
@@ -500,11 +802,18 @@
             const query = document.getElementById('search-input').value.trim();
             if (!query) return;
 
-            const matched = Object.keys(liveStockData).find(k => k.includes(query) || query.includes(k) || (liveStockData[k].code === query));
+            // 주도주에서 먼저 찾기
+            let matched = Object.keys(fullData.stocks || {}).find(k => k.includes(query) || (fullData.stocks[k].code === query));
+            if (!matched) {
+                // KOSPI 30에서 찾기
+                const inAll = (fullData.kospi_all || []).find(s => s.name.includes(query) || s.code === query);
+                if (inAll) matched = inAll.name;
+            }
+
             if (matched) {
                 selectStock(matched);
             } else {
-                alert(`'${query}' 종목의 실시간 데이터가 모니터링 목록에 없습니다. 다른 종목을 입력해 보세요.`);
+                alert(`'${query}' 종목을 찾을 수 없습니다. 종목명이나 6자리 코드를 확인해 주세요.`);
             }
         });
 
@@ -514,8 +823,7 @@
             }
         });
 
-        // 페이지 진입 시 실시간 데이터 로드
-        loadLiveData();
+        init();
     </script>
 </body>
 </html>
