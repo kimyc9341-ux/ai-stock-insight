@@ -26,7 +26,7 @@
         }
         .header {
             text-align: center;
-            margin-bottom: 32px;
+            margin-bottom: 28px;
         }
         .badge {
             display: inline-block;
@@ -51,13 +51,30 @@
             font-size: 15px;
             line-height: 1.5;
         }
+        .live-status-bar {
+            margin-top: 10px;
+            font-size: 13px;
+            color: #22c55e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 8px #22c55e;
+        }
         /* 검색창 영역 */
         .search-section {
             background: #1e293b;
             border: 1px solid #334155;
             border-radius: 14px;
             padding: 20px;
-            margin-bottom: 30px;
+            margin-bottom: 28px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         }
         .search-title {
@@ -98,29 +115,6 @@
         .search-btn:hover {
             background: #1d4ed8;
         }
-        /* 탭 영역 */
-        .tab-nav {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 20px;
-            border-bottom: 1px solid #334155;
-            padding-bottom: 8px;
-        }
-        .tab-btn {
-            background: none;
-            border: none;
-            color: #94a3b8;
-            font-size: 15px;
-            font-weight: 600;
-            padding: 8px 16px;
-            cursor: pointer;
-            border-radius: 6px;
-            transition: all 0.2s;
-        }
-        .tab-btn.active {
-            color: #38bdf8;
-            background: rgba(56, 189, 248, 0.12);
-        }
         /* 상세 리포트 카드 */
         .report-card {
             background: #1e293b;
@@ -157,7 +151,6 @@
         .report-change {
             font-size: 14px;
             font-weight: 700;
-            color: #ef4444;
         }
         .report-grid {
             display: grid;
@@ -233,7 +226,23 @@
             color: #e2e8f0;
             white-space: pre-line;
         }
-        /* 오늘의 8종목 그리드 */
+        /* 8종목 그리드 */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #334155;
+        }
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #cbd5e1;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
         .stock-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
@@ -280,6 +289,16 @@
             color: #94a3b8;
             line-height: 1.4;
         }
+        /* 상승/하락 컬러 */
+        .color-up {
+            color: #ef4444 !important; /* 한국 상승 빨간색 */
+        }
+        .color-down {
+            color: #3b82f6 !important; /* 한국 하락 파란색 */
+        }
+        .color-even {
+            color: #94a3b8 !important;
+        }
     </style>
 </head>
 <body>
@@ -291,6 +310,10 @@
                 실시간 호가 데이터 · 재무제표 펀더멘털 · 시장 뉴스 · Google Gemini 추론을 결합하여<br>
                 국내 주도주의 상승 가능성과 핵심 투자 포인트를 심층 분석합니다.
             </p>
+            <div class="live-status-bar">
+                <span class="live-dot"></span>
+                <span>실시간 데이터 자동 갱신 중 (<span id="last-updated">수신 중...</span>)</span>
+            </div>
         </header>
 
         <!-- 종목 검색 섹션 -->
@@ -306,12 +329,12 @@
         <div id="report-card" class="report-card">
             <div class="report-header">
                 <div>
-                    <div id="rep-name" class="report-stock-name">삼성전자</div>
-                    <div id="rep-code" class="report-stock-code">005930 · KOSPI</div>
+                    <div id="rep-name" class="report-stock-name">종목명</div>
+                    <div id="rep-code" class="report-stock-code">코드 · 시장</div>
                 </div>
                 <div class="report-price">
-                    <div id="rep-price" class="report-current-price">192,700원</div>
-                    <div id="rep-change" class="report-change">▲ +2,100원 (+1.10%)</div>
+                    <div id="rep-price" class="report-current-price">0원</div>
+                    <div id="rep-change" class="report-change">-</div>
                 </div>
             </div>
 
@@ -321,193 +344,167 @@
                     <div class="sub-box-title">📊 핵심 재무제표 (최근 결산 실적)</div>
                     <table class="finance-table">
                         <thead>
-                            <tr>
+                            <tr id="finance-thead-tr">
                                 <th>구분</th>
                                 <th>2025.12</th>
                                 <th>2026.12(E)</th>
                             </tr>
                         </thead>
-                        <tbody id="finance-tbody">
-                            <tr><td>매출액</td><td>3,336,059억</td><td>7,210,066억</td></tr>
-                            <tr><td>영업이익</td><td>436,011억</td><td>3,831,623억</td></tr>
-                            <tr><td>당기순이익</td><td>452,068억</td><td>3,075,801억</td></tr>
-                            <tr><td>영업이익률</td><td>13.07%</td><td>53.14%</td></tr>
-                            <tr><td>PER / PBR</td><td>18.27배</td><td>4.32배 / 1.82배</td></tr>
-                        </tbody>
+                        <tbody id="finance-tbody"></tbody>
                     </table>
                 </div>
 
                 <!-- 최근 뉴스 이슈 -->
                 <div class="sub-box">
                     <div class="sub-box-title">📰 최근 시장 주요 뉴스 헤드라인</div>
-                    <ul id="news-list" class="news-list">
-                        <li class="news-item">
-                            <strong>[문화일보] 젠슨황 사태 후폭풍…또 주저앉은 5000피</strong>
-                            미 정부의 대중 AI 반도체 규제 및 엔비디아 이슈로 국내 증시 변동성 확대...
-                        </li>
-                        <li class="news-item">
-                            <strong>[문화일보] 구글 TPU 생산 65% ↑… AI칩 왕좌 경쟁 가속</strong>
-                            구글의 차세대 AI 가속기 생산 확대에 따른 메모리 수혜 부각...
-                        </li>
-                    </ul>
+                    <ul id="news-list" class="news-list"></ul>
                 </div>
             </div>
 
             <!-- AI 종합 전망 -->
             <div class="ai-analysis-box">
                 <div class="ai-title">🤖 Google Gemini AI 종합 예측 진단</div>
-                <div id="ai-text" class="ai-text">
-1. 🎯 주가 및 수급 모멘텀: 반도체 업황 턴어라운드 및 외국인·기관 순매수 유입으로 단기 상승 추세 지속 전망.
-2. 📊 재무 건전성 및 실적 포인트: 2026년 예상 영업이익이 전년 대비 대폭 개선되며 PER 4.3배 수준으로 밸류에이션 매력 급상승.
-3. 📰 핵심 뉴스 이슈 및 AI 전망: 글로벌 빅테크의 차세대 AI 가속기 및 HBM 공급 체인 확대에 따라 메모리 중심의 실적 슈퍼사이클 진입 유력.
-                </div>
+                <div id="ai-text" class="ai-text">분석 결과를 불러오는 중입니다...</div>
             </div>
         </div>
 
-        <div class="tab-nav">
-            <button class="tab-btn active">🔥 오늘의 상승 유망 8종목 라이브 모니터링</button>
+        <div class="section-header">
+            <div class="section-title">🔥 오늘의 실시간 모니터링 8대 주도주</div>
+            <div style="font-size:12px; color:#94a3b8;">* 클릭 시 상세 AI 리포트가 펼쳐집니다.</div>
         </div>
 
-        <!-- 8개 종목 그리드 -->
-        <div class="stock-grid">
-            <div class="card" onclick="selectStock('삼성전자')">
-                <div class="card-header">
-                    <span class="card-name">삼성전자</span>
-                    <span class="card-tag">반도체 대장</span>
-                </div>
-                <div class="card-price">192,700원 <span style="font-size:14px; color:#ef4444;">▲ +2.75%</span></div>
-                <p class="card-reason">반도체 업황 턴어라운드 및 외인·기관 매수 유입.</p>
-            </div>
-
-            <div class="card" onclick="selectStock('SK하이닉스')">
-                <div class="card-header">
-                    <span class="card-name">SK하이닉스</span>
-                    <span class="card-tag">AI 메모리/HBM</span>
-                </div>
-                <div class="card-price">198,000원 <span style="font-size:14px; color:#ef4444;">▲ +3.94%</span></div>
-                <p class="card-reason">HBM 고대역폭 메모리 수요 폭증 및 차세대 가속기 공급 독점력 강화.</p>
-            </div>
-
-            <div class="card" onclick="selectStock('한미반도체')">
-                <div class="card-header">
-                    <span class="card-name">한미반도체</span>
-                    <span class="card-tag">반도체 HBM 장비</span>
-                </div>
-                <div class="card-price">124,500원 <span style="font-size:14px; color:#ef4444;">▲ +5.69%</span></div>
-                <p class="card-reason">HBM 필수 제조 장비 TC 본더의 압도적 시장 점유율.</p>
-            </div>
-
-            <div class="card" onclick="selectStock('LS ELECTRIC')">
-                <div class="card-header">
-                    <span class="card-name">LS ELECTRIC</span>
-                    <span class="card-tag">데이터센터 전력 인프라</span>
-                </div>
-                <div class="card-price">189,000원 <span style="font-size:14px; color:#ef4444;">▲ +5.00%</span></div>
-                <p class="card-reason">AI 데이터센터 전력 소비 급증에 따른 초고압 배전반 호황.</p>
-            </div>
-
-            <div class="card" onclick="selectStock('삼성SDS')">
-                <div class="card-header">
-                    <span class="card-name">삼성SDS</span>
-                    <span class="card-tag">AI 데이터센터/클라우드</span>
-                </div>
-                <div class="card-price">154,200원 <span style="font-size:14px; color:#ef4444;">▲ +3.07%</span></div>
-                <p class="card-reason">생성형 AI 브리티 코파일럿 확산 및 HPC 데이터센터 가동률 상승.</p>
-            </div>
-
-            <div class="card" onclick="selectStock('현대차')">
-                <div class="card-header">
-                    <span class="card-name">현대차</span>
-                    <span class="card-tag">모빌리티/밸류업</span>
-                </div>
-                <div class="card-price">258,000원 <span style="font-size:14px; color:#ef4444;">▲ +1.78%</span></div>
-                <p class="card-reason">하이브리드 차량 북미 수출 호조 및 주주환원(밸류업) 지속.</p>
-            </div>
-
-            <div class="card" onclick="selectStock('우리기술')">
-                <div class="card-header">
-                    <span class="card-name">우리기술</span>
-                    <span class="card-tag">원전/전력망</span>
-                </div>
-                <div class="card-price">2,450원 <span style="font-size:14px; color:#ef4444;">▲ +9.62%</span></div>
-                <p class="card-reason">체코 및 글로벌 원전 수출 수주 기대감과 제어계측 설비 국산화.</p>
-            </div>
-
-            <div class="card" onclick="selectStock('NAVER')">
-                <div class="card-header">
-                    <span class="card-name">NAVER</span>
-                    <span class="card-tag">AI 플랫폼</span>
-                </div>
-                <div class="card-price">182,300원 <span style="font-size:14px; color:#ef4444;">▲ +2.13%</span></div>
-                <p class="card-reason">서치플랫폼 광고 단가 회복 및 AI 검색 고도화에 따른 밸류 재평가.</p>
-            </div>
-        </div>
+        <!-- 8개 종목 그리드 컨테이너 -->
+        <div id="stock-grid" class="stock-grid"></div>
     </div>
 
     <script>
-        const stockData = {
-            "삼성전자": {
-                name: "삼성전자", code: "005930 · KOSPI", price: "192,700원", change: "▲ +2,100원 (+1.10%)",
-                finance: [
-                    ["매출액", "3,336,059억", "7,210,066억"],
-                    ["영업이익", "436,011억", "3,831,623억"],
-                    ["당기순이익", "452,068억", "3,075,801억"],
-                    ["영업이익률", "13.07%", "53.14%"],
-                    ["PER / PBR", "18.27배", "4.32배 / 1.82배"]
-                ],
-                news: [
-                    { title: "[문화일보] 젠슨황 사태 후폭풍…또 주저앉은 5000피", body: "미 정부의 대중 AI 반도체 규제 및 엔비디아 이슈로 국내 증시 변동성 확대..." },
-                    { title: "[문화일보] 구글 TPU 생산 65% ↑… AI칩 왕좌 경쟁 가속", body: "구글의 차세대 AI 가속기 생산 확대에 따른 메모리 수혜 부각..." }
-                ],
-                ai: "1. 🎯 주가 및 수급 모멘텀: 반도체 업황 턴어라운드 및 외국인·기관 순매수 유입으로 단기 상승 추세 지속 전망.\n2. 📊 재무 건전성 및 실적 포인트: 2026년 예상 영업이익이 전년 대비 대폭 개선되며 PER 4.3배 수준으로 밸류에이션 매력 급상승.\n3. 📰 핵심 뉴스 이슈 및 AI 전망: 글로벌 빅테크의 차세대 AI 가속기 및 HBM 공급 체인 확대에 따라 메모리 중심의 실적 슈퍼사이클 진입 유력."
-            },
-            "SK하이닉스": {
-                name: "SK하이닉스", code: "000660 · KOSPI", price: "198,000원", change: "▲ +7,500원 (+3.94%)",
-                finance: [
-                    ["매출액", "327,657억", "661,999억"],
-                    ["영업이익", "-77,303억", "234,673억"],
-                    ["당기순이익", "-91,375억", "197,890억"],
-                    ["영업이익률", "-23.59%", "35.45%"],
-                    ["PER / PBR", "적자전환", "7.15배 / 2.10배"]
-                ],
-                news: [
-                    { title: "[전자신문] SK하이닉스, 차세대 HBM3E 및 HBM4 독점 공급망 유지", body: "글로벌 AI 빅테크향 HBM 공급 계약 연장 및 수주 점유율 1위 수성..." },
-                    { title: "[한국경제] 엔비디아 차세대 아키텍처에 HBM 공급 차질 없어", body: "수율 안정화 및 청주 신규 팹 조기 가동으로 시장 수요 대응..." }
-                ],
-                ai: "1. 🎯 주가 및 수급 모멘텀: HBM 독점 공급 체인에 따른 사상 최고가 랠리 및 기관 지속 매수.\n2. 📊 재무 건전성 및 실적 포인트: 영업이익 23조원 흑자 턴어라운드로 역대 최고 실적 경신.\n3. 📰 핵심 뉴스 이슈 및 AI 전망: AI 가속기 수요가 유지되는 한 HBM 시장 리더십에 따른 프리미엄 밸류에이션 지속 전망."
+        let liveStockData = {};
+
+        // 실시간 data/stocks.json 동적 로드
+        async function loadLiveData() {
+            try {
+                // 캐시 방지 타임스탬프
+                const res = await fetch('data/stocks.json?t=' + Date.now());
+                if (!res.ok) throw new Error("Fetch failed");
+                const json = await res.json();
+                
+                document.getElementById('last-updated').innerText = json.updated_at || "실시간 수신 완료";
+                liveStockData = json.stocks || {};
+                renderStockGrid();
+            } catch (err) {
+                console.warn("로컬 data/stocks.json 로드 실패, 백업 데이터 사용:", err);
+                document.getElementById('last-updated').innerText = "오프라인 모드";
             }
-        };
+        }
+
+        function getColorClass(sign, rate) {
+            if (sign === '▲' || parseFloat(rate) > 0) return 'color-up';
+            if (sign === '▼' || parseFloat(rate) < 0) return 'color-down';
+            return 'color-even';
+        }
+
+        function renderStockGrid() {
+            const grid = document.getElementById('stock-grid');
+            grid.innerHTML = '';
+
+            const stockKeys = Object.keys(liveStockData);
+            if (stockKeys.length === 0) return;
+
+            stockKeys.forEach(name => {
+                const item = liveStockData[name];
+                const price = item.price || {};
+                const pVal = price.price || '0';
+                const cVal = price.change_val || '0';
+                const sign = price.sign || '-';
+                const rate = price.change_rate || '0.00';
+                const colorClass = getColorClass(sign, rate);
+
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.onclick = () => selectStock(name);
+                card.innerHTML = `
+                    <div class="card-header">
+                        <span class="card-name">${name}</span>
+                        <span class="card-tag">${item.tag || '주도주'}</span>
+                    </div>
+                    <div class="card-price">
+                        ${pVal}원 
+                        <span class="${colorClass}" style="font-size:14px; margin-left:6px;">
+                            ${sign} ${cVal}원 (${rate}%)
+                        </span>
+                    </div>
+                    <p class="card-reason">${item.analysis?.analysis ? item.analysis.analysis.split('\n')[0].replace('현재 주가는 ', '').slice(0, 75) + '...' : '시장 데이터 분석 완료.'}</p>
+                `;
+                grid.appendChild(card);
+            });
+        }
 
         function selectStock(name) {
+            const item = liveStockData[name];
+            if (!item) return;
+
             const card = document.getElementById('report-card');
-            const data = stockData[name] || stockData["삼성전자"];
+            const price = item.price || {};
+            const finance = item.finance || {};
+            const news = item.news || [];
+            const analysis = item.analysis || {};
+
+            const sign = price.sign || '-';
+            const rate = price.change_rate || '0.00';
+            const colorClass = getColorClass(sign, rate);
+
+            document.getElementById('rep-name').innerText = name;
+            document.getElementById('rep-code').innerText = `${item.code} · ${price.market || 'KRX'}`;
+            document.getElementById('rep-price').innerText = `${price.price || 0}원`;
             
-            document.getElementById('rep-name').innerText = data.name;
-            document.getElementById('rep-code').innerText = data.code;
-            document.getElementById('rep-price').innerText = data.price;
-            document.getElementById('rep-change').innerText = data.change;
+            const repChange = document.getElementById('rep-change');
+            repChange.className = `report-change ${colorClass}`;
+            repChange.innerText = `${sign} ${price.change_val || 0}원 (${rate}%) [${price.market_status || '시장'}]`;
 
-            // 재무
+            // 재무제표 렌더링
+            const theadTr = document.getElementById('finance-thead-tr');
             const tbody = document.getElementById('finance-tbody');
-            tbody.innerHTML = data.finance.map(row => `<tr><td>${row[0]}</td><td>${row[1]}</td><td>${row[2]}</td></tr>`).join('');
+            const years = finance.years || ['전년도', '당해년'];
+            theadTr.innerHTML = `<th>구분</th>` + years.map(y => `<th>${y}</th>`).join('');
+            
+            if (finance.metrics && Object.keys(finance.metrics).length > 0) {
+                tbody.innerHTML = Object.entries(finance.metrics).map(([k, vals]) => {
+                    return `<tr><td>${k}</td>${vals.map(v => `<td>${v}</td>`).join('')}</tr>`;
+                }).join('');
+            } else {
+                tbody.innerHTML = `<tr><td colspan="${years.length + 1}">재무제표 데이터 수신 대기 중</td></tr>`;
+            }
 
-            // 뉴스
+            // 뉴스 렌더링
             const newsList = document.getElementById('news-list');
-            newsList.innerHTML = data.news.map(n => `<li class="news-item"><strong>${n.title}</strong>${n.body}</li>`).join('');
+            if (news && news.length > 0) {
+                newsList.innerHTML = news.map(n => `
+                    <li class="news-item">
+                        <strong>[${n.office}] ${n.title}</strong>
+                        ${n.body ? n.body.slice(0, 85) + '...' : ''}
+                    </li>
+                `).join('');
+            } else {
+                newsList.innerHTML = `<li class="news-item">최신 뉴스 데이터가 없습니다.</li>`;
+            }
 
-            // AI
-            document.getElementById('ai-text').innerText = data.ai;
+            // AI 진단 렌더링
+            document.getElementById('ai-text').innerText = analysis.analysis || "분석 리포트 생성 중...";
 
             card.style.display = 'block';
             card.scrollIntoView({ behavior: 'smooth' });
         }
 
+        // 검색 처리
         document.getElementById('search-btn').addEventListener('click', () => {
             const query = document.getElementById('search-input').value.trim();
-            if (query.includes('하이닉스')) {
-                selectStock('SK하이닉스');
+            if (!query) return;
+
+            const matched = Object.keys(liveStockData).find(k => k.includes(query) || query.includes(k) || (liveStockData[k].code === query));
+            if (matched) {
+                selectStock(matched);
             } else {
-                selectStock('삼성전자');
+                alert(`'${query}' 종목의 실시간 데이터가 모니터링 목록에 없습니다. 다른 종목을 입력해 보세요.`);
             }
         });
 
@@ -516,6 +513,9 @@
                 document.getElementById('search-btn').click();
             }
         });
+
+        // 페이지 진입 시 실시간 데이터 로드
+        loadLiveData();
     </script>
 </body>
 </html>
