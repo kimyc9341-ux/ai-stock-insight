@@ -639,14 +639,15 @@
             tbody.innerHTML = '';
             const list = fullData.kospi_all || [];
 
-            list.forEach(item => {
+            list.forEach((item, index) => {
+                const rankNum = item.rank && item.rank > 0 ? item.rank : (index + 1);
                 const colorClass = getColorClass(item.sign, item.rate);
                 const isFav = favorites.includes(item.name);
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td><button class="fav-star-btn ${isFav ? 'active' : ''}" onclick="toggleFavorite(event, '${item.name}')">★</button></td>
                     <td onclick="selectStock('${item.name}')">
-                        <span style="color:#60a5fa; font-weight:700; margin-right:6px;">#${item.rank}</span>
+                        <span style="color:#60a5fa; font-weight:700; margin-right:6px;">#${rankNum}</span>
                         <strong>${item.name}</strong> 
                         <span style="font-size:12px; color:#94a3b8;">(${item.code})</span>
                     </td>
