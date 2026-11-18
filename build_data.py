@@ -25,6 +25,16 @@ LEAD_STOCKS_6 = [
     {"name": "NAVER", "code": "035420", "tag": "AI 플랫폼"}
 ]
 
+# 단기 변동성 및 업황 리스크 주의 6종목
+RISK_STOCKS_6 = [
+    {"name": "롯데케미칼", "code": "011170", "tag": "석유화학 업황부진", "recom": "비중 축소/관망"},
+    {"name": "엔씨소프트", "code": "036570", "tag": "신작 모멘텀 둔화", "recom": "실적 확인 후 접근"},
+    {"name": "에코프로비엠", "code": "247540", "tag": "이차전지 밸류 부담", "recom": "고변동성 유의"},
+    {"name": "이마트", "code": "139480", "tag": "유통 경쟁심화", "recom": "단기 주의/관망"},
+    {"name": "카카오", "code": "035720", "tag": "성장성 재점검", "recom": "보수적 관망"},
+    {"name": "LG화학", "code": "051910", "tag": "석화·배터리 이중부담", "recom": "단기 리스크 관리"}
+]
+
 
 def get_realtime_price(code: str):
     url = f"https://m.stock.naver.com/api/stock/{code}/basic"
@@ -206,6 +216,32 @@ def generate_gemini_analysis(name, code, tag, price, finance, news):
     }
 
 
+def generate_gemini_risk_analysis(name, code, tag, recom, price):
+    """단기 변동성 및 업황 주의/위험 종목 리포트 생성"""
+    p_val = price.get('price', '0') if price else '0'
+    sign = price.get('sign', '-') if price else '-'
+    rate = price.get('change_rate', '0.00') if price else '0.00'
+
+    risk_reasons = {
+        "롯데케미칼": "글로벌 공급 과잉 장기화 및 석유화학 스프레드 둔화로 실적 턴어라운드 확인 전까지 보수적 접근이 필요합니다.",
+        "엔씨소프트": "기존 주력 IP 매출 자연 감소 및 신작 흥행 변동성이 존재하여 분기 영업이익 반등 시점까지 관망이 권장됩니다.",
+        "에코프로비엠": "전방 전기차 수요 둔화(캐즘) 우려와 높은 밸류에이션 부담으로 단기 급등락 리스크 관리가 필수적입니다.",
+        "이마트": "이커머스 점유율 경쟁 심화 및 오프라인 고정비 부담으로 수익성 및 재무구조 개선 추이를 먼저 확인해야 합니다.",
+        "카카오": "자회사 구조조정 및 신규 AI 서비스 수익화 가시성 확보 전까지 단기 추격 매수보다 지지선 확인이 필요합니다.",
+        "LG화학": "석유화학 시황 부진과 배터리 자회사 실적 변동성이 맞물려 있어 업황 바닥 시그널 확인이 우선입니다."
+    }
+    reason = risk_reasons.get(name, "업황 둔화 및 단기 수급 변동성에 유의해야 하는 구간입니다.")
+    return {
+        "source": "Gemini AI Risk Radar",
+        "recommendation": recom,
+        "analysis": (
+            f"1. ⚠️ 수급/변동성 진단: 현재가 {p_val}원({sign} {rate}%)으로 단기 하방 압력 및 수급 변동성에 유의해야 하는 구간입니다.\n"
+            f"2. 📊 재무 및 업황 리스크: {reason}\n"
+            f"3. 🛡️ Gemini 리스크 대응 전략: [{recom}] - 무리한 물타기나 추격 매수를 자제하고 실적 턴어라운드 확인 후 접근 권장."
+        )
+    }
+
+
 def build():
     now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"[{now_str}] 🚀 Gemini 추천 주도주 6종목, KOSPI Top 50(표시용) & KOSPI 전 종목(검색용) API 빌드 시작...")
@@ -237,12 +273,36 @@ def build():
             "analysis": gemini_result
         }
 
+    risk_stocks_data = {}
+    for item in RISK_STOCKS_6:
+        code = item["code"]
+        name = item["name"]
+        tag = item["tag"]
+        recom = item["recom"]
+        print(f"  • Gemini 위험주 분석 중: {name} ({code})...")
+
+        price = get_realtime_price(code)
+        finance = get_financial_summary(code)
+        news = get_recent_news(code, page_size=3)
+        risk_result = generate_gemini_risk_analysis(name, code, tag, recom, price)
+
+        risk_stocks_data[name] = {
+            "name": name,
+            "code": code,
+            "tag": tag,
+            "price": price,
+            "finance": finance,
+            "news": news,
+            "analysis": risk_result
+        }
+
     out_data = {
         "updated_at": now_str,
         "indexes": indexes,
         "kospi_all": all_searchable_stocks,
         "kospi_search": all_searchable_stocks,
-        "stocks": lead_stocks_data
+        "stocks": lead_stocks_data,
+        "risk_stocks": risk_stocks_data
     }
 
     out_path = os.path.join(DATA_DIR, "stocks.json")

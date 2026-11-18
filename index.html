@@ -443,6 +443,32 @@
             border-radius: 12px;
             font-weight: 700;
         }
+        .risk-badge {
+            background: rgba(248, 113, 113, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(248, 113, 113, 0.35);
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 700;
+        }
+        .card-risk-tag {
+            font-size: 11px;
+            background: rgba(251, 146, 60, 0.15);
+            color: #fb923c;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .card-risk-reason {
+            font-size: 12px;
+            color: #cbd5e1;
+            line-height: 1.5;
+            background: #0f172a;
+            padding: 8px 10px;
+            border-radius: 6px;
+            border-left: 2px solid #f87171;
+        }
         .fav-star-btn {
             background: none;
             border: none;
@@ -749,12 +775,16 @@
         <!-- 3. 탭 네비게이션 -->
         <div class="tab-bar">
             <button class="tab-btn active" id="tab-lead" onclick="switchTab('lead')">🔥 Gemini 추천 주도주 (6종목)</button>
+            <button class="tab-btn" id="tab-risk" onclick="switchTab('risk')">⚠️ Gemini 추천 위험주 (6종목)</button>
             <button class="tab-btn" id="tab-all" onclick="switchTab('all')">📋 KOSPI 전체 종목 (시총 Top 50)</button>
             <button class="tab-btn" id="tab-fav" onclick="switchTab('fav')">⭐ 내 관심 종목 (<span id="fav-count">0</span>)</button>
         </div>
 
         <!-- 4-1. Gemini 추천 주도주 6종목 뷰 -->
         <div id="view-lead" class="stock-grid"></div>
+
+        <!-- 4-1-2. Gemini 추천 위험주 6종목 뷰 -->
+        <div id="view-risk" class="stock-grid" style="display:none;"></div>
 
         <!-- 4-2. KOSPI 시총 Top 50 뷰 -->
         <div id="view-all" class="all-table-box" style="display:none;">
@@ -860,6 +890,7 @@
                 document.getElementById('last-updated').innerText = fullData.updated_at || "실시간 수신";
                 renderIndexes();
                 renderLeadStocks6();
+                renderRiskStocks6();
                 renderKospiTop50();
                 renderFavorites();
                 updateFavCount();
@@ -932,6 +963,87 @@
             });
         }
 
+        const DEFAULT_RISK_STOCKS_6 = [
+            { name: "롯데케미칼", code: "011170", tag: "석유화학 업황부진", recom: "비중 축소/관망", reason: "글로벌 공급 과잉 장기화 및 석유화학 스프레드 둔화로 실적 턴어라운드 확인 전까지 보수적 접근이 필요합니다." },
+            { name: "엔씨소프트", code: "036570", tag: "신작 모멘텀 둔화", recom: "실적 확인 후 접근", reason: "기존 주력 IP 매출 자연 감소 및 신작 흥행 변동성이 존재하여 분기 영업이익 반등 시점까지 관망이 권장됩니다." },
+            { name: "에코프로비엠", code: "247540", tag: "이차전지 밸류 부담", recom: "고변동성 유의", reason: "전방 전기차 수요 둔화(캐즘) 우려와 높은 밸류에이션 부담으로 단기 급등락 리스크 관리가 필수적입니다." },
+            { name: "이마트", code: "139480", tag: "유통 경쟁심화", recom: "단기 주의/관망", reason: "이커머스 점유율 경쟁 심화 및 오프라인 고정비 부담으로 수익성 및 재무구조 개선 추이를 먼저 확인해야 합니다." },
+            { name: "카카오", code: "035720", tag: "성장성 재점검", recom: "보수적 관망", reason: "자회사 구조조정 및 신규 AI 서비스 수익화 가시성 확보 전까지 단기 추격 매수보다 지지선 확인이 필요합니다." },
+            { name: "LG화학", code: "051910", tag: "석화·배터리 이중부담", recom: "단기 리스크 관리", reason: "석유화학 시황 부진과 배터리 자회사 실적 변동성이 맞물려 있어 업황 바닥 시그널 확인이 우선입니다." }
+        ];
+
+        function getRiskStocksMap() {
+            if (fullData.risk_stocks && Object.keys(fullData.risk_stocks).length > 0) {
+                return fullData.risk_stocks;
+            }
+            const pool = getKospiSearchPool();
+            const map = {};
+            DEFAULT_RISK_STOCKS_6.forEach(def => {
+                const found = pool.find(s => s.name === def.name || s.code === def.code);
+                map[def.name] = {
+                    name: def.name,
+                    code: def.code,
+                    tag: def.tag,
+                    price: {
+                        price: found ? found.price : "-",
+                        change_val: found ? found.change : "0",
+                        change_rate: found ? found.rate : "0.00",
+                        sign: found ? found.sign : "-",
+                        market: (found && found.market) || "KRX"
+                    },
+                    analysis: {
+                        source: "Gemini AI Risk Radar",
+                        recommendation: def.recom,
+                        analysis: `1. ⚠️ 수급/변동성 진단: 현재가 ${found ? found.price : '-'}원(${found ? found.sign : '-'} ${found ? found.rate : '0.00'}%)으로 단기 하방 압력 및 수급 변동성에 유의해야 하는 구간입니다.\n2. 📊 재무 및 업황 리스크: ${def.reason}\n3. 🛡️ Gemini 리스크 대응 전략: [${def.recom}] - 무리한 물타기나 추격 매수를 자제하고 실적 턴어라운드 확인 후 접근 권장.`
+                    }
+                };
+            });
+            return map;
+        }
+
+        // Gemini 추천 위험주 6종목 렌더링
+        function renderRiskStocks6() {
+            const container = document.getElementById('view-risk');
+            if (!container) return;
+            container.innerHTML = '';
+            const riskStocks = getRiskStocksMap();
+
+            Object.keys(riskStocks).forEach(name => {
+                const item = riskStocks[name];
+                const price = item.price || {};
+                const sign = price.sign || '-';
+                const rate = price.change_rate || '0.00';
+                const colorClass = getColorClass(sign, rate);
+                const isFav = favorites.includes(name);
+                const gemini = item.analysis || {};
+                const recom = gemini.recommendation || "단기 주의";
+                const reasonLines = (gemini.analysis || '').split('\n');
+                const shortReason = reasonLines[1] || reasonLines[0] || '단기 변동성 및 업황 리스크 주의가 필요한 종목입니다.';
+
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div class="card-name-box">
+                            <span class="card-name" onclick="selectStock('${name}')">${name}</span>
+                            <span class="card-risk-tag">${item.tag || '주의종목'}</span>
+                            <span class="risk-badge">Gemini: ${recom}</span>
+                        </div>
+                        <button class="fav-star-btn ${isFav ? 'active' : ''}" onclick="toggleFavorite(event, '${name}')">★</button>
+                    </div>
+                    <div class="card-price" onclick="selectStock('${name}')">
+                        ${price.price || '0'}원 
+                        <span class="${colorClass}" style="font-size:14px; margin-left:6px;">
+                            ${sign} ${price.change_val || 0}원 (${rate}%)
+                        </span>
+                    </div>
+                    <p class="card-risk-reason" onclick="selectStock('${name}')">
+                        <strong>⚠️ AI 위험 분석:</strong> ${shortReason}
+                    </p>
+                `;
+                container.appendChild(card);
+            });
+        }
         // KOSPI Top 50 렌더링 (화면에는 상위 50개만 표시)
         function renderKospiTop50() {
             const tbody = document.getElementById('all-tbody');
@@ -1047,6 +1159,7 @@
             updateFavCount();
             updateReportFavBtn();
             renderLeadStocks6();
+            renderRiskStocks6();
             renderKospiTop50();
             renderFavorites();
         }
@@ -1150,6 +1263,7 @@
             updateFavCount();
             updateReportFavBtn();
             renderLeadStocks6();
+            renderRiskStocks6();
             renderKospiTop50();
             renderFavorites();
         }
@@ -1165,6 +1279,7 @@
             updateFavCount();
             updateReportFavBtn();
             renderLeadStocks6();
+            renderRiskStocks6();
             renderKospiTop50();
             renderFavorites();
         }
@@ -1175,16 +1290,21 @@
 
         function switchTab(tab) {
             document.getElementById('tab-lead').classList.remove('active');
+            document.getElementById('tab-risk').classList.remove('active');
             document.getElementById('tab-all').classList.remove('active');
             document.getElementById('tab-fav').classList.remove('active');
 
             document.getElementById('view-lead').style.display = 'none';
+            document.getElementById('view-risk').style.display = 'none';
             document.getElementById('view-all').style.display = 'none';
             document.getElementById('view-fav').style.display = 'none';
 
             if (tab === 'lead') {
                 document.getElementById('tab-lead').classList.add('active');
                 document.getElementById('view-lead').style.display = 'grid';
+            } else if (tab === 'risk') {
+                document.getElementById('tab-risk').classList.add('active');
+                document.getElementById('view-risk').style.display = 'grid';
             } else if (tab === 'all') {
                 document.getElementById('tab-all').classList.add('active');
                 document.getElementById('view-all').style.display = 'block';
@@ -1195,7 +1315,8 @@
         }
 
         function selectStock(name) {
-            const item = (fullData.stocks && fullData.stocks[name]) || null;
+            const riskMap = getRiskStocksMap();
+            const item = (fullData.stocks && fullData.stocks[name]) || riskMap[name] || null;
             const card = document.getElementById('report-card');
 
             if (item) {
@@ -1225,7 +1346,8 @@
                         return `<tr><td>${k}</td>${vals.map(v => `<td>${v}</td>`).join('')}</tr>`;
                     }).join('');
                 } else {
-                    tbody.innerHTML = `<tr><td colspan="${years.length + 1}">재무제표 데이터 준비 중</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="${years.length + 1}">실시간 재무제표 데이터 조회 중...</td></tr>`;
+                    fetchLiveStockDetails(item.code, name);
                 }
 
                 const newsList = document.getElementById('news-list');
@@ -1237,7 +1359,7 @@
                         </li>
                     `).join('');
                 } else {
-                    newsList.innerHTML = `<li class="news-item">최신 뉴스 데이터 준비 중</li>`;
+                    newsList.innerHTML = `<li class="news-item">실시간 뉴스 데이터 조회 중...</li>`;
                 }
 
                 document.getElementById('rep-gemini-badge').innerText = analysis.recommendation || "추천 분석";
