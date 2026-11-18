@@ -1626,7 +1626,7 @@
         }
 
         function getKisPaperAccountKey() {
-            return `kis_paper_account_${currentUser}`;
+            return `kis_paper_account_v2_${currentUser}`;
         }
 
         function loadKisPaperAccount() {
@@ -1636,10 +1636,7 @@
             }
             return {
                 cash: 50000000,
-                holdings: {
-                    "삼성전자": { name: "삼성전자", code: "005930", qty: 50, avgPrice: 68000 },
-                    "SK하이닉스": { name: "SK하이닉스", code: "000660", qty: 20, avgPrice: 175000 }
-                }
+                holdings: {}
             };
         }
 

@@ -538,12 +538,9 @@ def get_kis_paper_balance():
 
     return {
         "source": "KIS 모의투자 시뮬레이션 계좌 (무료 테스트 모드)",
-        "cash": 38500000,
-        "total_eval": 51240000,
-        "holdings": [
-            {"name": "삼성전자", "code": "005930", "qty": 100, "avg_price": 68000, "cur_price": 71500, "profit_rate": "+5.15"},
-            {"name": "SK하이닉스", "code": "000660", "qty": 30, "avg_price": 175000, "cur_price": 186300, "profit_rate": "+6.46"},
-        ],
+        "cash": 50000000,
+        "total_eval": 50000000,
+        "holdings": [],
     }
 
 
