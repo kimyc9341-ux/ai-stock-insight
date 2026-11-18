@@ -634,6 +634,7 @@
             flex: 1;
             padding: 14px;
             overflow-y: auto;
+            overflow-x: hidden;
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -645,6 +646,8 @@
             font-size: 13px;
             line-height: 1.5;
             white-space: pre-line;
+            word-break: break-word;
+            overflow-wrap: anywhere;
         }
         .chat-bubble.bot {
             align-self: flex-start;
@@ -659,18 +662,24 @@
         }
         .chatbot-chips {
             display: flex;
-            gap: 6px;
-            padding: 6px 12px;
-            overflow-x: auto;
+            flex-wrap: wrap;
+            gap: 5px;
+            padding: 6px 10px;
+            overflow-x: hidden;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
             border-top: 1px solid #334155;
             background: #162032;
+        }
+        .chatbot-chips::-webkit-scrollbar {
+            display: none;
         }
         .chat-chip {
             background: rgba(56, 189, 248, 0.12);
             color: #38bdf8;
             border: 1px solid rgba(56, 189, 248, 0.3);
             border-radius: 14px;
-            padding: 4px 10px;
+            padding: 4px 8px;
             font-size: 11px;
             white-space: nowrap;
             cursor: pointer;
