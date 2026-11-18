@@ -203,6 +203,98 @@
         .report-stock-name {
             font-size: 22px;
             font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .rep-fav-btn {
+            background: rgba(250, 204, 21, 0.12);
+            border: 1px solid rgba(250, 204, 21, 0.4);
+            color: #cbd5e1;
+            font-size: 13px;
+            font-weight: 700;
+            padding: 5px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .rep-fav-btn:hover {
+            border-color: #facc15;
+            color: #facc15;
+        }
+        .rep-fav-btn.active {
+            background: rgba(250, 204, 21, 0.2);
+            border-color: #facc15;
+            color: #facc15;
+        }
+        .user-fav-bar {
+            grid-column: 1 / -1;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 14px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .user-profile-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            font-size: 13px;
+            color: #cbd5e1;
+        }
+        .user-select {
+            background: #0f172a;
+            color: #38bdf8;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 13px;
+            font-weight: 700;
+            outline: none;
+        }
+        .user-small-btn {
+            background: #334155;
+            color: #f1f5f9;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .user-small-btn:hover {
+            background: #475569;
+        }
+        .fav-quick-add {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .fav-quick-input {
+            background: #0f172a;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            padding: 6px 12px;
+            color: #ffffff;
+            font-size: 13px;
+            outline: none;
+            width: 210px;
+        }
+        .fav-quick-btn {
+            background: #2563eb;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
         }
         .report-stock-code {
             font-size: 13px;
@@ -616,7 +708,10 @@
             <button class="report-close-btn" onclick="closeReport()">✕</button>
             <div class="report-header">
                 <div>
-                    <div id="rep-name" class="report-stock-name">종목명</div>
+                    <div class="report-stock-name">
+                        <span id="rep-name">종목명</span>
+                        <button type="button" id="rep-fav-btn" class="rep-fav-btn" onclick="toggleCurrentReportFavorite()">☆ 관심종목 추가</button>
+                    </div>
                     <div id="rep-code" class="report-stock-code">코드 · 시장</div>
                 </div>
                 <div class="report-price">
@@ -730,7 +825,31 @@
             return fullData.kospi_all || [];
         }
 
-        let favorites = JSON.parse(localStorage.getItem('my_favorite_stocks') || '["삼성전자", "SK하이닉스"]');
+        let userList = JSON.parse(localStorage.getItem('stock_agent_users') || '["기본 사용자"]');
+        if (!Array.isArray(userList) || userList.length === 0) userList = ["기본 사용자"];
+        let currentUser = localStorage.getItem('stock_agent_current_user') || userList[0];
+        if (!userList.includes(currentUser)) userList.push(currentUser);
+
+        let customStockCache = JSON.parse(localStorage.getItem('custom_stock_cache') || '{}');
+        let currentReportStockName = '';
+
+        function getFavStorageKey(user) {
+            return user === '기본 사용자' ? 'my_favorite_stocks' : `my_favorite_stocks_${user}`;
+        }
+
+        function loadUserFavorites(user) {
+            const raw = localStorage.getItem(getFavStorageKey(user));
+            if (raw) {
+                try { return JSON.parse(raw); } catch (_) {}
+            }
+            return user === '기본 사용자' ? ["삼성전자", "SK하이닉스"] : [];
+        }
+
+        function saveUserFavorites() {
+            localStorage.setItem(getFavStorageKey(currentUser), JSON.stringify(favorites));
+        }
+
+        let favorites = loadUserFavorites(currentUser);
 
         async function init() {
             try {
@@ -843,8 +962,35 @@
             const container = document.getElementById('view-fav');
             container.innerHTML = '';
 
+            const userBar = document.createElement('div');
+            userBar.className = 'user-fav-bar';
+            const optionsHtml = userList.map(u => `<option value="${u}" ${u === currentUser ? 'selected' : ''}>👤 ${u}</option>`).join('');
+            userBar.innerHTML = `
+                <div class="user-profile-box">
+                    <strong>사용자별 관심종목:</strong>
+                    <select class="user-select" onchange="switchUserProfile(this.value)">${optionsHtml}</select>
+                    <button type="button" class="user-small-btn" onclick="addNewUserProfile()">+ 사용자 추가</button>
+                </div>
+                <div class="fav-quick-add">
+                    <input type="text" id="fav-quick-input" class="fav-quick-input" placeholder="관심종목 직접 추가 (예: 대한항공, KT)">
+                    <button type="button" class="fav-quick-btn" onclick="quickAddFavoriteFromInput()">+ 관심종목 추가</button>
+                </div>
+            `;
+            container.appendChild(userBar);
+
+            const quickInput = userBar.querySelector('#fav-quick-input');
+            if (quickInput) {
+                quickInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') quickAddFavoriteFromInput();
+                });
+            }
+
             if (favorites.length === 0) {
-                container.innerHTML = `<div class="empty-box" style="grid-column: 1 / -1;">등록된 관심 종목이 없습니다. 종목 옆의 별표(★)를 눌러 관심 종목에 등록해 보세요!</div>`;
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = 'empty-box';
+                emptyDiv.style.gridColumn = '1 / -1';
+                emptyDiv.innerText = `[${currentUser}]님의 등록된 관심 종목이 없습니다. 상단 종목 검색 후 '☆ 관심종목 추가'를 누르거나 위 입력창에서 바로 추가해 보세요!`;
+                container.appendChild(emptyDiv);
                 return;
             }
 
@@ -854,14 +1000,17 @@
                 let tag = item ? item.tag : "관심 종목";
 
                 if (!price) {
-                    const foundInAll = getKospiSearchPool().find(s => s.name === name);
+                    const qNorm = norm(name);
+                    const foundInAll = getKospiSearchPool().find(s => norm(s.name) === qNorm || s.code === name) || customStockCache[name];
                     if (foundInAll) {
+                        const marketLabel = foundInAll.market || "KOSPI";
+                        tag = foundInAll.rank && foundInAll.rank !== '-' ? `${marketLabel} #${foundInAll.rank}위` : `${marketLabel} 관심종목`;
                         price = {
                             price: foundInAll.price,
                             change_val: foundInAll.change,
                             change_rate: foundInAll.rate,
                             sign: foundInAll.sign,
-                            market: "KOSPI"
+                            market: marketLabel
                         };
                     }
                 }
@@ -876,7 +1025,7 @@
                                 <span class="card-name" onclick="selectStock('${name}')">${name}</span>
                                 <span class="card-tag">${tag}</span>
                             </div>
-                            <button class="fav-star-btn active" onclick="toggleFavorite(event, '${name}')">★</button>
+                            <button class="fav-star-btn active" title="관심종목 해제" onclick="toggleFavorite(event, '${name}')">★</button>
                         </div>
                         <div class="card-price" onclick="selectStock('${name}')">
                             ${price.price}원 
@@ -884,11 +1033,125 @@
                                 ${price.sign} ${price.change_val}원 (${price.change_rate}%)
                             </span>
                         </div>
-                        <p class="card-reason" onclick="selectStock('${name}')">내 관심 종목에 등록된 종목입니다. 클릭하여 상세 리포트를 확인하세요.</p>
+                        <p class="card-reason" onclick="selectStock('${name}')">[${currentUser}]님의 관심 종목입니다. 클릭하여 상세 리포트(재무·뉴스·AI)를 확인하세요.</p>
                     `;
                     container.appendChild(card);
                 }
             });
+        }
+
+        function switchUserProfile(userName) {
+            currentUser = userName;
+            localStorage.setItem('stock_agent_current_user', currentUser);
+            favorites = loadUserFavorites(currentUser);
+            updateFavCount();
+            updateReportFavBtn();
+            renderLeadStocks6();
+            renderKospiTop50();
+            renderFavorites();
+        }
+
+        function addNewUserProfile() {
+            const newName = prompt('새로 추가할 사용자(프로필) 이름을 입력하세요 (예: 홍길동, 단기투자계정):');
+            if (!newName || !newName.trim()) return;
+            const cleanName = newName.trim();
+            if (!userList.includes(cleanName)) {
+                userList.push(cleanName);
+                localStorage.setItem('stock_agent_users', JSON.stringify(userList));
+            }
+            switchUserProfile(cleanName);
+        }
+
+        async function quickAddFavoriteFromInput() {
+            const input = document.getElementById('fav-quick-input');
+            if (!input) return;
+            const query = input.value.trim();
+            if (!query) return;
+
+            if (initPromise) {
+                try { await initPromise; } catch (_) {}
+            }
+
+            const qNorm = norm(query);
+            const searchPool = getKospiSearchPool();
+            let matched = Object.keys(fullData.stocks || {}).find(k => norm(k) === qNorm || (fullData.stocks[k].code === query));
+            if (!matched) {
+                const exactInAll = searchPool.find(s => norm(s.name) === qNorm || s.code === query);
+                if (exactInAll) matched = exactInAll.name;
+            }
+            if (!matched) {
+                matched = Object.keys(fullData.stocks || {}).find(k => norm(k).includes(qNorm));
+            }
+            if (!matched) {
+                const partialInAll = searchPool.find(s => norm(s.name).includes(qNorm));
+                if (partialInAll) matched = partialInAll.name;
+            }
+
+            if (!matched) {
+                try {
+                    const acData = await fetchJsonViaApi(`https://ac.stock.naver.com/ac?q=${encodeURIComponent(query)}&target=stock`);
+                    const item = (acData && acData.items && acData.items[0]) || null;
+                    if (item && item.code) {
+                        const basic = await fetchJsonViaApi(`https://m.stock.naver.com/api/stock/${item.code}/basic`);
+                        const dir = basic?.compareToPreviousPrice?.name || '';
+                        const sign = dir === 'RISING' ? '▲' : (dir === 'FALLING' ? '▼' : '-');
+                        const newEntry = {
+                            rank: '-',
+                            market: item.typeCode || basic?.stockExchangeName || 'KRX',
+                            name: basic?.stockName || item.name || query,
+                            code: item.code,
+                            price: basic?.closePrice || '0',
+                            change: basic?.compareToPreviousClosePrice || '0',
+                            rate: basic?.fluctuationsRatio || '0.00',
+                            sign: sign,
+                            marketValue: '-'
+                        };
+                        searchPool.push(newEntry);
+                        customStockCache[newEntry.name] = newEntry;
+                        localStorage.setItem('custom_stock_cache', JSON.stringify(customStockCache));
+                        matched = newEntry.name;
+                    }
+                } catch (_) {}
+            }
+
+            if (matched) {
+                if (!favorites.includes(matched)) {
+                    favorites.push(matched);
+                    saveUserFavorites();
+                    updateFavCount();
+                    updateReportFavBtn();
+                    renderLeadStocks6();
+                    renderKospiTop50();
+                    renderFavorites();
+                } else {
+                    alert(`'${matched}' 종목은 이미 [${currentUser}]님의 관심종목에 등록되어 있습니다.`);
+                }
+            } else {
+                alert(`'${query}' 종목을 찾을 수 없습니다.`);
+            }
+        }
+
+        function updateReportFavBtn() {
+            const btn = document.getElementById('rep-fav-btn');
+            if (!btn || !currentReportStockName) return;
+            const isFav = favorites.includes(currentReportStockName);
+            btn.className = `rep-fav-btn ${isFav ? 'active' : ''}`;
+            btn.innerText = isFav ? '★ 관심종목 등록됨 (해제)' : '☆ 관심종목 추가';
+        }
+
+        function toggleCurrentReportFavorite() {
+            if (!currentReportStockName) return;
+            if (favorites.includes(currentReportStockName)) {
+                favorites = favorites.filter(f => f !== currentReportStockName);
+            } else {
+                favorites.push(currentReportStockName);
+            }
+            saveUserFavorites();
+            updateFavCount();
+            updateReportFavBtn();
+            renderLeadStocks6();
+            renderKospiTop50();
+            renderFavorites();
         }
 
         function toggleFavorite(event, name) {
@@ -898,8 +1161,9 @@
             } else {
                 favorites.push(name);
             }
-            localStorage.setItem('my_favorite_stocks', JSON.stringify(favorites));
+            saveUserFavorites();
             updateFavCount();
+            updateReportFavBtn();
             renderLeadStocks6();
             renderKospiTop50();
             renderFavorites();
@@ -941,7 +1205,9 @@
                 const analysis = item.analysis || {};
                 const colorClass = getColorClass(price.sign, price.change_rate);
 
+                currentReportStockName = name;
                 document.getElementById('rep-name').innerText = name;
+                updateReportFavBtn();
                 document.getElementById('rep-code').innerText = `${item.code} · ${price.market || 'KRX'}`;
                 document.getElementById('rep-price').innerText = `${price.price || 0}원`;
                 
@@ -986,7 +1252,9 @@
                     const badgeLabel = (marketName === "KOSPI" && found.rank <= 50)
                         ? "KOSPI 50대 종목"
                         : `${marketName} 상장 종목 (#${found.rank}위)`;
+                    currentReportStockName = found.name;
                     document.getElementById('rep-name').innerText = found.name;
+                    updateReportFavBtn();
                     document.getElementById('rep-code').innerText = `${found.code} · ${marketName} 시총 ${found.rank}위`;
                     document.getElementById('rep-price').innerText = `${found.price}원`;
                     
@@ -1134,6 +1402,8 @@
                         marketValue: '-'
                     };
                     searchPool.push(newEntry);
+                    customStockCache[newEntry.name] = newEntry;
+                    localStorage.setItem('custom_stock_cache', JSON.stringify(customStockCache));
                     selectStock(newEntry.name);
                     return;
                 }
