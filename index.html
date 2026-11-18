@@ -827,6 +827,7 @@
             <button type="button" class="chat-chip" onclick="quickAsk('삼성전자 현재 주가와 투자 포인트 알려줘')">삼성전자 분석</button>
             <button type="button" class="chat-chip" onclick="quickAsk('SK하이닉스 재무랑 뉴스 요약해줘')">SK하이닉스 요약</button>
             <button type="button" class="chat-chip" onclick="quickAsk('오늘 주도주 추천 종목 알려줘')">오늘의 주도주</button>
+            <button type="button" class="chat-chip" onclick="quickAsk('오늘 위험주 주의 종목 알려줘')">오늘의 위험주</button>
         </div>
         <div class="chatbot-input-row">
             <input type="text" id="chatbot-input" class="chatbot-input" placeholder="종목명이나 질문을 입력하세요...">
@@ -1391,7 +1392,7 @@
                     `;
                     document.getElementById('news-list').innerHTML = `<li class="news-item"><strong>${found.name} 실시간 상세 재무·뉴스 API 조회 중...</strong>잠시만 기다려 주세요.</li>`;
                     document.getElementById('rep-gemini-badge').innerText = badgeLabel;
-                    document.getElementById('ai-text').innerText = `${marketName} 시가총액 ${found.rank}위(${found.marketValue || '-'}억원) 상장 종목입니다. 현재 ${found.price}원(${found.sign} ${found.change}원 / ${found.rate}%)에 거래되고 있습니다.`;
+                    document.getElementById('ai-text').innerText = buildSmartAiSummaryForStock(found);
 
                     fetchLiveStockDetails(found.code, found.name);
                 }
@@ -1471,6 +1472,30 @@
             } catch (_) {
                 document.getElementById('news-list').innerHTML = `<li class="news-item"><strong>${stockName} 실시간 거래 데이터 수신 완료</strong>정상 거래 중입니다.</li>`;
             }
+        }
+
+        function buildSmartAiSummaryForStock(stockObj) {
+            const marketName = stockObj.market || "KOSPI";
+            const rateNum = parseFloat(String(stockObj.rate || '0').replace('+', '')) || 0;
+            const momentumText = rateNum >= 3
+                ? `현재 ${stockObj.price}원(${stockObj.sign} ${stockObj.rate}%)으로 강한 단기 매수 수급과 상승 모멘텀이 유입되고 있습니다.`
+                : (rateNum > 0
+                    ? `현재 ${stockObj.price}원(${stockObj.sign} ${stockObj.rate}%)으로 견조한 강보합·상승 흐름을 유지 중입니다.`
+                    : (rateNum <= -3
+                        ? `현재 ${stockObj.price}원(${stockObj.sign} ${stockObj.rate}%)으로 단기 차익실현 및 조정 압력이 나타나고 있어 지지선 확인이 필요합니다.`
+                        : `현재 ${stockObj.price}원(${stockObj.sign} ${stockObj.rate}%)으로 단기 숨고르기 및 방향성 탐색 구간에 위치해 있습니다.`));
+            const rankNum = parseInt(stockObj.rank, 10);
+            const fundamentalText = (!isNaN(rankNum) && rankNum <= 50)
+                ? `${marketName} 시가총액 상위 ${stockObj.rank}위(${stockObj.marketValue || '-'}억원) 대형 우량주로 기관·외국인 수급 영향력이 높은 핵심 종목입니다.`
+                : (!isNaN(rankNum) && rankNum <= 200
+                    ? `${marketName} 시가총액 ${stockObj.rank}위(${stockObj.marketValue || '-'}억원) 중대형 상장사로 업종 내 실적 모멘텀과 수급 추이 확인이 중요합니다.`
+                    : `${marketName} 시가총액 ${stockObj.rank}위(${stockObj.marketValue || '-'}억원) 상장 종목으로 개별 이슈와 거래량 변화에 따른 변동성 관리가 필요합니다.`);
+            const strategyText = rateNum >= 3
+                ? `[단기 추격매수 유의 / 분할 대응] - 급등 구간 추격 매수보다는 눌림목 지지 여부와 최근 결산 실적 추이를 함께 점검하세요.`
+                : (rateNum <= -2
+                    ? `[바닥 지지 확인 후 분할 접근] - 단기 조정 국면이므로 수급 안정화 및 주요 뉴스/공시 모멘텀을 확인하며 분할 대응을 권장합니다.`
+                    : `[실적·수급 기반 분할 매수/관망] - 재무 건전성(ROE·영업이익)과 최근 시장 뉴스를 바탕으로 중장기 분할 접근이 유효합니다.`);
+            return `1. 🎯 수급/모멘텀: ${momentumText}\n2. 📊 시장 위치 및 펀더멘털: ${fundamentalText}\n3. 💡 AI 대응 전략: ${strategyText}`;
         }
 
         function closeReport() {
@@ -1559,8 +1584,22 @@
 
         function generateLocalBotReply(question) {
             const q = question.trim();
+            const qNorm = norm(q);
             const stocks = fullData.stocks || {};
-            const kospiAll = fullData.kospi_all || [];
+            const riskStocks = getRiskStocksMap();
+
+            if (q.includes('위험주') || q.includes('주의 종목') || q.includes('주의종목')) {
+                const riskNames = Object.keys(riskStocks);
+                if (riskNames.length > 0) {
+                    const summary = riskNames.map(n => {
+                        const item = riskStocks[n];
+                        const p = item.price || {};
+                        const recom = (item.analysis && item.analysis.recommendation) || '단기 주의';
+                        return `• ${n} (${p.price || '-'}원, ${p.sign || ''} ${p.change_rate || '0.00'}%) - [${item.tag || '주의'} / ${recom}]`;
+                    }).join('\n');
+                    return `⚠️ 오늘의 Gemini 추천 위험주(단기 주의 6종목) 현황입니다:\n${summary}\n\n특정 종목명을 입력하시면 리스크 요인과 대응 전략을 상세히 안내해 드립니다.`;
+                }
+            }
 
             if (q.includes('주도주') || q.includes('추천')) {
                 const names = Object.keys(stocks);
@@ -1573,7 +1612,7 @@
                 }
             }
 
-            const matchedKey = Object.keys(stocks).find(k => q.includes(k) || (stocks[k].code && q.includes(stocks[k].code)));
+            const matchedKey = Object.keys(stocks).find(k => qNorm.includes(norm(k)) || (stocks[k].code && q.includes(stocks[k].code)));
             if (matchedKey) {
                 const item = stocks[matchedKey];
                 const p = item.price || {};
@@ -1594,13 +1633,29 @@
                 return lines.join('\n');
             }
 
-            const kospiPool = getKospiSearchPool();
-            const inKospi = kospiPool.find(s => q.includes(s.name) || q.includes(s.code));
-            if (inKospi) {
-                return `📈 [${inKospi.name} (${inKospi.code})]\n• KOSPI 시가총액 ${inKospi.rank}위 (${inKospi.marketValue || '-'}억원)\n• 현재가: ${inKospi.price}원 (${inKospi.sign} ${inKospi.change}원 / ${inKospi.rate}%)`;
+            const matchedRiskKey = Object.keys(riskStocks).find(k => qNorm.includes(norm(k)) || (riskStocks[k].code && q.includes(riskStocks[k].code)));
+            if (matchedRiskKey) {
+                const item = riskStocks[matchedRiskKey];
+                const p = item.price || {};
+                const ai = (item.analysis && item.analysis.analysis) || '';
+                let lines = [`⚠️ [${matchedRiskKey} (${item.code})] 리스크 점검 요약`];
+                lines.push(`• 현재가: ${p.price || '-'}원 (${p.sign || '-'} ${p.change_val || 0}원 / ${p.change_rate || '0.00'}%)`);
+                lines.push(`• 주의 태그: ${item.tag || '변동성 유의'} (${(item.analysis && item.analysis.recommendation) || '관망'})`);
+                if (ai) {
+                    lines.push(`\n💡 AI 요약:\n${ai.split('\n').slice(0, 3).join('\n')}`);
+                }
+                return lines.join('\n');
             }
 
-            return `궁금하신 종목명(예: 삼성전자, SK하이닉스, 현대차 등)이나 '오늘의 주도주'를 입력해 보세요. 실시간 시세·재무·뉴스 데이터를 바탕으로 즉시 답변해 드립니다.`;
+            const kospiPool = getKospiSearchPool();
+            const inKospi = kospiPool.find(s => (s.name && qNorm.includes(norm(s.name))) || (s.code && q.includes(s.code)));
+            if (inKospi) {
+                const marketName = inKospi.market || "KOSPI";
+                const smartAi = buildSmartAiSummaryForStock(inKospi);
+                return `📈 [${inKospi.name} (${inKospi.code})]\n• ${marketName} 시가총액 ${inKospi.rank}위 (${inKospi.marketValue || '-'}억원)\n• 현재가: ${inKospi.price}원 (${inKospi.sign} ${inKospi.change}원 / ${inKospi.rate}%)\n\n💡 AI 요약:\n${smartAi}`;
+            }
+
+            return `궁금하신 종목명(예: 삼성전자, SK하이닉스, 대한항공 등)이나 '오늘의 주도주', '오늘의 위험주'를 입력해 보세요. 실시간 시세·재무·뉴스 데이터를 바탕으로 즉시 답변해 드립니다.`;
         }
 
         function configureGeminiKey() {
