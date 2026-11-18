@@ -17,7 +17,7 @@
             background-color: #0b0f19;
             color: #f1f5f9;
             min-height: 100vh;
-            padding: 36px 32px;
+            padding: 80px 36px 40px 36px;
             font-size: 16px;
             line-height: 1.6;
             display: flex;
@@ -25,7 +25,7 @@
             align-items: center;
         }
         .container {
-            max-width: 1380px;
+            max-width: 1640px;
             width: 100%;
         }
         .header {
@@ -640,176 +640,206 @@
             }
         }
 
-        /* 5. AI 주식 상담 챗봇 위젯 */
-        .chatbot-fab {
+        /* 좌측 상단 홈 & 3줄탭(햄버거 메뉴) 네비게이션 */
+        .top-left-nav {
             position: fixed;
-            bottom: 24px;
-            right: 24px;
-            background: linear-gradient(135deg, #2563eb, #0284c7);
-            color: #ffffff;
-            border: none;
-            border-radius: 50px;
-            padding: 14px 22px;
+            top: 18px;
+            left: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1100;
+        }
+        .nav-top-btn {
+            background: #1e293b;
+            color: #f8fafc;
+            border: 1px solid #38bdf8;
+            border-radius: 10px;
+            padding: 10px 16px;
             font-size: 15px;
-            font-weight: 700;
+            font-weight: 800;
             cursor: pointer;
-            box-shadow: 0 8px 24px rgba(37, 99, 235, 0.45);
             display: flex;
             align-items: center;
             gap: 8px;
-            z-index: 999;
-            transition: transform 0.2s;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+            transition: all 0.2s;
         }
-        .chatbot-fab:hover {
-            transform: translateY(-2px);
+        .nav-top-btn:hover, .nav-top-btn.active {
+            background: #2563eb;
+            border-color: #60a5fa;
+            color: #ffffff;
         }
-        .chatbot-panel {
+        .hamburger-icon {
+            display: inline-flex;
+            flex-direction: column;
+            justify-content: space-between;
+            width: 18px;
+            height: 14px;
+        }
+        .hamburger-icon span {
+            display: block;
+            height: 2.5px;
+            width: 100%;
+            background: currentColor;
+            border-radius: 2px;
+        }
+        .menu-backdrop {
             position: fixed;
-            bottom: 84px;
-            right: 24px;
-            width: 380px;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 1090;
+            display: none;
+        }
+        .menu-backdrop.open {
+            display: block;
+        }
+        .side-menu-drawer {
+            position: fixed;
+            top: 70px;
+            left: 24px;
+            width: 340px;
             max-width: calc(100vw - 48px);
-            height: 520px;
             background: #1e293b;
             border: 1px solid #38bdf8;
-            border-radius: 16px;
-            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
+            border-radius: 14px;
+            padding: 14px;
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65);
+            z-index: 1100;
             display: none;
             flex-direction: column;
-            overflow: hidden;
-            z-index: 1000;
+            gap: 8px;
         }
-        .chatbot-panel.open {
+        .side-menu-drawer.open {
             display: flex;
         }
-        .chatbot-header {
-            background: #0f172a;
-            padding: 14px 16px;
-            border-bottom: 1px solid #334155;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .chatbot-header-title {
-            font-size: 15px;
-            font-weight: 800;
-            color: #38bdf8;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .chatbot-close {
-            background: none;
-            border: none;
-            color: #94a3b8;
-            font-size: 18px;
-            cursor: pointer;
-        }
-        .chatbot-messages {
-            flex: 1;
-            padding: 14px;
-            overflow-y: auto;
-            overflow-x: hidden;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .chat-bubble {
-            max-width: 85%;
-            padding: 10px 13px;
-            border-radius: 12px;
+        .side-menu-title {
             font-size: 13px;
-            line-height: 1.5;
-            white-space: pre-line;
-            word-break: break-word;
-            overflow-wrap: anywhere;
+            font-weight: 700;
+            color: #94a3b8;
+            padding: 4px 10px 8px 10px;
+            border-bottom: 1px solid #334155;
+            margin-bottom: 4px;
         }
-        .chat-bubble.bot {
-            align-self: flex-start;
+        .drawer-tab-btn {
             background: #0f172a;
             border: 1px solid #334155;
             color: #e2e8f0;
-        }
-        .chat-bubble.user {
-            align-self: flex-end;
-            background: #2563eb;
-            color: #ffffff;
-        }
-        .chatbot-chips {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
-            padding: 6px 10px;
-            overflow-x: hidden;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-            border-top: 1px solid #334155;
-            background: #162032;
-        }
-        .chatbot-chips::-webkit-scrollbar {
-            display: none;
-        }
-        .chat-chip {
-            background: rgba(56, 189, 248, 0.12);
-            color: #38bdf8;
-            border: 1px solid rgba(56, 189, 248, 0.3);
-            border-radius: 14px;
-            padding: 4px 8px;
-            font-size: 11px;
-            white-space: nowrap;
-            cursor: pointer;
-        }
-        .chatbot-input-row {
-            display: flex;
-            gap: 8px;
-            padding: 10px 12px;
-            background: #0f172a;
-            border-top: 1px solid #334155;
-        }
-        .chatbot-input {
-            flex: 1;
-            background: #1e293b;
-            border: 1px solid #475569;
-            border-radius: 8px;
-            padding: 8px 12px;
-            color: #ffffff;
-            font-size: 13px;
-            outline: none;
-        }
-        .chatbot-send-btn {
-            background: #2563eb;
-            color: #ffffff;
-            border: none;
-            border-radius: 8px;
-            padding: 8px 14px;
-            font-size: 13px;
+            font-size: 15.5px;
             font-weight: 700;
+            padding: 13px 16px;
+            border-radius: 10px;
             cursor: pointer;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.2s;
+        }
+        .drawer-tab-btn:hover {
+            border-color: #38bdf8;
+            background: rgba(56, 189, 248, 0.1);
+        }
+        .drawer-tab-btn.active {
+            background: #2563eb;
+            border-color: #60a5fa;
+            color: #ffffff;
+        }
+        .active-menu-header {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-left: 4px solid #38bdf8;
+            border-radius: 12px;
+            padding: 18px 24px;
+            margin-bottom: 22px;
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .active-menu-title {
+            font-size: 24px;
+            font-weight: 800;
+            color: #ffffff;
         }
     </style>
 </head>
 <body>
+    <!-- 좌측 상단 홈 & 3줄탭 버튼 -->
+    <div class="top-left-nav">
+        <button type="button" id="btn-home" class="nav-top-btn active" onclick="switchTab('home')">
+            <span>🏠 홈</span>
+        </button>
+        <button type="button" id="btn-menu-toggle" class="nav-top-btn" onclick="toggleSideMenu()">
+            <span class="hamburger-icon">
+                <span></span>
+                <span></span>
+                <span></span>
+            </span>
+            <span>메뉴</span>
+        </button>
+    </div>
+
+    <!-- 3줄탭 클릭 시 열리는 5개 메뉴 드로어 -->
+    <div id="menu-backdrop" class="menu-backdrop" onclick="closeSideMenu()"></div>
+    <nav id="side-menu-drawer" class="side-menu-drawer">
+        <div class="side-menu-title">📂 전체 분석 메뉴 (클릭 시 화면 전환)</div>
+        <button type="button" class="drawer-tab-btn" id="tab-lead" onclick="switchTab('lead')">
+            <span>🔥 Gemini 추천 주도주 (6종목)</span>
+            <span>›</span>
+        </button>
+        <button type="button" class="drawer-tab-btn" id="tab-risk" onclick="switchTab('risk')">
+            <span>⚠️ Gemini 추천 위험주 (6종목)</span>
+            <span>›</span>
+        </button>
+        <button type="button" class="drawer-tab-btn" id="tab-all" onclick="switchTab('all')">
+            <span>📋 KOSPI 전체 종목 (시총 Top 50)</span>
+            <span>›</span>
+        </button>
+        <button type="button" class="drawer-tab-btn" id="tab-fav" onclick="switchTab('fav')">
+            <span>⭐ 내 관심 종목 (<span id="fav-count">0</span>)</span>
+            <span>›</span>
+        </button>
+        <button type="button" class="drawer-tab-btn" id="tab-kis-dart" onclick="switchTab('kis-dart')">
+            <span>🏦 KIS 모의투자 & DART 공시</span>
+            <span>›</span>
+        </button>
+    </nav>
+
     <div class="container">
-        <header class="header">
-            <span class="badge">Live AI Market Intelligence</span>
-            <h1>📈 AI 주식 종합 예측 & 분석 에이전트</h1>
-            <p class="desc">
-                주요 증시 지표 · Google Gemini 추천 주도주 6종목 · KOSPI 시총 Top 50 실시간 순위
-            </p>
-            <div class="live-status-bar">
-                <span class="live-dot"></span>
-                <span>실시간 데이터 자동 갱신 중 (<span id="last-updated">수신 중...</span>)</span>
+        <!-- 메인(홈) 화면 전용 영역: ① 상단 제목 & 4대 지수 전광판 + ② 종목 검색창 -->
+        <div id="home-section">
+            <header class="header">
+                <span class="badge">Live AI Market Intelligence</span>
+                <h1>📈 AI 주식 종합 예측 & 분석 에이전트</h1>
+                <p class="desc">
+                    주요 증시 지표 · 실시간 종목 검색 · 좌측 상단 메뉴(☰)에서 5대 핵심 분석 화면으로 전환하세요
+                </p>
+                <div class="live-status-bar">
+                    <span class="live-dot"></span>
+                    <span>실시간 데이터 자동 갱신 중 (<span id="last-updated">수신 중...</span>)</span>
+                </div>
+            </header>
+
+            <!-- 1. 주요 증시 4대 지표 전광판 -->
+            <div id="index-grid" class="index-grid"></div>
+
+            <!-- 2. 종목 검색 섹션 -->
+            <div class="search-section">
+                <div class="search-box">
+                    <input type="text" id="search-input" class="search-input" placeholder="종목명 또는 코드 입력 (실시간 검색 / 예: 삼성전자, 대한항공, KT, 현대차, 005930)">
+                    <button type="button" id="search-btn" class="search-btn">종목 조회</button>
+                </div>
             </div>
-        </header>
+        </div>
 
-        <!-- 1. 주요 증시 4대 지표 전광판 -->
-        <div id="index-grid" class="index-grid"></div>
-
-        <!-- 2. 종목 검색 섹션 -->
-        <div class="search-section">
-            <div class="search-box">
-                <input type="text" id="search-input" class="search-input" placeholder="종목명 또는 코드 입력 (실시간 검색 / 예: 삼성전자, 카카오, 현대차, 005930)">
-                <button type="button" id="search-btn" class="search-btn">종목 조회</button>
+        <!-- 5개 메뉴 선택 시 상단에 표시되는 와이드 화면 헤더 -->
+        <div id="active-menu-header" class="active-menu-header">
+            <div id="active-menu-title" class="active-menu-title">메뉴 화면</div>
+            <div style="display:flex; gap:8px;">
+                <button type="button" class="user-small-btn" style="font-size:14px; padding:8px 14px;" onclick="toggleSideMenu()">☰ 다른 메뉴 선택</button>
+                <button type="button" class="user-small-btn" style="font-size:14px; padding:8px 14px; background:#2563eb; color:#fff;" onclick="switchTab('home')">🏠 홈 (지수·검색)으로</button>
             </div>
         </div>
 
@@ -867,17 +897,8 @@
             </div>
         </div>
 
-        <!-- 3. 탭 네비게이션 -->
-        <div class="tab-bar" style="flex-wrap:wrap;">
-            <button class="tab-btn active" id="tab-lead" onclick="switchTab('lead')">🔥 Gemini 추천 주도주 (6종목)</button>
-            <button class="tab-btn" id="tab-risk" onclick="switchTab('risk')">⚠️ Gemini 추천 위험주 (6종목)</button>
-            <button class="tab-btn" id="tab-all" onclick="switchTab('all')">📋 KOSPI 전체 종목 (시총 Top 50)</button>
-            <button class="tab-btn" id="tab-fav" onclick="switchTab('fav')">⭐ 내 관심 종목 (<span id="fav-count">0</span>)</button>
-            <button class="tab-btn" id="tab-kis-dart" onclick="switchTab('kis-dart')">🏦 KIS 모의투자 & DART 공시</button>
-        </div>
-
-        <!-- 4-1. Gemini 추천 주도주 6종목 뷰 -->
-        <div id="view-lead" class="stock-grid"></div>
+        <!-- 4-1. Gemini 추천 주도주 6종목 뷰 (초기 홈 화면에서는 숨김) -->
+        <div id="view-lead" class="stock-grid" style="display:none;"></div>
 
         <!-- 4-1-2. Gemini 추천 위험주 6종목 뷰 -->
         <div id="view-risk" class="stock-grid" style="display:none;"></div>
@@ -903,35 +924,6 @@
 
         <!-- 4-4. 한국투자증권(KIS) 모의투자 & DART 전자공시 뷰 -->
         <div id="view-kis-dart" style="display:none;"></div>
-    </div>
-
-    <!-- 5. AI 주식 상담 챗봇 플로팅 버튼 & 패널 -->
-    <button type="button" class="chatbot-fab" onclick="toggleChatbot()">
-        <span>💬 AI 주식 상담 챗봇</span>
-    </button>
-
-    <div id="chatbot-panel" class="chatbot-panel">
-        <div class="chatbot-header">
-            <div class="chatbot-header-title">🤖 AI 주식 상담 챗봇</div>
-            <div style="display:flex; gap:8px; align-items:center;">
-                <button type="button" class="chat-chip" onclick="configureGeminiKey()">🔑 API키 설정</button>
-                <button type="button" class="chatbot-close" onclick="toggleChatbot()">✕</button>
-            </div>
-        </div>
-        <div id="chatbot-messages" class="chatbot-messages">
-            <div class="chat-bubble bot">안녕하세요! 실시간 시세·재무제표·뉴스 기반 AI 주식 상담 챗봇입니다.
-궁금한 종목명(예: 삼성전자, SK하이닉스, 현대차)이나 시장 질문을 입력해 보세요! (상단 '🔑 API키 설정'으로 Gemini 실시간 추론 연동도 가능합니다.)</div>
-        </div>
-        <div class="chatbot-chips">
-            <button type="button" class="chat-chip" onclick="quickAsk('삼성전자 현재 주가와 투자 포인트 알려줘')">삼성전자 분석</button>
-            <button type="button" class="chat-chip" onclick="quickAsk('SK하이닉스 재무랑 뉴스 요약해줘')">SK하이닉스 요약</button>
-            <button type="button" class="chat-chip" onclick="quickAsk('오늘 주도주 추천 종목 알려줘')">오늘의 주도주</button>
-            <button type="button" class="chat-chip" onclick="quickAsk('오늘 위험주 주의 종목 알려줘')">오늘의 위험주</button>
-        </div>
-        <div class="chatbot-input-row">
-            <input type="text" id="chatbot-input" class="chatbot-input" placeholder="종목명이나 질문을 입력하세요...">
-            <button type="button" id="chatbot-send-btn" class="chatbot-send-btn" onclick="sendChatMessage()">전송</button>
-        </div>
     </div>
 
     <script>
@@ -1411,13 +1403,39 @@
             document.getElementById('fav-count').innerText = favorites.length;
         }
 
+        function toggleSideMenu() {
+            const drawer = document.getElementById('side-menu-drawer');
+            const backdrop = document.getElementById('menu-backdrop');
+            const btnToggle = document.getElementById('btn-menu-toggle');
+            const isOpen = drawer.classList.toggle('open');
+            backdrop.classList.toggle('open', isOpen);
+            btnToggle.classList.toggle('active', isOpen);
+        }
+
+        function closeSideMenu() {
+            const drawer = document.getElementById('side-menu-drawer');
+            const backdrop = document.getElementById('menu-backdrop');
+            const btnToggle = document.getElementById('btn-menu-toggle');
+            if (drawer) drawer.classList.remove('open');
+            if (backdrop) backdrop.classList.remove('open');
+            if (btnToggle) btnToggle.classList.remove('active');
+        }
+
         function switchTab(tab) {
+            closeSideMenu();
+
+            const btnHome = document.getElementById('btn-home');
+            const homeSection = document.getElementById('home-section');
+            const activeMenuHeader = document.getElementById('active-menu-header');
+            const activeMenuTitle = document.getElementById('active-menu-title');
+
             document.getElementById('tab-lead').classList.remove('active');
             document.getElementById('tab-risk').classList.remove('active');
             document.getElementById('tab-all').classList.remove('active');
             document.getElementById('tab-fav').classList.remove('active');
             const tabKisDart = document.getElementById('tab-kis-dart');
             if (tabKisDart) tabKisDart.classList.remove('active');
+            if (btnHome) btnHome.classList.remove('active');
 
             document.getElementById('view-lead').style.display = 'none';
             document.getElementById('view-risk').style.display = 'none';
@@ -1425,6 +1443,28 @@
             document.getElementById('view-fav').style.display = 'none';
             const viewKisDart = document.getElementById('view-kis-dart');
             if (viewKisDart) viewKisDart.style.display = 'none';
+
+            if (tab === 'home') {
+                if (btnHome) btnHome.classList.add('active');
+                if (homeSection) homeSection.style.display = 'block';
+                if (activeMenuHeader) activeMenuHeader.style.display = 'none';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+
+            if (homeSection) homeSection.style.display = 'none';
+            if (activeMenuHeader) activeMenuHeader.style.display = 'flex';
+
+            const menuTitleMap = {
+                'lead': '🔥 Gemini 추천 주도주 (6종목)',
+                'risk': '⚠️ Gemini 추천 위험주 (6종목)',
+                'all': '📋 KOSPI 전체 종목 (시총 Top 50)',
+                'fav': `⭐ 내 관심 종목 (${favorites.length}종목)`,
+                'kis-dart': '🏦 한국투자증권(KIS) 모의투자 & DART 전자공시'
+            };
+            if (activeMenuTitle) {
+                activeMenuTitle.innerText = menuTitleMap[tab] || '메뉴 화면';
+            }
 
             if (tab === 'lead') {
                 document.getElementById('tab-lead').classList.add('active');
@@ -1445,6 +1485,7 @@
                     renderKisDartView();
                 }
             }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function selectStock(name) {
@@ -2010,170 +2051,6 @@
         document.getElementById('search-input').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 document.getElementById('search-btn').click();
-            }
-        });
-
-        function toggleChatbot() {
-            const panel = document.getElementById('chatbot-panel');
-            panel.classList.toggle('open');
-            if (panel.classList.contains('open')) {
-                document.getElementById('chatbot-input').focus();
-            }
-        }
-
-        function appendChatBubble(role, text) {
-            const box = document.getElementById('chatbot-messages');
-            const div = document.createElement('div');
-            div.className = `chat-bubble ${role}`;
-            div.innerText = text;
-            box.appendChild(div);
-            box.scrollTop = box.scrollHeight;
-        }
-
-        function generateLocalBotReply(question) {
-            const q = question.trim();
-            const qNorm = norm(q);
-            const stocks = fullData.stocks || {};
-            const riskStocks = getRiskStocksMap();
-
-            if (q.includes('공시') || q.toLowerCase().includes('dart')) {
-                const targets = favorites.length > 0 ? favorites.slice(0, 6) : ["삼성전자", "SK하이닉스", "현대차"];
-                const lines = targets.map(n => {
-                    const top = buildStockDisclosures(n)[0];
-                    return `• [${n}] (${top.category}/${top.impact}) ${top.title}`;
-                });
-                return `📢 [${currentUser}]님의 관심종목 DART 전자공시 AI 감지 요약입니다:\n${lines.join('\n')}`;
-            }
-
-            if (q.includes('모의투자') || q.includes('잔고') || q.toLowerCase().includes('kis')) {
-                const acc = loadKisPaperAccount();
-                const hNames = Object.keys(acc.holdings || {});
-                const hText = hNames.length > 0
-                    ? hNames.map(n => `• ${n}: ${acc.holdings[n].qty}주 (평단 ${acc.holdings[n].avgPrice.toLocaleString()}원)`).join('\n')
-                    : '• 보유 종목 없음';
-                return `🏦 [${currentUser}]님의 KIS 모의투자 잔고 현황:\n• 주문가능 예수금: ${acc.cash.toLocaleString()}원\n${hText}\n\n상단 [🏦 KIS 모의투자 & DART 공시] 탭에서 실시간 모의 매수/매도를 실행하실 수 있습니다.`;
-            }
-
-            if (q.includes('위험주') || q.includes('주의 종목') || q.includes('주의종목')) {
-                const riskNames = Object.keys(riskStocks);
-                if (riskNames.length > 0) {
-                    const summary = riskNames.map(n => {
-                        const item = riskStocks[n];
-                        const p = item.price || {};
-                        const recom = (item.analysis && item.analysis.recommendation) || '단기 주의';
-                        return `• ${n} (${p.price || '-'}원, ${p.sign || ''} ${p.change_rate || '0.00'}%) - [${item.tag || '주의'} / ${recom}]`;
-                    }).join('\n');
-                    return `⚠️ 오늘의 Gemini 추천 위험주(단기 주의 6종목) 현황입니다:\n${summary}\n\n특정 종목명을 입력하시면 리스크 요인과 대응 전략을 상세히 안내해 드립니다.`;
-                }
-            }
-
-            if (q.includes('주도주') || q.includes('추천')) {
-                const names = Object.keys(stocks);
-                if (names.length > 0) {
-                    const summary = names.map(n => {
-                        const p = stocks[n].price || {};
-                        return `• ${n} (${p.price || '-'}원, ${p.sign || ''} ${p.change_rate || '0.00'}%)`;
-                    }).join('\n');
-                    return `🔥 오늘의 AI 추천 주도주 현황입니다:\n${summary}\n\n특정 종목명을 입력하시면 재무·뉴스 상세 브리핑을 안내해 드립니다.`;
-                }
-            }
-
-            const matchedKey = Object.keys(stocks).find(k => qNorm.includes(norm(k)) || (stocks[k].code && q.includes(stocks[k].code)));
-            if (matchedKey) {
-                const item = stocks[matchedKey];
-                const p = item.price || {};
-                const f = (item.finance && item.finance.metrics) || {};
-                const news = item.news || [];
-                const ai = (item.analysis && item.analysis.analysis) || '';
-                let lines = [`📊 [${matchedKey} (${item.code})] 실시간 요약`];
-                lines.push(`• 현재가: ${p.price || '-'}원 (${p.sign || '-'} ${p.change_val || 0}원 / ${p.change_rate || '0.00'}%)`);
-                if (f['PER'] || f['ROE']) {
-                    lines.push(`• 핵심지표: ROE ${(f['ROE'] || ['-']).slice(-1)[0]}%, PER ${(f['PER'] || ['-']).slice(-1)[0]}배`);
-                }
-                if (news.length > 0) {
-                    lines.push(`• 최신뉴스: [${news[0].office}] ${news[0].title}`);
-                }
-                if (ai) {
-                    lines.push(`\n💡 AI 요약:\n${ai.split('\n').slice(0, 3).join('\n')}`);
-                }
-                return lines.join('\n');
-            }
-
-            const matchedRiskKey = Object.keys(riskStocks).find(k => qNorm.includes(norm(k)) || (riskStocks[k].code && q.includes(riskStocks[k].code)));
-            if (matchedRiskKey) {
-                const item = riskStocks[matchedRiskKey];
-                const p = item.price || {};
-                const ai = (item.analysis && item.analysis.analysis) || '';
-                let lines = [`⚠️ [${matchedRiskKey} (${item.code})] 리스크 점검 요약`];
-                lines.push(`• 현재가: ${p.price || '-'}원 (${p.sign || '-'} ${p.change_val || 0}원 / ${p.change_rate || '0.00'}%)`);
-                lines.push(`• 주의 태그: ${item.tag || '변동성 유의'} (${(item.analysis && item.analysis.recommendation) || '관망'})`);
-                if (ai) {
-                    lines.push(`\n💡 AI 요약:\n${ai.split('\n').slice(0, 3).join('\n')}`);
-                }
-                return lines.join('\n');
-            }
-
-            const kospiPool = getKospiSearchPool();
-            const inKospi = kospiPool.find(s => (s.name && qNorm.includes(norm(s.name))) || (s.code && q.includes(s.code)));
-            if (inKospi) {
-                const marketName = inKospi.market || "KOSPI";
-                const smartAi = buildSmartAiSummaryForStock(inKospi);
-                return `📈 [${inKospi.name} (${inKospi.code})]\n• ${marketName} 시가총액 ${inKospi.rank}위 (${inKospi.marketValue || '-'}억원)\n• 현재가: ${inKospi.price}원 (${inKospi.sign} ${inKospi.change}원 / ${inKospi.rate}%)\n\n💡 AI 요약:\n${smartAi}`;
-            }
-
-            return `궁금하신 종목명(예: 삼성전자, SK하이닉스, 대한항공 등)이나 '오늘의 주도주', '오늘의 위험주'를 입력해 보세요. 실시간 시세·재무·뉴스 데이터를 바탕으로 즉시 답변해 드립니다.`;
-        }
-
-        function configureGeminiKey() {
-            const current = localStorage.getItem('gemini_api_key') || '';
-            const entered = prompt('Google Gemini API 키를 입력하세요 (브라우저 localStorage에만 저장됩니다):', current);
-            if (entered !== null) {
-                localStorage.setItem('gemini_api_key', entered.trim());
-                appendChatBubble('bot', entered.trim()
-                    ? '✅ Gemini API 키가 설정되었습니다. 이제 질문 시 Gemini(gemini-3.8-flash) 실시간 추론이 함께 동작합니다.'
-                    : 'ℹ️ API 키가 해제되어 기본 실시간 데이터 엔진으로 동작합니다.');
-            }
-        }
-
-        async function sendChatMessage() {
-            const input = document.getElementById('chatbot-input');
-            const text = input.value.trim();
-            if (!text) return;
-            input.value = '';
-            appendChatBubble('user', text);
-
-            const localContext = generateLocalBotReply(text);
-            const apiKey = localStorage.getItem('gemini_api_key');
-
-            if (!apiKey) {
-                setTimeout(() => appendChatBubble('bot', localContext), 150);
-                return;
-            }
-
-            try {
-                const promptText = `당신은 대한민국 AI 주식 투자 상담 챗봇입니다. 아래 실시간 시장 데이터 요약을 참고해 사용자의 질문에 친절하고 핵심적으로 답변해 주세요.\n\n[실시간 데이터 요약]\n${localContext}\n\n[사용자 질문]\n${text}`;
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${encodeURIComponent(apiKey)}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
-                });
-                if (!res.ok) throw new Error('API Error ' + res.status);
-                const data = await res.json();
-                const aiReply = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-                appendChatBubble('bot', aiReply || localContext);
-            } catch (err) {
-                appendChatBubble('bot', localContext + '\n\n(※ Gemini API 호출 실패로 실시간 데이터 요약본을 표시했습니다.)');
-            }
-        }
-
-        function quickAsk(text) {
-            document.getElementById('chatbot-input').value = text;
-            sendChatMessage();
-        }
-
-        document.getElementById('chatbot-input').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                sendChatMessage();
             }
         });
 
