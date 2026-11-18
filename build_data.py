@@ -240,7 +240,7 @@ def build():
     out_data = {
         "updated_at": now_str,
         "indexes": indexes,
-        "kospi_all": kospi_top_50,
+        "kospi_all": all_searchable_stocks,
         "kospi_search": all_searchable_stocks,
         "stocks": lead_stocks_data
     }

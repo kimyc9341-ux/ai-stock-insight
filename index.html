@@ -813,11 +813,11 @@
             });
         }
 
-        // KOSPI Top 50 렌더링
+        // KOSPI Top 50 렌더링 (화면에는 상위 50개만 표시)
         function renderKospiTop50() {
             const tbody = document.getElementById('all-tbody');
             tbody.innerHTML = '';
-            const list = fullData.kospi_all || [];
+            const list = (fullData.kospi_all || []).slice(0, 50);
 
             list.forEach((item, index) => {
                 const rankNum = item.rank && item.rank > 0 ? item.rank : (index + 1);
