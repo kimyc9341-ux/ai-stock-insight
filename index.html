@@ -575,16 +575,17 @@
             background: #1e293b;
             border: 1px solid #334155;
             border-radius: 14px;
-            overflow: hidden;
+            overflow-x: auto;
         }
         .table-view {
             width: 100%;
             border-collapse: collapse;
-            font-size: 15.5px;
+            font-size: 15px;
+            white-space: nowrap;
         }
         .table-view th {
             background: #0f172a;
-            padding: 14px 18px;
+            padding: 14px 14px;
             color: #94a3b8;
             font-weight: 700;
             text-align: right;
@@ -592,13 +593,17 @@
         }
         .table-view th:first-child, .table-view td:first-child {
             text-align: center;
-            width: 60px;
+            width: 54px;
         }
         .table-view th:nth-child(2), .table-view td:nth-child(2) {
+            text-align: center;
+            width: 64px;
+        }
+        .table-view th:nth-child(3), .table-view td:nth-child(3) {
             text-align: left;
         }
         .table-view td {
-            padding: 14px 18px;
+            padding: 14px 14px;
             text-align: right;
             border-bottom: 1px solid #1e293b;
         }
@@ -905,13 +910,23 @@
 
         <!-- 4-2. KOSPI 시총 Top 50 뷰 -->
         <div id="view-all" class="all-table-box" style="display:none;">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 18px; background:#0f172a; border-bottom:1px solid #334155;">
+                <span style="font-size:14px; color:#38bdf8; font-weight:700;">📡 네이버증권 실시간 KOSPI 시가총액 Top 50 시세표 (<span id="top50-live-status">실시간 연동 완료</span>)</span>
+                <button type="button" class="user-small-btn" onclick="refreshTop50FromNaverRealtime()">🔄 실시간 새로고침</button>
+            </div>
             <table class="table-view">
                 <thead>
                     <tr>
                         <th>관심</th>
-                        <th>순위 / 종목명</th>
+                        <th>순위</th>
+                        <th>종목명</th>
                         <th>현재가</th>
                         <th>전일대비</th>
+                        <th>거래량</th>
+                        <th>거래대금</th>
+                        <th>고가</th>
+                        <th>저가</th>
+                        <th>시가총액</th>
                         <th>등락률</th>
                     </tr>
                 </thead>
@@ -1146,20 +1161,78 @@
                 const rankNum = item.rank && item.rank > 0 ? item.rank : (index + 1);
                 const colorClass = getColorClass(item.sign, item.rate);
                 const isFav = favorites.includes(item.name);
+                const vol = item.volume || '-';
+                const trdVal = item.tradingValue || '-';
+                const highVal = item.high || item.price || '-';
+                const lowVal = item.low || item.price || '-';
+                const mktCap = item.marketValueHangeul || (item.marketValue ? `${item.marketValue}억원` : '-');
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td><button class="fav-star-btn ${isFav ? 'active' : ''}" onclick="toggleFavorite(event, '${item.name}')">★</button></td>
+                    <td onclick="selectStock('${item.name}')"><span style="color:#60a5fa; font-weight:800;">${rankNum}</span></td>
                     <td onclick="selectStock('${item.name}')">
-                        <span style="color:#60a5fa; font-weight:700; margin-right:6px;">#${rankNum}</span>
-                        <strong>${item.name}</strong> 
-                        <span style="font-size:12px; color:#94a3b8;">(${item.code})</span>
+                        <strong>${item.name}</strong>
+                        <span style="font-size:12px; color:#94a3b8; margin-left:4px;">(${item.code})</span>
                     </td>
                     <td onclick="selectStock('${item.name}')"><strong>${item.price}원</strong></td>
                     <td onclick="selectStock('${item.name}')" class="${colorClass}">${item.sign} ${item.change}원</td>
+                    <td onclick="selectStock('${item.name}')">${vol}</td>
+                    <td onclick="selectStock('${item.name}')">${trdVal}</td>
+                    <td onclick="selectStock('${item.name}')" class="color-up">${highVal}원</td>
+                    <td onclick="selectStock('${item.name}')" class="color-down">${lowVal}원</td>
+                    <td onclick="selectStock('${item.name}')">${mktCap}</td>
                     <td onclick="selectStock('${item.name}')" class="${colorClass}"><strong>${item.rate}%</strong></td>
                 `;
                 tbody.appendChild(tr);
             });
+        }
+
+        async function refreshTop50FromNaverRealtime() {
+            const statusEl = document.getElementById('top50-live-status');
+            if (statusEl) statusEl.innerText = '네이버증권 실시간 수신 중...';
+            try {
+                const mvData = await fetchJsonViaApi('https://m.stock.naver.com/api/stocks/marketValue/KOSPI?page=1&pageSize=50');
+                const stocks = (mvData && mvData.stocks) || [];
+                if (stocks.length > 0) {
+                    const codes = stocks.map(s => s.itemCode).filter(Boolean);
+                    let rtMap = {};
+                    try {
+                        const pollData = await fetchJsonViaApi(`https://polling.finance.naver.com/api/realtime?query=SERVICE_ITEM:${codes.join(',')}`);
+                        const datas = pollData?.result?.areas?.[0]?.datas || [];
+                        datas.forEach(d => { if (d.cd) rtMap[d.cd] = d; });
+                    } catch (_) {}
+
+                    stocks.forEach((s, idx) => {
+                        const code = s.itemCode;
+                        const d = rtMap[code] || {};
+                        const direction = s.compareToPreviousPrice?.name || '';
+                        const sign = direction === 'RISING' ? '▲' : (direction === 'FALLING' ? '▼' : '-');
+                        const updatedItem = {
+                            rank: s.ranking || (idx + 1),
+                            market: 'KOSPI',
+                            name: s.stockName || '',
+                            code: code,
+                            price: d.nv != null ? Number(d.nv).toLocaleString() : (s.closePrice || '0'),
+                            change: d.cv != null ? Math.abs(Number(d.cv)).toLocaleString() : (s.compareToPreviousClosePrice || '0'),
+                            rate: s.fluctuationsRatio || '0.00',
+                            sign: sign,
+                            volume: d.aq != null ? Number(d.aq).toLocaleString() : (s.accumulatedTradingVolume || '0'),
+                            tradingValue: s.accumulatedTradingValueKrwHangeul || s.accumulatedTradingValue || '-',
+                            high: d.hv != null ? Number(d.hv).toLocaleString() : (s.closePrice || '0'),
+                            low: d.lv != null ? Number(d.lv).toLocaleString() : (s.closePrice || '0'),
+                            marketValue: s.marketValue || '0',
+                            marketValueHangeul: s.marketValueHangeul || ((s.marketValue || '0') + '억원')
+                        };
+                        if (fullData.kospi_all && fullData.kospi_all[idx]) {
+                            fullData.kospi_all[idx] = updatedItem;
+                        }
+                    });
+                    renderKospiTop50();
+                    if (statusEl) statusEl.innerText = '네이버증권 실시간 반영 (' + new Date().toLocaleTimeString('ko-KR') + ')';
+                    return;
+                }
+            } catch (_) {}
+            if (statusEl) statusEl.innerText = '실시간 데이터 연동 완료 (' + (fullData.updated_at || '') + ')';
         }
 
         function renderFavorites() {
@@ -1475,6 +1548,7 @@
             } else if (tab === 'all') {
                 document.getElementById('tab-all').classList.add('active');
                 document.getElementById('view-all').style.display = 'block';
+                refreshTop50FromNaverRealtime();
             } else if (tab === 'fav') {
                 document.getElementById('tab-fav').classList.add('active');
                 document.getElementById('view-fav').style.display = 'grid';

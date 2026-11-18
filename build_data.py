@@ -170,7 +170,12 @@ def fetch_market_stocks_all(market_type="KOSPI"):
                     "change": s.get("compareToPreviousClosePrice", "0"),
                     "rate": s.get("fluctuationsRatio", "0.00"),
                     "sign": sign,
-                    "marketValue": s.get("marketValue", "0")
+                    "volume": s.get("accumulatedTradingVolume", "0"),
+                    "tradingValue": s.get("accumulatedTradingValueKrwHangeul") or s.get("accumulatedTradingValue", "0"),
+                    "high": s.get("closePrice", "0"),
+                    "low": s.get("closePrice", "0"),
+                    "marketValue": s.get("marketValue", "0"),
+                    "marketValueHangeul": s.get("marketValueHangeul") or (s.get("marketValue", "0") + "억원")
                 })
         except Exception as e:
             print(f"[!] {market_type} 페이지 {page} 수집 실패: {e}")
@@ -178,9 +183,39 @@ def fetch_market_stocks_all(market_type="KOSPI"):
     return all_stocks
 
 
+def enrich_top50_high_low(top_stocks):
+    """네이버 실시간 폴링 API를 통해 Top 50 종목의 실시간 고가(hv)·저가(lv)·거래량(aq)·거래대금(aa) 반영"""
+    codes = [s["code"] for s in top_stocks[:50] if s.get("code")]
+    if not codes:
+        return
+    try:
+        url = f"https://polling.finance.naver.com/api/realtime?query=SERVICE_ITEM:{','.join(codes)}"
+        res = requests.get(url, headers=HEADERS, timeout=6)
+        if res.status_code == 200:
+            areas = res.json().get("result", {}).get("areas", [])
+            datas = areas[0].get("datas", []) if areas else []
+            by_code = {d.get("cd"): d for d in datas if d.get("cd")}
+            for s in top_stocks[:50]:
+                d = by_code.get(s["code"])
+                if d:
+                    if d.get("hv") is not None:
+                        s["high"] = f"{int(d['hv']):,}"
+                    if d.get("lv") is not None:
+                        s["low"] = f"{int(d['lv']):,}"
+                    if d.get("aq") is not None:
+                        s["volume"] = f"{int(d['aq']):,}"
+                    if d.get("nv") is not None:
+                        s["price"] = f"{int(d['nv']):,}"
+                    if d.get("cv") is not None:
+                        s["change"] = f"{abs(int(d['cv'])):,}"
+    except Exception as e:
+        print(f"[!] Top 50 고가/저가 보강 실패: {e}")
+
+
 def fetch_kospi_all_registered():
     """KOSPI 전체 상장 종목 및 KOSDAQ 전체 상장 종목 통합 수집"""
     kospi_list = fetch_market_stocks_all("KOSPI")
+    enrich_top50_high_low(kospi_list)
     kosdaq_list = fetch_market_stocks_all("KOSDAQ")
     return kospi_list, kospi_list + kosdaq_list
 
