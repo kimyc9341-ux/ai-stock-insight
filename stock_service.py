@@ -204,3 +204,147 @@ def analyze_with_gemini(stock_name: str, price_info: dict, finance_info: dict, n
             "source": "Fallback Engine",
             "analysis": f"Gemini API 호출 중 오류 발생 ({e}). 실시간 데이터 기반 기본 리포트를 참조하세요."
         }
+
+
+def _extract_stock_from_text(text: str):
+    """사용자 질문에서 종목명이나 6자리 종목코드를 추출"""
+    if not text:
+        return None, None
+    for name, code in STOCK_DIRECTORY.items():
+        if name in text:
+            return name, code
+    import re
+    match = re.search(r"\b(\d{6})\b", text)
+    if match:
+        code = match.group(1)
+        name, resolved_code = resolve_stock_code(code)
+        return name, resolved_code
+    return None, None
+
+
+def chat_with_agent(user_message: str, history: list = None):
+    """
+    멀티턴 대화를 지원하는 AI 주식 상담 챗봇 함수.
+    - .env의 GEMINI_API_KEY(또는 API_KEY)와 MODEL_NAME(기본값: gemini-2.5-flash)을 런타임에 참조
+    - 질문 내 종목 감지 시 실시간 시세·재무·뉴스 컨텍스트 자동 결합
+    - API 키 미설정 시 실시간 데이터 기반 스마트 폴백 응답 반환
+    """
+    if history is None:
+        history = []
+
+    stock_name, stock_code = _extract_stock_from_text(user_message)
+    if not stock_code and history:
+        for past in reversed(history):
+            s_name, s_code = _extract_stock_from_text(past.get("content", ""))
+            if s_code:
+                stock_name, stock_code = s_name, s_code
+                break
+
+    price_info = get_realtime_price(stock_code) if stock_code else None
+    finance_info = get_financial_summary(stock_code) if stock_code else None
+    news_list = get_recent_news(stock_code, page_size=3) if stock_code else []
+
+    context_blocks = []
+    if stock_code:
+        if price_info:
+            context_blocks.append(
+                f"[실시간 시세] {stock_name}({stock_code}): 현재가 {price_info.get('price')}원 "
+                f"({price_info.get('sign')} {price_info.get('change_val')}원 / {price_info.get('change_rate')}%), "
+                f"시장 {price_info.get('market')}, 체결시간 {price_info.get('traded_at')}"
+            )
+        if finance_info and finance_info.get("metrics"):
+            years = ", ".join(finance_info.get("years", []))
+            metrics_str = "; ".join([f"{k}: {v}" for k, v in finance_info["metrics"].items()])
+            context_blocks.append(f"[재무 요약 ({years})] {metrics_str}")
+        if news_list:
+            news_str = " / ".join([f"[{n['office']}] {n['title']}" for n in news_list])
+            context_blocks.append(f"[최근 뉴스] {news_str}")
+
+    api_key = os.getenv("GEMINI_API_KEY") or os.getenv("API_KEY")
+    model_name = os.getenv("MODEL_NAME", "gemini-2.5-flash")
+
+    if not api_key:
+        if stock_code and (price_info or finance_info or news_list):
+            reply_lines = [f"💬 [{stock_name} ({stock_code})] 실시간 데이터 기반 답변입니다:"]
+            if price_info:
+                reply_lines.append(
+                    f"• 현재 주가: {price_info['price']}원 ({price_info['sign']} {price_info['change_val']}원, {price_info['change_rate']}%)"
+                )
+            if finance_info and finance_info.get("metrics"):
+                per = finance_info["metrics"].get("PER", ["-"])[-1]
+                roe = finance_info["metrics"].get("ROE", ["-"])[-1]
+                op_margin = finance_info["metrics"].get("영업이익률", ["-"])[-1]
+                reply_lines.append(f"• 주요 재무지표(최근 결산): 영업이익률 {op_margin}%, ROE {roe}%, PER {per}배")
+            if news_list:
+                reply_lines.append(f"• 최신 뉴스: [{news_list[0]['office']}] {news_list[0]['title']}")
+            reply_lines.append("※ .env에 API 키(GEMINI_API_KEY)와 모델 이름(MODEL_NAME)을 설정하시면 심층 자유 대화 추론이 활성화됩니다.")
+            return {
+                "source": "Smart Rules Chatbot (API 키 미설정)",
+                "reply": "\n".join(reply_lines),
+                "stock": {"name": stock_name, "code": stock_code}
+            }
+        return {
+            "source": "Smart Rules Chatbot (API 키 미설정)",
+            "reply": (
+                "궁금하신 종목명(예: 삼성전자, SK하이닉스, 현대차 등)이나 6자리 종목코드를 포함해 질문해 주시면 "
+                "실시간 시세·재무제표·뉴스를 즉시 조회해 답변해 드립니다.\n"
+                "※ 자유로운 AI 심층 대화를 원하시면 API 키를 설정해 주세요."
+            ),
+            "stock": None
+        }
+
+    history_text = "\n".join(
+        [f"{'사용자' if m.get('role') == 'user' else 'AI'}: {m.get('content', '')}" for m in history[-6:]]
+    )
+    market_context = "\n".join(context_blocks) if context_blocks else "특정 종목 지정 없음 (일반 주식/시장 상담)"
+
+    prompt = f"""당신은 친절하고 전문적인 대한민국 AI 주식 투자 상담 챗봇입니다.
+아래 제공된 실시간 시장 데이터와 이전 대화 내역을 참고하여 사용자의 질문에 명확하고 핵심적으로 답변해 주세요.
+
+[실시간 종목 컨텍스트]
+{market_context}
+
+[최근 대화 내역]
+{history_text}
+
+[사용자 질문]
+{user_message}
+"""
+
+    try:
+        try:
+            from google import genai
+            client = genai.Client(api_key=api_key)
+            response = client.models.generate_content(
+                model=model_name,
+                contents=prompt
+            )
+            return {
+                "source": f"Google Gemini ({model_name})",
+                "reply": response.text.strip(),
+                "stock": {"name": stock_name, "code": stock_code} if stock_code else None
+            }
+        except ImportError:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+            payload = {"contents": [{"parts": [{"text": prompt}]}]}
+            res = requests.post(url, json=payload, timeout=15)
+            res.raise_for_status()
+            data = res.json()
+            reply_text = (
+                data.get("candidates", [{}])[0]
+                .get("content", {})
+                .get("parts", [{}])[0]
+                .get("text", "")
+                .strip()
+            )
+            return {
+                "source": f"Google Gemini REST ({model_name})",
+                "reply": reply_text or "응답을 생성하지 못했습니다.",
+                "stock": {"name": stock_name, "code": stock_code} if stock_code else None
+            }
+    except Exception as e:
+        return {
+            "source": "Fallback Chatbot Engine",
+            "reply": f"API 호출 중 오류가 발생했습니다 ({e}). 키 또는 모델 이름 설정을 확인해 주세요.",
+            "stock": {"name": stock_name, "code": stock_code} if stock_code else None
+        }

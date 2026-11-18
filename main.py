@@ -3,6 +3,7 @@ main.py - AI 주식 예측 프로그램 (종합 분석 에이전트)
 - 1: 오늘의 상승 예측 8종목 실시간 시세 및 AI 브리핑
 - 2: 종목 검색 및 상세 리포트 (실시간 주가 + 재무제표 + 뉴스 + Gemini 분석)
 - 3: Gemini API 키 설정 가이드 및 확인
+- 4: AI 주식 상담 챗봇 (실시간 데이터 연동 멀티턴 대화)
 - 0: 프로그램 종료
 """
 
@@ -116,21 +117,57 @@ def guide_api_key():
     print(" 🔑 Google Gemini API 키 연동 안내")
     print("=" * 65)
     print("1. Google AI Studio(https://aistudio.google.com/apikey)에서 무료 키를 발급받습니다.")
-    print("2. 프로젝트 폴더의 '.env' 파일에 아래와 같이 입력합니다:")
-    print("   GEMINI_API_KEY=내_발급받은_키")
-    print("3. 키가 등록되면 [2]번 메뉴 분석 시 Gemini 2.5 Flash 기반의 실시간 심층 추론이 실행됩니다.")
+    print("2. 프로젝트 폴더의 '.env' 파일에 아래와 같이 키와 모델 이름 자리를 입력합니다:")
+    print("   GEMINI_API_KEY=여기에_발급받은_API_키를_입력하세요")
+    print("   MODEL_NAME=gemini-2.5-flash")
+    print("3. 키가 등록되면 [2]번 심층 리포트와 [4]번 AI 주식 상담 챗봇에서 실시간 추론이 실행됩니다.")
     print("=" * 65)
+
+
+def run_chatbot():
+    print("\n" + "=" * 65)
+    print(" 💬 AI 주식 상담 챗봇 (실시간 시세·재무·뉴스 연동)")
+    print("=" * 65)
+    print("• 종목명(예: 삼성전자, SK하이닉스, 현대차)이나 종목코드를 포함해 질문해 보세요.")
+    print("• 대화 내역 초기화: '초기화' 또는 'reset' 입력")
+    print("• 챗봇 종료 및 메인 메뉴 복귀: '종료', 'exit', 또는 'q' 입력")
+    print("-" * 65)
+
+    history = []
+    while True:
+        user_input = input("\n🙋 질문 입력: ").strip()
+        if not user_input:
+            continue
+        if user_input.lower() in ("종료", "exit", "q", "quit"):
+            print("\n챗봇 상담을 종료하고 메인 메뉴로 돌아갑니다.")
+            break
+        if user_input.lower() in ("초기화", "reset", "clear"):
+            history.clear()
+            print("🔄 대화 내역이 초기화되었습니다.")
+            continue
+
+        res = stock_service.chat_with_agent(user_input, history=history)
+        reply = res.get("reply", "")
+        source = res.get("source", "AI Chatbot")
+
+        print(f"\n🤖 [{source}]")
+        print(reply)
+
+        history.append({"role": "user", "content": user_input})
+        history.append({"role": "assistant", "content": reply})
+
 
 def main():
     while True:
-        print("\n" + "#" * 50)
+        print("\n" + "#" * 55)
         print("   📈 AI 주식 종합 예측 및 분석 에이전트")
-        print("#" * 50)
+        print("#" * 55)
         print(" 1. 오늘의 상승 유망 8종목 실시간 시세 모니터링")
         print(" 2. 개별 종목 검색 및 AI 심층 분석 리포트 (시세+재무+뉴스+AI)")
         print(" 3. Google Gemini API 설정 및 상태 확인")
+        print(" 4. 💬 AI 주식 상담 챗봇 (실시간 데이터 연동 대화)")
         print(" 0. 프로그램 종료")
-        print("#" * 50)
+        print("#" * 55)
         
         choice = input("원하시는 메뉴 번호를 입력하세요: ").strip()
         
@@ -140,6 +177,8 @@ def main():
             search_and_analyze()
         elif choice == "3":
             guide_api_key()
+        elif choice == "4":
+            run_chatbot()
         elif choice == "0":
             print("\n프로그램을 종료합니다. 성공 투자를 기원합니다! 👋\n")
             break
