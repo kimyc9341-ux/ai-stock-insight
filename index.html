@@ -912,7 +912,7 @@
         <div id="view-all" class="all-table-box" style="display:none;">
             <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 18px; background:#0f172a; border-bottom:1px solid #334155;">
                 <span style="font-size:14px; color:#38bdf8; font-weight:700;">📡 네이버증권 실시간 KOSPI 시가총액 Top 50 시세표 (<span id="top50-live-status">실시간 연동 완료</span>)</span>
-                <button type="button" class="user-small-btn" onclick="refreshTop50FromNaverRealtime()">🔄 실시간 새로고침</button>
+                <button type="button" id="top50-refresh-btn" class="user-small-btn" onclick="refreshTop50FromNaverRealtime()">🔄 실시간 새로고침</button>
             </div>
             <table class="table-view">
                 <thead>
@@ -1187,52 +1187,113 @@
             });
         }
 
+        function formatWonToHangeul(wonVal) {
+            const num = Number(wonVal);
+            if (!num || isNaN(num) || num <= 0) return '-';
+            const eok = Math.round(num / 100000000);
+            if (eok >= 10000) {
+                const jo = Math.floor(eok / 10000);
+                const remEok = eok % 10000;
+                return remEok > 0 ? `${jo.toLocaleString()}조 ${remEok.toLocaleString()}억원` : `${jo.toLocaleString()}조원`;
+            }
+            return `${eok.toLocaleString()}억원`;
+        }
+
+        function fetchNaverRealtimeJsonp(codes) {
+            return new Promise((resolve, reject) => {
+                if (!codes || codes.length === 0) return resolve([]);
+                const cbName = '__naverRtCb_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+                const script = document.createElement('script');
+                const timer = setTimeout(() => {
+                    cleanup();
+                    reject(new Error('JSONP timeout'));
+                }, 6000);
+
+                function cleanup() {
+                    clearTimeout(timer);
+                    try { delete window[cbName]; } catch (_) { window[cbName] = undefined; }
+                    if (script.parentNode) script.parentNode.removeChild(script);
+                }
+
+                window[cbName] = (data) => {
+                    cleanup();
+                    const datas = data?.result?.areas?.[0]?.datas || [];
+                    resolve(datas);
+                };
+
+                script.onerror = () => {
+                    cleanup();
+                    reject(new Error('JSONP script error'));
+                };
+
+                script.src = `https://polling.finance.naver.com/api/realtime?query=SERVICE_ITEM:${codes.join(',')}&_callback=${cbName}&_t=${Date.now()}`;
+                document.head.appendChild(script);
+            });
+        }
+
         async function refreshTop50FromNaverRealtime() {
             const statusEl = document.getElementById('top50-live-status');
+            const btnEl = document.getElementById('top50-refresh-btn');
             if (statusEl) statusEl.innerText = '네이버증권 실시간 수신 중...';
-            try {
-                const mvData = await fetchJsonViaApi('https://m.stock.naver.com/api/stocks/marketValue/KOSPI?page=1&pageSize=50');
-                const stocks = (mvData && mvData.stocks) || [];
-                if (stocks.length > 0) {
-                    const codes = stocks.map(s => s.itemCode).filter(Boolean);
-                    let rtMap = {};
-                    try {
-                        const pollData = await fetchJsonViaApi(`https://polling.finance.naver.com/api/realtime?query=SERVICE_ITEM:${codes.join(',')}`);
-                        const datas = pollData?.result?.areas?.[0]?.datas || [];
-                        datas.forEach(d => { if (d.cd) rtMap[d.cd] = d; });
-                    } catch (_) {}
+            if (btnEl) {
+                btnEl.disabled = true;
+                btnEl.innerText = '⏳ 수신 중...';
+            }
 
-                    stocks.forEach((s, idx) => {
-                        const code = s.itemCode;
-                        const d = rtMap[code] || {};
-                        const direction = s.compareToPreviousPrice?.name || '';
-                        const sign = direction === 'RISING' ? '▲' : (direction === 'FALLING' ? '▼' : '-');
-                        const updatedItem = {
-                            rank: s.ranking || (idx + 1),
-                            market: 'KOSPI',
-                            name: s.stockName || '',
-                            code: code,
-                            price: d.nv != null ? Number(d.nv).toLocaleString() : (s.closePrice || '0'),
-                            change: d.cv != null ? Math.abs(Number(d.cv)).toLocaleString() : (s.compareToPreviousClosePrice || '0'),
-                            rate: s.fluctuationsRatio || '0.00',
-                            sign: sign,
-                            volume: d.aq != null ? Number(d.aq).toLocaleString() : (s.accumulatedTradingVolume || '0'),
-                            tradingValue: s.accumulatedTradingValueKrwHangeul || s.accumulatedTradingValue || '-',
-                            high: d.hv != null ? Number(d.hv).toLocaleString() : (s.closePrice || '0'),
-                            low: d.lv != null ? Number(d.lv).toLocaleString() : (s.closePrice || '0'),
-                            marketValue: s.marketValue || '0',
-                            marketValueHangeul: s.marketValueHangeul || ((s.marketValue || '0') + '억원')
-                        };
-                        if (fullData.kospi_all && fullData.kospi_all[idx]) {
-                            fullData.kospi_all[idx] = updatedItem;
-                        }
-                    });
-                    renderKospiTop50();
-                    if (statusEl) statusEl.innerText = '네이버증권 실시간 반영 (' + new Date().toLocaleTimeString('ko-KR') + ')';
-                    return;
+            try {
+                if (initPromise) {
+                    try { await initPromise; } catch (_) {}
                 }
-            } catch (_) {}
-            if (statusEl) statusEl.innerText = '실시간 데이터 연동 완료 (' + (fullData.updated_at || '') + ')';
+                const top50List = (fullData.kospi_all || []).slice(0, 50);
+                const codes = top50List.map(s => s.code).filter(Boolean);
+                if (codes.length > 0) {
+                    const datas = await fetchNaverRealtimeJsonp(codes);
+                    const rtMap = {};
+                    datas.forEach(d => { if (d.cd) rtMap[d.cd] = d; });
+
+                    top50List.forEach((item, idx) => {
+                        const d = rtMap[item.code];
+                        if (!d) return;
+                        const rf = String(d.rf || '');
+                        const sign = (rf === '1' || rf === '2') ? '▲' : ((rf === '4' || rf === '5') ? '▼' : '-');
+                        const rawRate = d.cr != null ? Number(d.cr) : parseFloat(item.rate || '0');
+                        const signedRate = (rf === '4' || rf === '5') ? (-Math.abs(rawRate)).toFixed(2) : Math.abs(rawRate).toFixed(2);
+                        const nv = d.nv != null ? Number(d.nv) : null;
+                        const listedShares = d.countOfListedStock ? Number(d.countOfListedStock) : 0;
+
+                        if (nv != null) item.price = nv.toLocaleString();
+                        if (d.cv != null) item.change = Math.abs(Number(d.cv)).toLocaleString();
+                        if (!isNaN(rawRate)) item.rate = signedRate;
+                        item.sign = sign;
+                        if (d.aq != null) item.volume = Number(d.aq).toLocaleString();
+                        if (d.aa != null && Number(d.aa) > 0) {
+                            item.tradingValue = formatWonToHangeul(d.aa);
+                        }
+                        if (d.hv != null) item.high = Number(d.hv).toLocaleString();
+                        if (d.lv != null) item.low = Number(d.lv).toLocaleString();
+                        if (nv != null && listedShares > 0) {
+                            const mktWon = nv * listedShares;
+                            item.marketValue = Math.round(mktWon / 100000000).toLocaleString();
+                            item.marketValueHangeul = formatWonToHangeul(mktWon);
+                        }
+                        fullData.kospi_all[idx] = item;
+                    });
+
+                    renderKospiTop50();
+                    const nowTimeStr = new Date().toLocaleTimeString('ko-KR');
+                    if (statusEl) statusEl.innerText = `네이버증권 실시간 직결 갱신 완료 (${nowTimeStr})`;
+                    const lastUpdEl = document.getElementById('last-updated');
+                    if (lastUpdEl) lastUpdEl.innerText = nowTimeStr + ' 실시간';
+                }
+            } catch (err) {
+                console.error('실시간 갱신 오류:', err);
+                if (statusEl) statusEl.innerText = '실시간 데이터 연동 완료 (' + (fullData.updated_at || '') + ')';
+            } finally {
+                if (btnEl) {
+                    btnEl.disabled = false;
+                    btnEl.innerText = '🔄 실시간 새로고침';
+                }
+            }
         }
 
         function renderFavorites() {
