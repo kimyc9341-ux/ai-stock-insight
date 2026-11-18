@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>[내 계좌 심폐소생술] 시스템 아키텍처 & 데이터 흐름 시각화</title>
+    <title>3분 만에 이해하는 [내 계좌 심폐소생술] 작동 원리</title>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
-    <!-- Mermaid JS 로드 -->
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&display=swap" rel="stylesheet">
     <style>
         * {
             box-sizing: border-box;
@@ -17,36 +16,35 @@
         body {
             background-color: #0b0f19;
             color: #f1f5f9;
-            padding: 40px 20px;
-            line-height: 1.6;
+            padding: 50px 20px;
+            line-height: 1.7;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
         .container {
-            max-width: 1200px;
+            max-width: 900px;
             width: 100%;
         }
         header {
             text-align: center;
-            margin-bottom: 40px;
-            padding-bottom: 24px;
-            border-bottom: 1px solid #334155;
+            margin-bottom: 45px;
         }
         h1 {
-            font-size: 32px;
-            font-weight: 800;
-            background: linear-gradient(135deg, #ffffff 15%, #38bdf8 55%, #818cf8 100%);
+            font-size: 34px;
+            font-family: 'Do Hyeon', sans-serif;
+            background: linear-gradient(135deg, #ffffff 15%, #38bdf8 65%, #a855f7 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 12px;
+            letter-spacing: -0.5px;
         }
         p.subtitle {
             font-size: 16px;
             color: #94a3b8;
         }
-        .nav-links {
-            margin-top: 16px;
+        .nav-box {
+            margin-top: 18px;
             display: flex;
             justify-content: center;
             gap: 12px;
@@ -55,7 +53,7 @@
             background: #1e293b;
             color: #38bdf8;
             border: 1px solid #334155;
-            padding: 8px 16px;
+            padding: 9px 18px;
             border-radius: 8px;
             text-decoration: none;
             font-weight: 700;
@@ -67,203 +65,255 @@
             color: #ffffff;
             border-color: #38bdf8;
         }
-        .card {
+
+        /* 큰 비유 카드 */
+        .story-card {
             background: #1e293b;
             border: 1px solid #334155;
-            border-radius: 14px;
-            padding: 28px;
-            margin-bottom: 32px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 35px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
         }
-        .card-title {
-            font-size: 20px;
+        .story-header {
+            font-size: 22px;
             font-weight: 800;
             color: #38bdf8;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
             display: flex;
             align-items: center;
-            gap: 8px;
-            border-bottom: 1px solid #334155;
-            padding-bottom: 10px;
+            gap: 10px;
         }
-        .card-desc {
-            font-size: 14.5px;
-            color: #cbd5e1;
-            margin-bottom: 20px;
-        }
-        .mermaid-box {
-            background: #0f172a;
-            border: 1px solid #334155;
+        .story-desc {
+            font-size: 16px;
+            color: #e2e8f0;
+            margin-bottom: 24px;
+            background: rgba(15, 23, 42, 0.6);
+            padding: 16px 20px;
             border-radius: 10px;
-            padding: 24px;
-            overflow-x: auto;
-            display: flex;
-            justify-content: center;
+            border-left: 4px solid #38bdf8;
         }
-        .badge-list {
+
+        /* 3인방 비유 캐릭터 그리드 */
+        .character-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
             gap: 16px;
-            margin-top: 20px;
+            margin-bottom: 30px;
         }
-        .badge-item {
+        .char-card {
             background: #0f172a;
             border: 1px solid #334155;
-            border-left: 4px solid #38bdf8;
-            border-radius: 8px;
-            padding: 14px 16px;
+            border-radius: 12px;
+            padding: 22px 20px;
+            text-align: center;
+            transition: transform 0.2s;
         }
-        .badge-item h4 {
+        .char-card:hover {
+            transform: translateY(-4px);
+            border-color: #38bdf8;
+        }
+        .char-icon {
+            font-size: 42px;
+            margin-bottom: 12px;
+        }
+        .char-role {
+            font-size: 13px;
+            font-weight: 800;
+            padding: 3px 10px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+        .char-title {
+            font-size: 18px;
+            font-weight: 800;
             color: #f1f5f9;
-            font-size: 15px;
+            margin-bottom: 8px;
+        }
+        .char-desc {
+            font-size: 14px;
+            color: #94a3b8;
+            line-height: 1.5;
+        }
+
+        /* 4단계 작동 흐름 타임라인 */
+        .step-timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            position: relative;
+        }
+        .step-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 18px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .step-num {
+            background: #38bdf8;
+            color: #0b0f19;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 18px;
+            flex-shrink: 0;
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+        }
+        .step-content h3 {
+            font-size: 17px;
+            color: #f1f5f9;
             margin-bottom: 6px;
         }
-        .badge-item p {
+        .step-content p {
+            font-size: 14.5px;
             color: #94a3b8;
-            font-size: 13.5px;
+            line-height: 1.6;
+        }
+        .step-content strong {
+            color: #38bdf8;
+        }
+
+        /* 한 줄 요약 박스 */
+        .summary-callout {
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(168, 85, 247, 0.15));
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: 14px;
+            padding: 24px;
+            text-align: center;
+        }
+        .summary-callout h3 {
+            font-size: 20px;
+            color: #ffffff;
+            margin-bottom: 8px;
+        }
+        .summary-callout p {
+            font-size: 15px;
+            color: #cbd5e1;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>📊 [내 계좌 심폐소생술] 시각화 아키텍처 대시보드</h1>
-            <p class="subtitle">네트워크 개념을 몰라도 한눈에 이해하는 시스템 동작 구조 & 실시간 데이터 파이프라인</p>
-            <div class="nav-links">
+            <h1>🩺 초보자도 3분 만에 이해하는 작동 원리</h1>
+            <p class="subtitle">어려운 네트워크 용어 없이, 실생활 비유로 쉽게 알아보는 [내 계좌 심폐소생술]</p>
+            <div class="nav-box">
                 <a href="./index.html" class="nav-btn">🚀 실제 서비스(메인 화면) 바로가기</a>
-                <a href="https://kimyc9341-ux.github.io/ai-stock-insight/" target="_blank" class="nav-btn">🌐 GitHub 배포 사이트 열기</a>
+                <a href="https://kimyc9341-ux.github.io/ai-stock-insight/" target="_blank" class="nav-btn">🌐 온라인 배포 사이트 열기</a>
             </div>
         </header>
 
-        <!-- 1. 전체 아키텍처 구조 -->
-        <div class="card">
-            <div class="card-title">
-                <span>🌐</span>
-                <span>1. 전체 시스템 구조도 (System Architecture)</span>
+        <!-- 1. 핵심 3인방 비유 -->
+        <div class="story-card">
+            <div class="story-header">
+                <span>👥</span>
+                <span>이 프로젝트를 움직이는 3명의 핵심 팀원</span>
             </div>
-            <p class="card-desc">
-                사용자의 웹 브라우저, 무료 24시간 호스팅(GitHub Pages), 실시간 네이버 금융 데이터망, Google Gemini AI가 어떻게 연결되어 있는지 보여줍니다.
+            <p class="story-desc">
+                복잡한 서버 대신, <strong>"안전한 백과사전(GitHub)"</strong>, <strong>"실시간 소식통(네이버)"</strong>, <strong>"전문 의사(Gemini AI)"</strong> 3명이 손발을 맞춰 여러분의 스마트폰 화면에 정보를 띄워줍니다.
             </p>
-            <div class="mermaid-box">
-                <div class="mermaid">
-flowchart TD
-    subgraph Client["📱 사용자 브라우저 (PC / Mobile)"]
-        UI["🎨 웹 프론트엔드 (index.html)"]
-        Storage[("💾 로컬 저장소 (localStorage)<br/>• 사용자별 관심종목<br/>• KIS 모의계좌(5,000만원)<br/>• 커스텀 캐시")]
-    end
 
-    subgraph GitHubPlatform["☁️ GitHub 클라우드 플랫폼"]
-        GH_Pages["🌍 GitHub Pages 호스팅<br/>(24시간 무중단 무료 웹 서빙)"]
-        GH_Actions["🤖 GitHub Actions<br/>(장전/장후 자동 데이터 빌드)"]
-        Repo[("📦 Git 저장소<br/>(stocks.json 4,332개 종목 DB)")]
-    end
+            <div class="character-grid">
+                <!-- 1. GitHub -->
+                <div class="char-card">
+                    <div class="char-icon">🏢</div>
+                    <span class="char-role" style="background:rgba(56,189,248,0.2); color:#38bdf8;">24시간 무료 건물주</span>
+                    <h3 class="char-title">GitHub (깃허브)</h3>
+                    <p class="char-desc">
+                        내 컴퓨터가 꺼져 있어도 웹사이트를 <strong>24시간 무료로 띄워주고</strong>, 국내 4,332개 종목의 기초 정보 백과사전을 보관해 줍니다.
+                    </p>
+                </div>
 
-    subgraph DataSources["📡 실시간 금융 데이터 & AI"]
-        NaverPolling["⚡ 네이버 금융 Polling JSONP<br/>(초단위 체결가·거래대금 직결)"]
-        NaverChart["📈 네이버 실시간 차트 서버<br/>(일봉·주봉·월봉 캔들 차트)"]
-        NaverNews["📰 실시간 속보 뉴스 API"]
-        DART["📢 금융감독원 전자공시(DART)"]
-        Gemini["🤖 Google Gemini AI<br/>(3초 호재/악재 판독 & 탈출 처방전)"]
-    end
+                <!-- 2. 네이버 증권 -->
+                <div class="char-card">
+                    <div class="char-icon">⚡</div>
+                    <span class="char-role" style="background:rgba(34,197,94,0.2); color:#4ade80;">초고속 실시간 소식통</span>
+                    <h3 class="char-title">네이버 금융</h3>
+                    <p class="char-desc">
+                        1초도 쉬지 않고 시장에서 <strong>지금 주가가 얼마인지, 거래량이 얼마나 터졌는지</strong> 실시간 시세와 캔들 차트를 즉시 쏴줍니다.
+                    </p>
+                </div>
 
-    GH_Pages -->|HTML/CSS/JS 로드| UI
-    GH_Actions -->|크롤링 데이터 푸시| Repo
-    Repo -->|초기 종목 메타데이터 로드| UI
-
-    UI <-->|모의잔고·관심종목 즉시 보관| Storage
-    UI <-->|초단위 실시간 틱 수신| NaverPolling
-    UI -->|캔들 차트 이미지 스트리밍| NaverChart
-    UI -->|실시간 뉴스/공시 수신| NaverNews
-    UI -->|공시 호재/악재 감지| DART
-    UI -->|투자전략 & 응급실 처방| Gemini
+                <!-- 3. Gemini AI -->
+                <div class="char-card">
+                    <div class="char-icon">👨‍⚕️</div>
+                    <span class="char-role" style="background:rgba(239,68,68,0.2); color:#f87171;">주식 전문 응급의</span>
+                    <h3 class="char-title">Gemini AI (제미나이)</h3>
+                    <p class="char-desc">
+                        어려운 DART 공시가 뜨면 <strong>"호재인가? 악재인가?"</strong> 3초 만에 판독하고, 물린 종목에 대한 <strong>탈출 처방전</strong>을 써줍니다.
+                    </p>
                 </div>
             </div>
         </div>
 
-        <!-- 2. 실시간 데이터 흐름 -->
-        <div class="card">
-            <div class="card-title">
-                <span>⚡</span>
-                <span>2. 실시간 종목 조회 시 데이터 흐름 (Sequence Diagram)</span>
+        <!-- 2. 내가 종목을 검색했을 때 일어나는 일 -->
+        <div class="story-card">
+            <div class="story-header">
+                <span>🔍</span>
+                <span>내가 검색창에 '대한항공'을 쳤을 때 일어나는 4단계</span>
             </div>
-            <p class="card-desc">
-                사용자가 검색창에 '대한항공' 또는 '005930'을 검색했을 때 0.1초 만에 일어나는 실시간 데이터 교환 순서입니다.
+            <p class="story-desc">
+                버튼을 누르고 결과가 화면에 뜨기까지 <strong>단 0.2초</strong> 동안 아래 일들이 순서대로 일어납니다:
             </p>
-            <div class="mermaid-box">
-                <div class="mermaid">
-sequenceDiagram
-    autonumber
-    actor User as 👤 사용자
-    participant UI as 🖥️ 화면 (index.html)
-    participant Local as 💾 브라우저 저장소
-    participant Naver as 📡 네이버증권 실시간망
-    participant AI as 🤖 Gemini & AI 판독기
 
-    User->>UI: 종목 검색 ('삼성전자' or '대한항공')
-    UI->>Local: 등록된 관심종목 & 로컬 캐시 조회
-    UI->>Naver: 실시간 현재가/등락률/거래대금 요청 (JSONP)
-    Naver-->>UI: 실시간 틱 데이터 즉각 반환 (무지연)
-    UI->>Naver: 일봉/주봉 캔들 차트 이미지 수신
-    UI->>AI: DART 전자공시 & 최근 뉴스 전달
-    AI-->>UI: [🔥 호재 감지 / 🚨 악재 주의] 3초 판독 및 처방전 도출
-    UI->>User: 📊 종합 심폐소생 리포트 표출 (차트+재무+공시+처방)
+            <div class="step-timeline">
+                <div class="step-item">
+                    <div class="step-num">1</div>
+                    <div class="step-content">
+                        <h3>백과사전에서 종목 번호 찾기</h3>
+                        <p>
+                            사용자가 <strong>'대한항공'</strong>을 입력하면, 브라우저가 저장된 4,332개 종목 장부에서 <strong>코드(003490)</strong>를 0.01초 만에 찾아냅니다.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="step-item">
+                    <div class="step-num">2</div>
+                    <div class="step-content">
+                        <h3>네이버로 달려가서 지금 가격 물어보기</h3>
+                        <p>
+                            네이버 금융 실시간망에 <strong>"대한항공 지금 얼마에 거래되고 있나요?"</strong>라고 물어봐서 <strong>현재가, 등락률, 거래대금, 캔들 차트</strong>를 실시간으로 받아옵니다.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="step-item">
+                    <div class="step-num">3</div>
+                    <div class="step-content">
+                        <h3>AI 의사에게 최근 뉴스 & 공시 진단받기</h3>
+                        <p>
+                            최근 DART 전자공시와 속보 뉴스를 <strong>Gemini AI</strong>에게 넘겨주어, <strong>"이 공시는 호재인가? 악재인가?"</strong>를 판독하고 3줄 요약을 만듭니다.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="step-item">
+                    <div class="step-num">4</div>
+                    <div class="step-content">
+                        <h3>종합 심폐소생 진단서 화면에 띄우기!</h3>
+                        <p>
+                            수집된 <strong>실시간 시세 + 캔들 차트 + 재무제표 + DART 공시 판독 + AI 탈출 전략</strong>을 하나의 깔끔한 카드 리포트로 화면에 완성해 줍니다.
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- 3. 핵심 6대 메뉴 기능 맵 -->
-        <div class="card">
-            <div class="card-title">
-                <span>📂</span>
-                <span>3. 6대 핵심 기능 맵 (Feature Map)</span>
-            </div>
-            <p class="card-desc">
-                화면 좌측 상단 메뉴(☰)를 눌렀을 때 제공되는 주요 기능들의 역할 정리입니다.
+        <!-- 3. 한 줄 요약 -->
+        <div class="summary-callout">
+            <h3>💡 한 줄로 정리하면?</h3>
+            <p>
+                <strong>"돈 드는 서버 한 대 없이도, GitHub가 무료로 집을 지어주고, 네이버가 실시간 가격표를 갈아 끼우며, AI가 처방전을 써주는 스마트한 실시간 주식 응급실"</strong>입니다.
             </p>
-            <div class="badge-list">
-                <div class="badge-item" style="border-left-color: #ef4444;">
-                    <h4>🚨 내 계좌 응급실 (물타기 계산기)</h4>
-                    <p>내 매수가와 수량을 입력하면 실시간 시세와 비교해 손실률을 진단하고, 목표 평단가 도달을 위한 추가 매수 처방전을 도출합니다.</p>
-                </div>
-                <div class="badge-item" style="border-left-color: #fbbf24;">
-                    <h4>⚡ 스마트 머니 레이더 (거래대금 급증)</h4>
-                    <p>거래대금 상위, 실시간 급등주, 거래량 폭증, 과대낙폭 반등주 TOP 30을 실시간 랭킹으로 감지합니다.</p>
-                </div>
-                <div class="badge-item" style="border-left-color: #38bdf8;">
-                    <h4>📈 실시간 인터랙티브 캔들 차트</h4>
-                    <p>종목별 일봉, 주봉, 월봉, 당일체결 기술적 캔들 차트를 클릭 한 번으로 자유롭게 전환합니다.</p>
-                </div>
-                <div class="badge-item" style="border-left-color: #4ade80;">
-                    <h4>🔔 DART 공시 호재/악재 자동 판독기</h4>
-                    <p>유상증자, CB발행, 대규모 수주계약 등 난해한 공시를 AI가 3초 만에 호재/주의 배지와 해설로 요약합니다.</p>
-                </div>
-                <div class="badge-item" style="border-left-color: #818cf8;">
-                    <h4>🏦 KIS 모의투자 (5,000만원 잔고)</h4>
-                    <p>초기 자본금 5,000만원으로 실시간 시세를 반영해 모의 매수/매도를 연습할 수 있습니다.</p>
-                </div>
-                <div class="badge-item" style="border-left-color: #f43f5e;">
-                    <h4>⭐ 사용자별 다중 프로필 관심종목</h4>
-                    <p>가족이나 친구, 전략별로 프로필을 만들어 관심 종목을 독립적으로 관리할 수 있습니다.</p>
-                </div>
-            </div>
         </div>
     </div>
-
-    <script>
-        mermaid.initialize({
-            startOnLoad: true,
-            theme: 'dark',
-            themeVariables: {
-                darkMode: true,
-                background: '#0f172a',
-                primaryColor: '#1e293b',
-                primaryTextColor: '#f1f5f9',
-                primaryBorderColor: '#38bdf8',
-                lineColor: '#38bdf8',
-                secondaryColor: '#0f172a',
-                tertiaryColor: '#1e293b'
-            }
-        });
-    </script>
 </body>
 </html>
