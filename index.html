@@ -717,6 +717,12 @@
             stocks: {}
         };
 
+        let initPromise = null;
+
+        function norm(str) {
+            return String(str || '').toLowerCase().replace(/\s+/g, '');
+        }
+
         function getKospiSearchPool() {
             if (fullData.kospi_search && fullData.kospi_search.length > 0) {
                 return fullData.kospi_search;
@@ -972,12 +978,16 @@
                 document.getElementById('ai-text').innerText = analysis.analysis || "분석 리포트가 생성되었습니다.";
             } else {
                 const searchPool = getKospiSearchPool();
-                const found = searchPool.find(s => s.name === name || s.code === name);
+                const qNorm = norm(name);
+                const found = searchPool.find(s => norm(s.name) === qNorm || s.code === name);
                 if (found) {
+                    const marketName = found.market || "KOSPI";
                     const colorClass = getColorClass(found.sign, found.rate);
-                    const badgeLabel = found.rank <= 50 ? "KOSPI 50대 종목" : `KOSPI 상장 종목 (#${found.rank}위)`;
+                    const badgeLabel = (marketName === "KOSPI" && found.rank <= 50)
+                        ? "KOSPI 50대 종목"
+                        : `${marketName} 상장 종목 (#${found.rank}위)`;
                     document.getElementById('rep-name').innerText = found.name;
-                    document.getElementById('rep-code').innerText = `${found.code} · KOSPI 시총 ${found.rank}위`;
+                    document.getElementById('rep-code').innerText = `${found.code} · ${marketName} 시총 ${found.rank}위`;
                     document.getElementById('rep-price').innerText = `${found.price}원`;
                     
                     const repChange = document.getElementById('rep-change');
@@ -987,11 +997,11 @@
                     document.getElementById('finance-thead-tr').innerHTML = `<th>구분</th><th>실시간 지표</th>`;
                     document.getElementById('finance-tbody').innerHTML = `
                         <tr><td>시가총액</td><td>${found.marketValue || '-'}억원</td></tr>
-                        <tr><td>시총순위</td><td>KOSPI ${found.rank}위</td></tr>
+                        <tr><td>시총순위</td><td>${marketName} ${found.rank}위</td></tr>
                     `;
                     document.getElementById('news-list').innerHTML = `<li class="news-item"><strong>${found.name} 실시간 상세 재무·뉴스 API 조회 중...</strong>잠시만 기다려 주세요.</li>`;
                     document.getElementById('rep-gemini-badge').innerText = badgeLabel;
-                    document.getElementById('ai-text').innerText = `KOSPI 시가총액 ${found.rank}위(${found.marketValue || '-'}억원) 상장 종목입니다. 현재 ${found.price}원(${found.sign} ${found.change}원 / ${found.rate}%)에 거래되고 있습니다.`;
+                    document.getElementById('ai-text').innerText = `${marketName} 시가총액 ${found.rank}위(${found.marketValue || '-'}억원) 상장 종목입니다. 현재 ${found.price}원(${found.sign} ${found.change}원 / ${found.rate}%)에 거래되고 있습니다.`;
 
                     fetchLiveStockDetails(found.code, found.name);
                 }
@@ -1002,14 +1012,18 @@
         }
 
         async function fetchJsonViaApi(targetUrl) {
-            try {
-                const directRes = await fetch(targetUrl);
-                if (directRes.ok) return await directRes.json();
-            } catch (_) {}
-            const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl);
-            const res = await fetch(proxyUrl);
-            if (!res.ok) throw new Error('API fetch failed');
-            return await res.json();
+            const urls = [
+                targetUrl,
+                'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl),
+                'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(targetUrl)
+            ];
+            for (const u of urls) {
+                try {
+                    const res = await fetch(u);
+                    if (res.ok) return await res.json();
+                } catch (_) {}
+            }
+            throw new Error('API fetch failed');
         }
 
         async function fetchLiveStockDetails(code, stockName) {
@@ -1073,29 +1087,59 @@
             document.getElementById('report-card').style.display = 'none';
         }
 
-        document.getElementById('search-btn').addEventListener('click', () => {
+        document.getElementById('search-btn').addEventListener('click', async () => {
             const query = document.getElementById('search-input').value.trim();
             if (!query) return;
 
+            if (initPromise) {
+                try { await initPromise; } catch (_) {}
+            }
+
+            const qNorm = norm(query);
             const searchPool = getKospiSearchPool();
-            let matched = Object.keys(fullData.stocks || {}).find(k => k === query || (fullData.stocks[k].code === query));
+            let matched = Object.keys(fullData.stocks || {}).find(k => norm(k) === qNorm || (fullData.stocks[k].code === query));
             if (!matched) {
-                const exactInAll = searchPool.find(s => s.name === query || s.code === query);
+                const exactInAll = searchPool.find(s => norm(s.name) === qNorm || s.code === query);
                 if (exactInAll) matched = exactInAll.name;
             }
             if (!matched) {
-                matched = Object.keys(fullData.stocks || {}).find(k => k.includes(query));
+                matched = Object.keys(fullData.stocks || {}).find(k => norm(k).includes(qNorm));
             }
             if (!matched) {
-                const partialInAll = searchPool.find(s => s.name.includes(query));
+                const partialInAll = searchPool.find(s => norm(s.name).includes(qNorm));
                 if (partialInAll) matched = partialInAll.name;
             }
 
             if (matched) {
                 selectStock(matched);
-            } else {
-                alert(`'${query}' 종목을 KOSPI 상장 종목에서 찾을 수 없습니다.`);
+                return;
             }
+
+            try {
+                const acData = await fetchJsonViaApi(`https://ac.stock.naver.com/ac?q=${encodeURIComponent(query)}&target=stock`);
+                const item = (acData && acData.items && acData.items[0]) || null;
+                if (item && item.code) {
+                    const basic = await fetchJsonViaApi(`https://m.stock.naver.com/api/stock/${item.code}/basic`);
+                    const dir = basic?.compareToPreviousPrice?.name || '';
+                    const sign = dir === 'RISING' ? '▲' : (dir === 'FALLING' ? '▼' : '-');
+                    const newEntry = {
+                        rank: '-',
+                        market: item.typeCode || basic?.stockExchangeName || 'KRX',
+                        name: basic?.stockName || item.name || query,
+                        code: item.code,
+                        price: basic?.closePrice || '0',
+                        change: basic?.compareToPreviousClosePrice || '0',
+                        rate: basic?.fluctuationsRatio || '0.00',
+                        sign: sign,
+                        marketValue: '-'
+                    };
+                    searchPool.push(newEntry);
+                    selectStock(newEntry.name);
+                    return;
+                }
+            } catch (_) {}
+
+            alert(`'${query}' 종목을 상장 종목에서 찾을 수 없습니다. 종목명이나 6자리 코드를 확인해 주세요.`);
         });
 
         document.getElementById('search-input').addEventListener('keydown', (e) => {
@@ -1220,7 +1264,7 @@
             }
         });
 
-        init();
+        initPromise = init();
     </script>
 </body>
 </html>

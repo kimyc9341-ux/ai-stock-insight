@@ -135,11 +135,11 @@ def fetch_market_indexes():
     return results
 
 
-def fetch_kospi_all_registered():
-    """JSON API 페이지네이션을 통해 KOSPI에 등록된 전체 종목 리스트 수집"""
+def fetch_market_stocks_all(market_type="KOSPI"):
+    """JSON API 페이지네이션을 통해 해당 시장(KOSPI/KOSDAQ)에 등록된 전체 종목 리스트 수집"""
     all_stocks = []
     for page in range(1, 30):
-        url = f"https://m.stock.naver.com/api/stocks/marketValue/KOSPI?page={page}&pageSize=100"
+        url = f"https://m.stock.naver.com/api/stocks/marketValue/{market_type}?page={page}&pageSize=100"
         try:
             res = requests.get(url, headers=HEADERS, timeout=5)
             if res.status_code != 200:
@@ -153,6 +153,7 @@ def fetch_kospi_all_registered():
                 sign = "▲" if direction == "RISING" else ("▼" if direction == "FALLING" else "-")
                 all_stocks.append({
                     "rank": s.get("ranking", len(all_stocks) + 1),
+                    "market": market_type,
                     "name": s.get("stockName", ""),
                     "code": s.get("itemCode", ""),
                     "price": s.get("closePrice", "0"),
@@ -162,9 +163,16 @@ def fetch_kospi_all_registered():
                     "marketValue": s.get("marketValue", "0")
                 })
         except Exception as e:
-            print(f"[!] KOSPI 페이지 {page} 수집 실패: {e}")
+            print(f"[!] {market_type} 페이지 {page} 수집 실패: {e}")
             break
     return all_stocks
+
+
+def fetch_kospi_all_registered():
+    """KOSPI 전체 상장 종목 및 KOSDAQ 전체 상장 종목 통합 수집"""
+    kospi_list = fetch_market_stocks_all("KOSPI")
+    kosdaq_list = fetch_market_stocks_all("KOSDAQ")
+    return kospi_list, kospi_list + kosdaq_list
 
 
 def generate_gemini_analysis(name, code, tag, price, finance, news):
@@ -203,9 +211,9 @@ def build():
     print(f"[{now_str}] 🚀 Gemini 추천 주도주 6종목, KOSPI Top 50(표시용) & KOSPI 전 종목(검색용) API 빌드 시작...")
 
     indexes = fetch_market_indexes()
-    kospi_all_registered = fetch_kospi_all_registered()
-    kospi_top_50 = kospi_all_registered[:50]
-    print(f"  • KOSPI 등록 전체 종목 수집 완료: 총 {len(kospi_all_registered)}개 종목 (화면 표시: 상위 {len(kospi_top_50)}개)")
+    kospi_only, all_searchable_stocks = fetch_kospi_all_registered()
+    kospi_top_50 = kospi_only[:50]
+    print(f"  • 전체 상장 종목 수집 완료: 총 {len(all_searchable_stocks)}개 종목 (KOSPI {len(kospi_only)}개 / 화면 표시: 상위 {len(kospi_top_50)}개)")
 
     lead_stocks_data = {}
     for item in LEAD_STOCKS_6:
@@ -233,7 +241,7 @@ def build():
         "updated_at": now_str,
         "indexes": indexes,
         "kospi_all": kospi_top_50,
-        "kospi_search": kospi_all_registered,
+        "kospi_search": all_searchable_stocks,
         "stocks": lead_stocks_data
     }
 
@@ -241,7 +249,7 @@ def build():
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(out_data, f, ensure_ascii=False, indent=2)
 
-    print(f"[{now_str}] ✅ KOSPI 전체 {len(kospi_all_registered)}종목(검색용) & Top 50(표시용) 빌드 완료 -> '{out_path}'")
+    print(f"[{now_str}] ✅ 전체 {len(all_searchable_stocks)}종목(검색용) & Top 50(표시용) 빌드 완료 -> '{out_path}'")
 
 
 if __name__ == "__main__":
