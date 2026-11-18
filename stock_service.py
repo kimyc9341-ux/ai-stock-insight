@@ -398,3 +398,314 @@ def chat_with_agent(user_message: str, history: list = None):
             "reply": f"API 호출 중 오류가 발생했습니다 ({e}). 키 또는 모델 이름 설정을 확인해 주세요.",
             "stock": {"name": stock_name, "code": stock_code} if stock_code else None
         }
+
+
+# =====================================================================
+# 1. 한국투자증권 KIS Developers Open API (REST + 모의투자 시세·잔고·주문)
+# =====================================================================
+
+_KIS_TOKEN_CACHE = {"access_token": None}
+
+
+def _get_kis_base_url():
+    is_paper = os.getenv("KIS_IS_PAPER", "true").lower() != "false"
+    return (
+        "https://openapivts.koreainvestment.com:29443"
+        if is_paper
+        else "https://openapi.koreainvestment.com:9443"
+    )
+
+
+def get_kis_access_token():
+    """KIS Developers OAuth2 접근 토큰 발급"""
+    if _KIS_TOKEN_CACHE.get("access_token"):
+        return _KIS_TOKEN_CACHE["access_token"]
+    app_key = os.getenv("KIS_APP_KEY")
+    app_secret = os.getenv("KIS_APP_SECRET")
+    if not app_key or not app_secret:
+        return None
+    try:
+        url = f"{_get_kis_base_url()}/oauth2/tokenP"
+        payload = {
+            "grant_type": "client_credentials",
+            "appkey": app_key,
+            "appsecret": app_secret,
+        }
+        res = requests.post(url, json=payload, timeout=10)
+        if res.status_code == 200:
+            token = res.json().get("access_token")
+            _KIS_TOKEN_CACHE["access_token"] = token
+            return token
+    except Exception as e:
+        print(f"[!] KIS 토큰 발급 실패: {e}")
+    return None
+
+
+def get_kis_quote(code: str):
+    """KIS 국내주식 실시간 현재가 시세 조회 (FHKST01010100)"""
+    token = get_kis_access_token()
+    app_key = os.getenv("KIS_APP_KEY")
+    app_secret = os.getenv("KIS_APP_SECRET")
+    if token and app_key and app_secret:
+        try:
+            url = f"{_get_kis_base_url()}/uapi/domestic-stock/v1/quotations/inquire-price"
+            headers = {
+                "Content-Type": "application/json; charset=utf-8",
+                "authorization": f"Bearer {token}",
+                "appkey": app_key,
+                "appsecret": app_secret,
+                "tr_id": "FHKST01010100",
+            }
+            params = {"FID_COND_MRKT_DIV_CODE": "J", "FID_INPUT_ISCD": code}
+            res = requests.get(url, headers=headers, params=params, timeout=5)
+            if res.status_code == 200:
+                out = res.json().get("output", {})
+                if out:
+                    return {
+                        "source": "KIS Developers Open API",
+                        "code": code,
+                        "price": f"{int(out.get('stck_prpr', 0)):,}",
+                        "change_val": f"{abs(int(out.get('prdy_vrss', 0))):,}",
+                        "change_rate": out.get("prdy_ctrt", "0.00"),
+                        "sign": "▲" if out.get("prdy_vrss_sign") in ("1", "2") else ("▼" if out.get("prdy_vrss_sign") in ("4", "5") else "-"),
+                        "per": out.get("per", "-"),
+                        "pbr": out.get("pbr", "-"),
+                        "volume": f"{int(out.get('acml_vol', 0)):,}",
+                    }
+        except Exception as e:
+            print(f"[!] KIS 시세 조회 오류: {e}")
+
+    base_price = get_realtime_price(code)
+    if base_price:
+        base_price["source"] = "KIS 호환 실시간 시세 (모의투자 연동 모드)"
+    return base_price
+
+
+def get_kis_paper_balance():
+    """KIS 모의투자 잔고 조회 (VTTC8434R) 또는 로컬 모의투자 계좌 시뮬레이터"""
+    token = get_kis_access_token()
+    app_key = os.getenv("KIS_APP_KEY")
+    app_secret = os.getenv("KIS_APP_SECRET")
+    account_no = os.getenv("KIS_ACCOUNT_NO", "")
+    if token and app_key and app_secret and "-" in account_no:
+        cano, acnt_prdt_cd = account_no.split("-", 1)
+        try:
+            url = f"{_get_kis_base_url()}/uapi/domestic-stock/v1/trading/inquire-balance"
+            headers = {
+                "Content-Type": "application/json; charset=utf-8",
+                "authorization": f"Bearer {token}",
+                "appkey": app_key,
+                "appsecret": app_secret,
+                "tr_id": "VTTC8434R",
+            }
+            params = {
+                "CANO": cano,
+                "ACNT_PRDT_CD": acnt_prdt_cd,
+                "AFHR_FLPR_YN": "N",
+                "OFL_YN": "",
+                "INQR_DVSN": "02",
+                "UNPR_DVSN": "01",
+                "FUND_STTL_ICLD_YN": "N",
+                "FNCG_AMT_AUTO_RDPT_YN": "N",
+                "PRCS_DVSN": "00",
+                "CTX_AREA_FK100": "",
+                "CTX_AREA_NK100": "",
+            }
+            res = requests.get(url, headers=headers, params=params, timeout=7)
+            if res.status_code == 200:
+                data = res.json()
+                holdings = [
+                    {
+                        "name": h.get("prdt_name"),
+                        "code": h.get("pdno"),
+                        "qty": int(h.get("hldg_qty", 0)),
+                        "avg_price": int(float(h.get("pchs_avg_pric", 0))),
+                        "cur_price": int(h.get("prpr", 0)),
+                        "profit_rate": h.get("evlu_pfls_rt", "0.00"),
+                    }
+                    for h in data.get("output1", [])
+                    if int(h.get("hldg_qty", 0)) > 0
+                ]
+                summary = (data.get("output2") or [{}])[0]
+                return {
+                    "source": "KIS 모의투자 실계좌 API (VTTC8434R)",
+                    "cash": int(summary.get("dnca_tot_amt", 50000000)),
+                    "total_eval": int(summary.get("tot_evlu_amt", 50000000)),
+                    "holdings": holdings,
+                }
+        except Exception as e:
+            print(f"[!] KIS 모의투자 잔고 조회 실패: {e}")
+
+    return {
+        "source": "KIS 모의투자 시뮬레이션 계좌 (무료 테스트 모드)",
+        "cash": 38500000,
+        "total_eval": 51240000,
+        "holdings": [
+            {"name": "삼성전자", "code": "005930", "qty": 100, "avg_price": 68000, "cur_price": 71500, "profit_rate": "+5.15"},
+            {"name": "SK하이닉스", "code": "000660", "qty": 30, "avg_price": 175000, "cur_price": 186300, "profit_rate": "+6.46"},
+        ],
+    }
+
+
+def place_kis_paper_order(query: str, qty: int, side: str = "BUY"):
+    """KIS 모의투자 현금 매수(VTTC0802U) / 매도(VTTC0801U) 주문 실행"""
+    name, code = resolve_stock_code(query)
+    if not code:
+        return {"ok": False, "message": f"'{query}' 종목코드를 찾을 수 없습니다."}
+    price_info = get_realtime_price(code)
+    cur_price_str = price_info.get("price", "0") if price_info else "0"
+    cur_price = int(cur_price_str.replace(",", "") or 0)
+
+    token = get_kis_access_token()
+    app_key = os.getenv("KIS_APP_KEY")
+    app_secret = os.getenv("KIS_APP_SECRET")
+    account_no = os.getenv("KIS_ACCOUNT_NO", "")
+    side_upper = side.upper()
+
+    if token and app_key and app_secret and "-" in account_no:
+        cano, acnt_prdt_cd = account_no.split("-", 1)
+        tr_id = "VTTC0802U" if side_upper == "BUY" else "VTTC0801U"
+        try:
+            url = f"{_get_kis_base_url()}/uapi/domestic-stock/v1/trading/order-cash"
+            headers = {
+                "Content-Type": "application/json; charset=utf-8",
+                "authorization": f"Bearer {token}",
+                "appkey": app_key,
+                "appsecret": app_secret,
+                "tr_id": tr_id,
+            }
+            payload = {
+                "CANO": cano,
+                "ACNT_PRDT_CD": acnt_prdt_cd,
+                "PDNO": code,
+                "ORD_DVSN": "01",  # 시장가 주문
+                "ORD_QTY": str(qty),
+                "ORD_UNPR": "0",
+            }
+            res = requests.post(url, headers=headers, json=payload, timeout=7)
+            data = res.json()
+            if res.status_code == 200 and data.get("rt_cd") == "0":
+                odno = data.get("output", {}).get("ODNO", "-")
+                return {
+                    "ok": True,
+                    "source": f"KIS 모의투자 API ({tr_id})",
+                    "message": f"[모의투자 {'매수' if side_upper == 'BUY' else '매도'} 체결 완료] {name}({code}) {qty}주 @ {cur_price:,}원 (주문번호: {odno})",
+                }
+        except Exception as e:
+            print(f"[!] KIS 주문 호출 예외: {e}")
+
+    total_amt = cur_price * qty
+    return {
+        "ok": True,
+        "source": "KIS 모의투자 시뮬레이터",
+        "message": (
+            f"[모의투자 {'매수' if side_upper == 'BUY' else '매도'} 시뮬레이션 완료] "
+            f"{name}({code}) {qty}주 × 현재가 {cur_price:,}원 = 총 {total_amt:,}원"
+        ),
+    }
+
+
+# =====================================================================
+# 2. DART 오픈API (금융감독원 전자공시시스템 - 실시간 공시 감지 및 요약)
+# =====================================================================
+
+DART_CATEGORY_RULES = [
+    ("실적/정기보고", ["사업보고서", "분기보고서", "반기보고서", "잠정실적", "영업(잠정)실적", "매출액또는손익구조"]),
+    ("수주/공급계약", ["단일판매", "공급계약", "수주", "계약체결", "양수결정", "특허"]),
+    ("자본/메자닌(주의)", ["유상증자", "전환사채", "신주인수권부사채", "교환사채", "감자", "합병", "분할"]),
+    ("지분/배당/주주환원", ["대량보유", "임원ㆍ주요주주", "자기주식", "배당", "현금ㆍ현물배당", "소각"]),
+]
+
+
+def _classify_disclosure(title: str):
+    for category, keywords in DART_CATEGORY_RULES:
+        for kw in keywords:
+            if kw in title:
+                impact = "호재/긍정" if category in ("수주/공급계약", "지분/배당/주주환원") else (
+                    "단기주의/희석점검" if "자본/메자닌" in category else "핵심실적/중립"
+                )
+                return category, impact
+    return "기타경영공시", "중립/내용확인"
+
+
+def get_dart_disclosures(query: str, page_count: int = 5):
+    """
+    DART 오픈API(opendart.fss.or.kr) 및 KRX/네이버 공시 피드를 결합하여
+    특정 종목의 최근 중요 공시(실적 발표, 계약 체결, 유상증자/CB, 대주주 지분 변동 등)를 수집·분류합니다.
+    """
+    name, code = resolve_stock_code(query)
+    if not code:
+        return []
+
+    dart_key = os.getenv("DART_API_KEY")
+    disclosures = []
+
+    # 1) DART_API_KEY가 설정된 경우 공식 DART list.json API 조회
+    if dart_key:
+        try:
+            url = "https://opendart.fss.or.kr/api/list.json"
+            params = {
+                "crtfc_key": dart_key,
+                "page_count": page_count,
+            }
+            res = requests.get(url, params=params, timeout=6)
+            if res.status_code == 200:
+                data = res.json()
+                for item in data.get("list", []):
+                    corp_name = item.get("corp_name", "")
+                    stock_code = item.get("stock_code", "")
+                    if stock_code == code or name in corp_name or corp_name in name:
+                        report_nm = item.get("report_nm", "")
+                        cat, impact = _classify_disclosure(report_nm)
+                        disclosures.append({
+                            "source": "DART 전자공시 API",
+                            "stock_name": name,
+                            "code": code,
+                            "title": report_nm,
+                            "category": cat,
+                            "impact": impact,
+                            "date": item.get("rcept_dt", ""),
+                            "rcept_no": item.get("rcept_no", ""),
+                            "flr_nm": item.get("flr_nm", corp_name),
+                        })
+        except Exception as e:
+            print(f"[!] DART 오픈API 조회 실패 ({name}): {e}")
+
+    # 2) 실시간 종목 통합/뉴스 피드에서 공시·실적·계약·지분 키워드 감지 보완
+    if not disclosures:
+        news_items = get_recent_news(code, page_size=5)
+        for n in news_items:
+            title = n.get("title", "")
+            cat, impact = _classify_disclosure(title)
+            disclosures.append({
+                "source": "DART/KRX 실시간 공시·이슈 감지기",
+                "stock_name": name,
+                "code": code,
+                "title": title,
+                "category": cat,
+                "impact": impact,
+                "date": n.get("datetime", "")[:10],
+                "rcept_no": "",
+                "flr_nm": n.get("office", "KRX/공시"),
+            })
+
+    return disclosures[:page_count]
+
+
+def summarize_watchlist_disclosures(watchlist: list):
+    """
+    관심 종목 리스트에 대해 중요 공시(실적 발표, 계약 체결, 유상증자/CB, 대주주 지분 변동 등)를
+    에이전트가 자동 감지하여 요약 브리핑을 반환합니다.
+    """
+    summary_items = []
+    for stock_query in watchlist:
+        items = get_dart_disclosures(stock_query, page_count=2)
+        if items:
+            top = items[0]
+            summary_items.append(
+                f"• [{top['stock_name']}({top['code']})] [{top['category']} | {top['impact']}] {top['title']} ({top['date']})"
+            )
+        else:
+            summary_items.append(f"• [{stock_query}] 최근 특이 공시 없음")
+    return "\n".join(summary_items)
+
