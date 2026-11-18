@@ -38,26 +38,72 @@ STOCK_DIRECTORY = {
     "한화에어로스페이스": "012450"
 }
 
+def _load_kospi_cache():
+    """data/stocks.json에 저장된 KOSPI 전체 종목 캐시 로드"""
+    try:
+        import json
+        data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "stocks.json")
+        if os.path.exists(data_path):
+            with open(data_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            return data.get("kospi_search") or data.get("kospi_all") or []
+    except Exception:
+        pass
+    return []
+
+
 def resolve_stock_code(query: str):
-    """종목명 또는 코드를 입력받아 정규화된 (종목명, 종목코드) 반환"""
+    """종목명 또는 코드를 입력받아 정규화된 (종목명, 종목코드) 반환 (KOSPI 전 종목 API 연동)"""
     query = query.strip()
+    if not query:
+        return query, None
+
     if query in STOCK_DIRECTORY:
         return query, STOCK_DIRECTORY[query]
-    
+
     # 코드로 들어왔을 때
     for name, code in STOCK_DIRECTORY.items():
         if code == query:
             return name, code
-            
-    # 6자리 숫자 코드인 경우
+
+    # 로컬 KOSPI 전체 종목 캐시(kospi_search) 확인
+    kospi_cache = _load_kospi_cache()
+    for item in kospi_cache:
+        if item.get("name") == query or item.get("code") == query:
+            return item.get("name"), item.get("code")
+
+    # 6자리 숫자 코드인 경우 실시간 시세 API로 종목명 확인
     if len(query) == 6 and query.isdigit():
+        price_data = get_realtime_price(query)
+        if price_data and price_data.get("name"):
+            return price_data["name"], query
         return query, query
-        
-    # 부분 일치 검색
+
+    # 캐시 부분 일치 검색
+    for item in kospi_cache:
+        name = item.get("name", "")
+        if name and (query in name or name in query):
+            return name, item.get("code")
+
+    # 실시간 종목 검색 JSON API 호출 (크롤링 없이 공식 자동완성 API 연동)
+    try:
+        url = "https://ac.stock.naver.com/ac"
+        res = requests.get(url, params={"q": query, "target": "stock"}, headers=HEADERS, timeout=5)
+        if res.status_code == 200:
+            items = res.json().get("items", [])
+            for item in items:
+                if item.get("typeCode") in ("KOSPI", "KOSDAQ") or item.get("nationCode") == "KOR":
+                    return item.get("name", query), item.get("code")
+            if items:
+                return items[0].get("name", query), items[0].get("code")
+    except Exception:
+        pass
+
+    # 기본 사전 부분 일치 검색
     for name, code in STOCK_DIRECTORY.items():
         if query in name or name in query:
             return name, code
-            
+
     return query, None
 
 def get_realtime_price(code: str):
@@ -207,12 +253,16 @@ def analyze_with_gemini(stock_name: str, price_info: dict, finance_info: dict, n
 
 
 def _extract_stock_from_text(text: str):
-    """사용자 질문에서 종목명이나 6자리 종목코드를 추출"""
+    """사용자 질문에서 종목명이나 6자리 종목코드를 추출 (KOSPI 전체 종목 지원)"""
     if not text:
         return None, None
     for name, code in STOCK_DIRECTORY.items():
         if name in text:
             return name, code
+    for item in _load_kospi_cache():
+        name = item.get("name", "")
+        if len(name) >= 2 and name in text:
+            return name, item.get("code")
     import re
     match = re.search(r"\b(\d{6})\b", text)
     if match:

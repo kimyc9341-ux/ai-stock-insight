@@ -713,8 +713,16 @@
         let fullData = {
             indexes: [],
             kospi_all: [],
+            kospi_search: [],
             stocks: {}
         };
+
+        function getKospiSearchPool() {
+            if (fullData.kospi_search && fullData.kospi_search.length > 0) {
+                return fullData.kospi_search;
+            }
+            return fullData.kospi_all || [];
+        }
 
         let favorites = JSON.parse(localStorage.getItem('my_favorite_stocks') || '["삼성전자", "SK하이닉스"]');
 
@@ -840,7 +848,7 @@
                 let tag = item ? item.tag : "관심 종목";
 
                 if (!price) {
-                    const foundInAll = (fullData.kospi_all || []).find(s => s.name === name);
+                    const foundInAll = getKospiSearchPool().find(s => s.name === name);
                     if (foundInAll) {
                         price = {
                             price: foundInAll.price,
@@ -963,9 +971,11 @@
                 document.getElementById('rep-gemini-badge').innerText = analysis.recommendation || "추천 분석";
                 document.getElementById('ai-text').innerText = analysis.analysis || "분석 리포트가 생성되었습니다.";
             } else {
-                const found = (fullData.kospi_all || []).find(s => s.name === name);
+                const searchPool = getKospiSearchPool();
+                const found = searchPool.find(s => s.name === name || s.code === name);
                 if (found) {
                     const colorClass = getColorClass(found.sign, found.rate);
+                    const badgeLabel = found.rank <= 50 ? "KOSPI 50대 종목" : `KOSPI 상장 종목 (#${found.rank}위)`;
                     document.getElementById('rep-name').innerText = found.name;
                     document.getElementById('rep-code').innerText = `${found.code} · KOSPI 시총 ${found.rank}위`;
                     document.getElementById('rep-price').innerText = `${found.price}원`;
@@ -979,14 +989,84 @@
                         <tr><td>시가총액</td><td>${found.marketValue || '-'}억원</td></tr>
                         <tr><td>시총순위</td><td>KOSPI ${found.rank}위</td></tr>
                     `;
-                    document.getElementById('news-list').innerHTML = `<li class="news-item"><strong>${found.name} 실시간 거래 데이터 수신 완료</strong>정상 거래 중입니다.</li>`;
-                    document.getElementById('rep-gemini-badge').innerText = "KOSPI 50대 종목";
-                    document.getElementById('ai-text').innerText = `KOSPI 시가총액 상위 ${found.rank}위 우량 종목입니다. 현재 ${found.price}원(${found.sign} ${found.rate}%)에 거래되고 있습니다.`;
+                    document.getElementById('news-list').innerHTML = `<li class="news-item"><strong>${found.name} 실시간 상세 재무·뉴스 API 조회 중...</strong>잠시만 기다려 주세요.</li>`;
+                    document.getElementById('rep-gemini-badge').innerText = badgeLabel;
+                    document.getElementById('ai-text').innerText = `KOSPI 시가총액 ${found.rank}위(${found.marketValue || '-'}억원) 상장 종목입니다. 현재 ${found.price}원(${found.sign} ${found.change}원 / ${found.rate}%)에 거래되고 있습니다.`;
+
+                    fetchLiveStockDetails(found.code, found.name);
                 }
             }
 
             card.style.display = 'block';
             card.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function fetchJsonViaApi(targetUrl) {
+            try {
+                const directRes = await fetch(targetUrl);
+                if (directRes.ok) return await directRes.json();
+            } catch (_) {}
+            const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl);
+            const res = await fetch(proxyUrl);
+            if (!res.ok) throw new Error('API fetch failed');
+            return await res.json();
+        }
+
+        async function fetchLiveStockDetails(code, stockName) {
+            try {
+                const [finData, newsData] = await Promise.allSettled([
+                    fetchJsonViaApi(`https://m.stock.naver.com/api/stock/${code}/finance/annual`),
+                    fetchJsonViaApi(`https://m.stock.naver.com/api/news/stock/${code}?pageSize=3`)
+                ]);
+
+                if (finData.status === 'fulfilled' && finData.value && finData.value.financeInfo) {
+                    const financeInfo = finData.value.financeInfo;
+                    const trTitles = (financeInfo.trTitleList || []).slice(-2);
+                    const yearKeys = trTitles.map(t => t.key);
+                    const yearLabels = trTitles.map(t => t.title);
+                    const rowList = financeInfo.rowList || [];
+                    const targetMetrics = ['매출액', '영업이익', '당기순이익', '영업이익률', 'ROE', 'PER', 'PBR'];
+                    const rowsHtml = rowList
+                        .filter(r => targetMetrics.includes(r.title))
+                        .map(r => {
+                            const cols = r.columns || {};
+                            const vals = yearKeys.map(k => (cols[k] && cols[k].value) ? cols[k].value : '-');
+                            return `<tr><td>${r.title}</td>${vals.map(v => `<td>${v}</td>`).join('')}</tr>`;
+                        })
+                        .join('');
+                    if (rowsHtml) {
+                        document.getElementById('finance-thead-tr').innerHTML = `<th>구분</th>` + yearLabels.map(y => `<th>${y}</th>`).join('');
+                        document.getElementById('finance-tbody').innerHTML = rowsHtml;
+                    }
+                }
+
+                if (newsData.status === 'fulfilled' && Array.isArray(newsData.value)) {
+                    const items = [];
+                    newsData.value.forEach(group => {
+                        (group.items || []).forEach(sub => {
+                            items.push({
+                                title: sub.titleFull || sub.title || '',
+                                office: sub.officeName || '',
+                                body: sub.body || ''
+                            });
+                        });
+                    });
+                    if (items.length > 0) {
+                        document.getElementById('news-list').innerHTML = items.slice(0, 3).map(n => `
+                            <li class="news-item">
+                                <strong>[${n.office}] ${n.title}</strong>
+                                ${n.body ? n.body.slice(0, 85) + '...' : ''}
+                            </li>
+                        `).join('');
+                    } else {
+                        document.getElementById('news-list').innerHTML = `<li class="news-item"><strong>${stockName} 실시간 거래 데이터 수신 완료</strong>정상 거래 중입니다.</li>`;
+                    }
+                } else {
+                    document.getElementById('news-list').innerHTML = `<li class="news-item"><strong>${stockName} 실시간 거래 데이터 수신 완료</strong>정상 거래 중입니다.</li>`;
+                }
+            } catch (_) {
+                document.getElementById('news-list').innerHTML = `<li class="news-item"><strong>${stockName} 실시간 거래 데이터 수신 완료</strong>정상 거래 중입니다.</li>`;
+            }
         }
 
         function closeReport() {
@@ -997,16 +1077,24 @@
             const query = document.getElementById('search-input').value.trim();
             if (!query) return;
 
-            let matched = Object.keys(fullData.stocks || {}).find(k => k.includes(query) || (fullData.stocks[k].code === query));
+            const searchPool = getKospiSearchPool();
+            let matched = Object.keys(fullData.stocks || {}).find(k => k === query || (fullData.stocks[k].code === query));
             if (!matched) {
-                const inAll = (fullData.kospi_all || []).find(s => s.name.includes(query) || s.code === query);
-                if (inAll) matched = inAll.name;
+                const exactInAll = searchPool.find(s => s.name === query || s.code === query);
+                if (exactInAll) matched = exactInAll.name;
+            }
+            if (!matched) {
+                matched = Object.keys(fullData.stocks || {}).find(k => k.includes(query));
+            }
+            if (!matched) {
+                const partialInAll = searchPool.find(s => s.name.includes(query));
+                if (partialInAll) matched = partialInAll.name;
             }
 
             if (matched) {
                 selectStock(matched);
             } else {
-                alert(`'${query}' 종목을 찾을 수 없습니다.`);
+                alert(`'${query}' 종목을 KOSPI 상장 종목에서 찾을 수 없습니다.`);
             }
         });
 
@@ -1070,7 +1158,8 @@
                 return lines.join('\n');
             }
 
-            const inKospi = kospiAll.find(s => q.includes(s.name) || q.includes(s.code));
+            const kospiPool = getKospiSearchPool();
+            const inKospi = kospiPool.find(s => q.includes(s.name) || q.includes(s.code));
             if (inKospi) {
                 return `📈 [${inKospi.name} (${inKospi.code})]\n• KOSPI 시가총액 ${inKospi.rank}위 (${inKospi.marketValue || '-'}억원)\n• 현재가: ${inKospi.price}원 (${inKospi.sign} ${inKospi.change}원 / ${inKospi.rate}%)`;
             }
