@@ -1045,6 +1045,10 @@
             line-height: 1.5;
             border-left: 2px solid #38bdf8;
         }
+        .diagnosis-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr)); gap:8px; padding:0; list-style:none; }
+        .diagnosis-cards li { border:1px solid #334155; border-radius:8px; padding:10px; overflow-wrap:anywhere; }
+        .diagnosis-controls { display:grid; gap:8px; max-width:420px; }
+        .diagnosis-controls select, .diagnosis-controls input { width:100%; min-width:0; margin:0; }
     </style>
 </head>
 <body>
@@ -1084,7 +1088,7 @@
             <span>›</span>
         </button>
         <button type="button" class="drawer-tab-btn" id="tab-er" onclick="switchTab('er')">
-            <span>🚨 내 계좌 응급실 (물타기 계산기)</span>
+            <span>🚨 내 계좌 응급실</span>
             <span>›</span>
         </button>
         <button type="button" class="drawer-tab-btn" id="tab-radar" onclick="switchTab('radar')">
@@ -1111,6 +1115,8 @@
                     <button type="button" class="user-small-btn" style="padding:3px 10px; font-size:12px; margin-left:6px;" onclick="refreshTop50FromNaverRealtime(false)">🔄 즉시 새로고침</button>
                 </div>
             </header>
+
+            <button type="button" class="search-btn" onclick="switchTab('er')" style="margin-bottom:14px;">내 계좌 진단하기</button>
 
             <!-- 1. 주요 증시 4대 지표 전광판 -->
             <div id="index-grid" class="index-grid"></div>
@@ -1244,6 +1250,25 @@
 
         <!-- 4-5. 🚨 내 계좌 응급실 (물타기 계산기 & 평단가 탈출 시뮬레이터) 뷰 -->
         <div id="view-er" style="display:none;">
+            <section id="account-diagnosis" class="er-calc-container" aria-labelledby="diagnosis-title">
+                <h2 id="diagnosis-title">모의계좌 진단</h2>
+                <p id="diagnosis-summary"></p>
+                <p>보유 비중은 현금을 포함한 총 평가액 기준이며, 평가손익은 매수원가 대비 차이입니다.</p>
+                <ul id="diagnosis-holdings" class="diagnosis-cards" aria-label="계좌 구성"></ul>
+                <p id="diagnosis-empty" hidden>보유 종목이 없습니다. 모의매수 후 하락 시나리오를 실험할 수 있습니다.</p>
+                <button type="button" class="user-small-btn" onclick="switchTab('kis-dart')">모의계좌 열기</button>
+                <div id="diagnosis-scenario" style="margin-top:18px;" hidden>
+                    <h3>한 종목 하락 시나리오</h3>
+                    <p>선택한 종목만 하락하고 현금과 다른 종목의 가격은 그대로라고 가정합니다.</p>
+                    <div class="diagnosis-controls">
+                        <label for="diagnosis-stock">종목 선택</label>
+                        <select id="diagnosis-stock" class="er-input-field" onchange="updateDiagnosisScenario()"></select>
+                        <label for="diagnosis-drop">가정 하락률</label>
+                        <input id="diagnosis-drop" type="range" min="0" max="100" value="10" step="1" oninput="updateDiagnosisScenario()">
+                        <output id="diagnosis-result" for="diagnosis-stock diagnosis-drop" aria-live="polite"></output>
+                    </div>
+                </div>
+            </section>
             <div class="er-calc-container">
                 <div class="er-calc-title">
                     <span>🚨</span>
@@ -1406,6 +1431,7 @@
                 if (!res.ok) throw new Error("Fetch failed");
                 fullData = await res.json();
                 
+                if (document.getElementById('view-er').style.display === 'block') renderAccountDiagnosis();
                 document.getElementById('last-updated').innerText = fullData.updated_at || "실시간 수신";
                 renderIndexes();
                 renderLeadStocks6();
@@ -1800,6 +1826,7 @@
                     renderFavorites();
                 }
 
+                if (document.getElementById('view-er').style.display === 'block') renderAccountDiagnosis();
                 // 상세 리포트 팝업이 열려 있으면 현재가·등락률 실시간 갱신
                 const repCard = document.getElementById('report-card');
                 if (repCard && repCard.style.display === 'block' && currentReportStockName) {
@@ -1937,6 +1964,7 @@
 
         function switchUserProfile(userName) {
             currentUser = userName;
+            if (document.getElementById('view-er').style.display === 'block') renderAccountDiagnosis();
             localStorage.setItem('stock_agent_current_user', currentUser);
             favorites = loadUserFavorites(currentUser);
             updateFavCount();
@@ -2136,7 +2164,7 @@
                 'risk': '⚠️ Gemini 추천 위험주 (6종목)',
                 'all': '📋 KOSPI 전체 종목 (시총 Top 50)',
                 'fav': `⭐ 내 관심 종목 (${favorites.length}종목)`,
-                'er': '🚨 내 계좌 응급실 (물타기 & 탈출 시뮬레이터)',
+                'er': '🚨 내 계좌 응급실',
                 'radar': '⚡ 장중 특징주 & 거래대금 급증 레이더',
                 'kis-dart': '🏦 한국투자증권(KIS) 모의투자 & DART 전자공시'
             };
@@ -2164,6 +2192,7 @@
                 if (tabEr) tabEr.classList.add('active');
                 if (viewEr) {
                     viewEr.style.display = 'block';
+                    renderAccountDiagnosis();
                     runEmergencyRoomCalculation();
                 }
             } else if (tab === 'radar') {
@@ -2427,7 +2456,7 @@
             localStorage.setItem(getKisPaperAccountKey(), JSON.stringify(acc));
         }
 
-        function getLiveNumericPrice(nameOrCode) {
+        function getLiveNumericPrice(nameOrCode, exact = false) {
             const qNorm = norm(nameOrCode);
             const leadKey = Object.keys(fullData.stocks || {}).find(k => norm(k) === qNorm || fullData.stocks[k].code === nameOrCode);
             if (leadKey && fullData.stocks[leadKey].price) {
@@ -2435,12 +2464,77 @@
                 if (p > 0) return { name: leadKey, code: fullData.stocks[leadKey].code, price: p };
             }
             const found = getKospiSearchPool().find(s => norm(s.name) === qNorm || s.code === nameOrCode)
-                || getKospiSearchPool().find(s => norm(s.name).includes(qNorm));
+                || (!exact && getKospiSearchPool().find(s => norm(s.name).includes(qNorm)));
             if (found) {
                 const p = parseInt(String(found.price || '0').replace(/,/g, ''), 10);
                 return { name: found.name, code: found.code, price: p };
             }
             return null;
+        }
+
+        function renderAccountDiagnosis() {
+            const account = loadKisPaperAccount();
+            const cash = Math.max(0, Number(account?.cash) || 0);
+            const holdings = Object.entries(account?.holdings || {}).flatMap(([name, holding]) => {
+                const qty = Number(holding?.qty);
+                const avgPrice = Number(holding?.avgPrice);
+                if (!Number.isFinite(qty) || qty <= 0 || !Number.isFinite(avgPrice) || avgPrice <= 0) return [];
+                const quote = getLiveNumericPrice(holding.code || name, true);
+                const price = quote?.price || avgPrice;
+                return [{ name, value: price * qty, profit: (price - avgPrice) * qty, estimated: !quote }];
+            }).sort((a, b) => b.value - a.value);
+
+            const total = cash + holdings.reduce((sum, holding) => sum + holding.value, 0);
+            const profit = holdings.reduce((sum, holding) => sum + holding.profit, 0);
+            const won = value => `${Math.round(value).toLocaleString('ko-KR')}원`;
+            const signedWon = value => `${value > 0 ? '+' : ''}${won(value)}`;
+            const weight = value => total > 0 ? (value / total * 100).toFixed(2) : '0.00';
+            document.getElementById('diagnosis-summary').textContent =
+                `${currentUser} · 총 평가액 ${won(total)} · 보유 종목 평가손익 ${signedWon(profit)}`;
+
+            const list = document.getElementById('diagnosis-holdings');
+            const addCard = (label, detail) => {
+                const card = document.createElement('li');
+                const heading = document.createElement('strong');
+                heading.textContent = label;
+                card.append(heading, document.createElement('br'), detail);
+                list.append(card);
+            };
+            list.replaceChildren();
+            addCard('현금', `${weight(cash)}% · ${won(cash)}`);
+            holdings.forEach(holding => {
+                const basis = holding.estimated ? ' · 시세 없음, 매수평균가 적용' : '';
+                addCard(holding.name,
+                    `비중 ${weight(holding.value)}% · 평가액 ${won(holding.value)} · 평가손익 ${signedWon(holding.profit)}${basis}`);
+            });
+
+            const select = document.getElementById('diagnosis-stock');
+            const selected = select.value;
+            select.replaceChildren(...holdings.map(holding => {
+                const option = new Option(holding.name, holding.name);
+                option.dataset.value = holding.value;
+                return option;
+            }));
+            if (holdings.some(holding => holding.name === selected)) select.value = selected;
+            select.dataset.total = total;
+            document.getElementById('diagnosis-empty').hidden = holdings.length > 0;
+            document.getElementById('diagnosis-scenario').hidden = holdings.length === 0;
+            updateDiagnosisScenario();
+        }
+
+        function updateDiagnosisScenario() {
+            const select = document.getElementById('diagnosis-stock');
+            const result = document.getElementById('diagnosis-result');
+            if (!select.selectedOptions.length) {
+                result.textContent = '';
+                return;
+            }
+            const total = Number(select.dataset.total);
+            const drop = Number(document.getElementById('diagnosis-drop').value);
+            const loss = Number(select.selectedOptions[0].dataset.value) * drop / 100;
+            const impact = total > 0 ? loss / total * 100 : 0;
+            const remaining = Math.round(total - loss).toLocaleString('ko-KR');
+            result.textContent = `${select.value} ${drop}% 하락 → 계좌 ${impact.toFixed(2)}% 감소 · 예상 평가액 ${remaining}원`;
         }
 
         function executeKisPaperOrder(stockQuery, qtyInput, side) {
