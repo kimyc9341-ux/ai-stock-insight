@@ -823,7 +823,8 @@
                 </p>
                 <div class="live-status-bar">
                     <span class="live-dot"></span>
-                    <span>실시간 데이터 자동 갱신 중 (<span id="last-updated">수신 중...</span>)</span>
+                    <span>네이버증권 실시간 자동 동기화 중 (<span id="last-updated">수신 중...</span>)</span>
+                    <button type="button" class="user-small-btn" style="padding:3px 10px; font-size:12px; margin-left:6px;" onclick="refreshTop50FromNaverRealtime(false)">🔄 즉시 새로고침</button>
                 </div>
             </header>
 
@@ -841,8 +842,12 @@
 
         <!-- 5개 메뉴 선택 시 상단에 표시되는 와이드 화면 헤더 -->
         <div id="active-menu-header" class="active-menu-header">
-            <div id="active-menu-title" class="active-menu-title">메뉴 화면</div>
-            <div style="display:flex; gap:8px;">
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                <div id="active-menu-title" class="active-menu-title">메뉴 화면</div>
+                <span style="font-size:13px; color:#22c55e;">● 네이버증권 실시간 연동 (<span id="menu-last-updated">수신 중...</span>)</span>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button type="button" class="user-small-btn" style="font-size:14px; padding:8px 14px;" onclick="refreshTop50FromNaverRealtime(false)">🔄 실시간 새로고침</button>
                 <button type="button" class="user-small-btn" style="font-size:14px; padding:8px 14px;" onclick="toggleSideMenu()">☰ 다른 메뉴 선택</button>
                 <button type="button" class="user-small-btn" style="font-size:14px; padding:8px 14px; background:#2563eb; color:#fff;" onclick="switchTab('home')">🏠 홈 (지수·검색)으로</button>
             </div>
@@ -1001,6 +1006,8 @@
                 renderKospiTop50();
                 renderFavorites();
                 updateFavCount();
+                setTimeout(() => refreshTop50FromNaverRealtime(true), 100);
+                setInterval(() => refreshTop50FromNaverRealtime(true), 10000);
             } catch (err) {
                 console.error("데이터 로드 실패:", err);
                 document.getElementById('last-updated').innerText = "오프라인 모드";
@@ -1201,7 +1208,6 @@
 
         function fetchNaverRealtimeJsonp(codes) {
             return new Promise((resolve, reject) => {
-                if (!codes || codes.length === 0) return resolve([]);
                 const cbName = '__naverRtCb_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
                 const script = document.createElement('script');
                 const timer = setTimeout(() => {
@@ -1217,8 +1223,14 @@
 
                 window[cbName] = (data) => {
                     cleanup();
-                    const datas = data?.result?.areas?.[0]?.datas || [];
-                    resolve(datas);
+                    const areas = data?.result?.areas || [];
+                    let itemDatas = [];
+                    let indexDatas = [];
+                    areas.forEach(a => {
+                        if (a.name === 'SERVICE_ITEM') itemDatas = a.datas || [];
+                        if (a.name === 'SERVICE_INDEX') indexDatas = a.datas || [];
+                    });
+                    resolve({ itemDatas, indexDatas });
                 };
 
                 script.onerror = () => {
@@ -1226,65 +1238,180 @@
                     reject(new Error('JSONP script error'));
                 };
 
-                script.src = `https://polling.finance.naver.com/api/realtime?query=SERVICE_ITEM:${codes.join(',')}&_callback=${cbName}&_t=${Date.now()}`;
+                const itemPart = (codes && codes.length > 0) ? `|SERVICE_ITEM:${codes.join(',')}` : '';
+                script.src = `https://polling.finance.naver.com/api/realtime?query=SERVICE_INDEX:KOSPI,KOSDAQ,KPI200${itemPart}&_callback=${cbName}&_t=${Date.now()}`;
                 document.head.appendChild(script);
             });
         }
 
-        async function refreshTop50FromNaverRealtime() {
+        async function refreshTop50FromNaverRealtime(isSilent) {
             const statusEl = document.getElementById('top50-live-status');
             const btnEl = document.getElementById('top50-refresh-btn');
-            if (statusEl) statusEl.innerText = '네이버증권 실시간 수신 중...';
-            if (btnEl) {
-                btnEl.disabled = true;
-                btnEl.innerText = '⏳ 수신 중...';
+            if (!isSilent) {
+                if (statusEl) statusEl.innerText = '네이버증권 실시간 수신 중...';
+                if (btnEl) {
+                    btnEl.disabled = true;
+                    btnEl.innerText = '⏳ 수신 중...';
+                }
             }
 
             try {
                 if (initPromise) {
                     try { await initPromise; } catch (_) {}
                 }
-                const top50List = (fullData.kospi_all || []).slice(0, 50);
-                const codes = top50List.map(s => s.code).filter(Boolean);
-                if (codes.length > 0) {
-                    const datas = await fetchNaverRealtimeJsonp(codes);
-                    const rtMap = {};
-                    datas.forEach(d => { if (d.cd) rtMap[d.cd] = d; });
 
-                    top50List.forEach((item, idx) => {
-                        const d = rtMap[item.code];
-                        if (!d) return;
+                const codeSet = new Set();
+                const pool = getKospiSearchPool();
+                (fullData.kospi_all || []).slice(0, 50).forEach(s => { if (s.code) codeSet.add(s.code); });
+                Object.values(fullData.stocks || {}).forEach(s => { if (s.code) codeSet.add(s.code); });
+                Object.values(getRiskStocksMap() || {}).forEach(s => { if (s.code) codeSet.add(s.code); });
+                favorites.forEach(favName => {
+                    const fNorm = norm(favName);
+                    const found = pool.find(s => norm(s.name) === fNorm || s.code === favName) || customStockCache[favName];
+                    if (found && found.code) codeSet.add(found.code);
+                });
+                if (currentReportStockName) {
+                    const rNorm = norm(currentReportStockName);
+                    const foundRep = pool.find(s => norm(s.name) === rNorm || s.code === currentReportStockName);
+                    if (foundRep && foundRep.code) codeSet.add(foundRep.code);
+                }
+
+                const codes = Array.from(codeSet);
+                const { itemDatas, indexDatas } = await fetchNaverRealtimeJsonp(codes);
+
+                // 1) 홈 화면 4대 지수 실시간 반영
+                if (indexDatas && indexDatas.length > 0 && Array.isArray(fullData.indexes)) {
+                    const idxMap = {};
+                    indexDatas.forEach(d => { if (d.cd) idxMap[d.cd] = d; });
+                    const keyMap = { '코스피': 'KOSPI', '코스닥': 'KOSDAQ', '코스피 200': 'KPI200' };
+                    fullData.indexes.forEach(idxObj => {
+                        const codeKey = keyMap[idxObj.name];
+                        const d = codeKey ? idxMap[codeKey] : null;
+                        if (d && d.nv != null) {
+                            const rf = String(d.rf || '');
+                            const sign = (rf === '1' || rf === '2') ? '▲' : ((rf === '4' || rf === '5') ? '▼' : '-');
+                            const rawRate = d.cr != null ? Number(d.cr) : 0;
+                            const signedRate = (rf === '4' || rf === '5') ? (-Math.abs(rawRate)).toFixed(2) : Math.abs(rawRate).toFixed(2);
+                            idxObj.price = (Number(d.nv) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                            idxObj.change = (Math.abs(Number(d.cv || 0)) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                            idxObj.rate = signedRate;
+                            idxObj.sign = sign;
+                        }
+                    });
+                    // 코스피 200 선물도 코스피 200 실시간 등락과 동기화 보정
+                    const kpi200 = idxMap['KPI200'];
+                    const futObj = fullData.indexes.find(x => x.name.includes('선물'));
+                    if (kpi200 && futObj && kpi200.nv != null) {
+                        const rf = String(kpi200.rf || '');
+                        futObj.sign = (rf === '1' || rf === '2') ? '▲' : ((rf === '4' || rf === '5') ? '▼' : '-');
+                        const rawRate = kpi200.cr != null ? Number(kpi200.cr) : 0;
+                        futObj.rate = (rf === '4' || rf === '5') ? (-Math.abs(rawRate)).toFixed(2) : Math.abs(rawRate).toFixed(2);
+                    }
+                    renderIndexes();
+                }
+
+                // 2) 전 종목(Top 50, 추천 주도주, 추천 위험주, 내 관심종목, 검색 풀) 실시간 반영
+                const rtMap = {};
+                (itemDatas || []).forEach(d => { if (d.cd) rtMap[d.cd] = d; });
+
+                function applyRtToStockItem(item) {
+                    const d = rtMap[item.code];
+                    if (!d) return false;
+                    const rf = String(d.rf || '');
+                    const sign = (rf === '1' || rf === '2') ? '▲' : ((rf === '4' || rf === '5') ? '▼' : '-');
+                    const rawRate = d.cr != null ? Number(d.cr) : parseFloat(item.rate || '0');
+                    const signedRate = (rf === '4' || rf === '5') ? (-Math.abs(rawRate)).toFixed(2) : Math.abs(rawRate).toFixed(2);
+                    const nv = d.nv != null ? Number(d.nv) : null;
+                    const listedShares = d.countOfListedStock ? Number(d.countOfListedStock) : 0;
+
+                    if (nv != null) item.price = nv.toLocaleString();
+                    if (d.cv != null) item.change = Math.abs(Number(d.cv)).toLocaleString();
+                    if (!isNaN(rawRate)) item.rate = signedRate;
+                    item.sign = sign;
+                    if (d.aq != null) item.volume = Number(d.aq).toLocaleString();
+                    if (d.aa != null && Number(d.aa) > 0) {
+                        item.tradingValue = formatWonToHangeul(d.aa);
+                    }
+                    if (d.hv != null) item.high = Number(d.hv).toLocaleString();
+                    if (d.lv != null) item.low = Number(d.lv).toLocaleString();
+                    if (nv != null && listedShares > 0) {
+                        const mktWon = nv * listedShares;
+                        item.marketValue = Math.round(mktWon / 100000000).toLocaleString();
+                        item.marketValueHangeul = formatWonToHangeul(mktWon);
+                    }
+                    return true;
+                }
+
+                (fullData.kospi_all || []).forEach(item => applyRtToStockItem(item));
+                if (fullData.kospi_search && fullData.kospi_search !== fullData.kospi_all) {
+                    fullData.kospi_search.forEach(item => applyRtToStockItem(item));
+                }
+                Object.values(customStockCache || {}).forEach(item => applyRtToStockItem(item));
+
+                // 추천 주도주 6종목 실시간 업데이트
+                Object.keys(fullData.stocks || {}).forEach(name => {
+                    const st = fullData.stocks[name];
+                    const d = rtMap[st.code];
+                    if (d && st.price) {
                         const rf = String(d.rf || '');
                         const sign = (rf === '1' || rf === '2') ? '▲' : ((rf === '4' || rf === '5') ? '▼' : '-');
-                        const rawRate = d.cr != null ? Number(d.cr) : parseFloat(item.rate || '0');
+                        const rawRate = d.cr != null ? Number(d.cr) : parseFloat(st.price.change_rate || '0');
                         const signedRate = (rf === '4' || rf === '5') ? (-Math.abs(rawRate)).toFixed(2) : Math.abs(rawRate).toFixed(2);
-                        const nv = d.nv != null ? Number(d.nv) : null;
-                        const listedShares = d.countOfListedStock ? Number(d.countOfListedStock) : 0;
+                        if (d.nv != null) st.price.price = Number(d.nv).toLocaleString();
+                        if (d.cv != null) st.price.change_val = Math.abs(Number(d.cv)).toLocaleString();
+                        st.price.change_rate = signedRate;
+                        st.price.sign = sign;
+                    }
+                });
 
-                        if (nv != null) item.price = nv.toLocaleString();
-                        if (d.cv != null) item.change = Math.abs(Number(d.cv)).toLocaleString();
-                        if (!isNaN(rawRate)) item.rate = signedRate;
-                        item.sign = sign;
-                        if (d.aq != null) item.volume = Number(d.aq).toLocaleString();
-                        if (d.aa != null && Number(d.aa) > 0) {
-                            item.tradingValue = formatWonToHangeul(d.aa);
-                        }
-                        if (d.hv != null) item.high = Number(d.hv).toLocaleString();
-                        if (d.lv != null) item.low = Number(d.lv).toLocaleString();
-                        if (nv != null && listedShares > 0) {
-                            const mktWon = nv * listedShares;
-                            item.marketValue = Math.round(mktWon / 100000000).toLocaleString();
-                            item.marketValueHangeul = formatWonToHangeul(mktWon);
-                        }
-                        fullData.kospi_all[idx] = item;
-                    });
-
-                    renderKospiTop50();
-                    const nowTimeStr = new Date().toLocaleTimeString('ko-KR');
-                    if (statusEl) statusEl.innerText = `네이버증권 실시간 직결 갱신 완료 (${nowTimeStr})`;
-                    const lastUpdEl = document.getElementById('last-updated');
-                    if (lastUpdEl) lastUpdEl.innerText = nowTimeStr + ' 실시간';
+                // 추천 위험주 6종목 실시간 업데이트
+                if (!fullData.risk_stocks) {
+                    fullData.risk_stocks = getRiskStocksMap();
                 }
+                Object.keys(fullData.risk_stocks || {}).forEach(name => {
+                    const st = fullData.risk_stocks[name];
+                    const d = rtMap[st.code];
+                    if (d && st.price) {
+                        const rf = String(d.rf || '');
+                        const sign = (rf === '1' || rf === '2') ? '▲' : ((rf === '4' || rf === '5') ? '▼' : '-');
+                        const rawRate = d.cr != null ? Number(d.cr) : parseFloat(st.price.change_rate || '0');
+                        const signedRate = (rf === '4' || rf === '5') ? (-Math.abs(rawRate)).toFixed(2) : Math.abs(rawRate).toFixed(2);
+                        if (d.nv != null) st.price.price = Number(d.nv).toLocaleString();
+                        if (d.cv != null) st.price.change_val = Math.abs(Number(d.cv)).toLocaleString();
+                        st.price.change_rate = signedRate;
+                        st.price.sign = sign;
+                    }
+                });
+
+                renderLeadStocks6();
+                renderRiskStocks6();
+                renderKospiTop50();
+
+                // 내 관심 종목 탭 입력창에 포커스가 없을 때만 재렌더링
+                const activeEl = document.activeElement;
+                if (!activeEl || activeEl.id !== 'fav-quick-input') {
+                    renderFavorites();
+                }
+
+                // 상세 리포트 팝업이 열려 있으면 현재가·등락률 실시간 갱신
+                const repCard = document.getElementById('report-card');
+                if (repCard && repCard.style.display === 'block' && currentReportStockName) {
+                    const found = pool.find(s => norm(s.name) === norm(currentReportStockName) || s.code === currentReportStockName);
+                    if (found) {
+                        const colorClass = getColorClass(found.sign, found.rate);
+                        document.getElementById('rep-price').innerText = `${found.price}원`;
+                        const repChange = document.getElementById('rep-change');
+                        repChange.className = `report-change ${colorClass}`;
+                        repChange.innerText = `${found.sign} ${found.change}원 (${found.rate}%)`;
+                    }
+                }
+
+                const nowTimeStr = new Date().toLocaleTimeString('ko-KR');
+                if (statusEl) statusEl.innerText = `네이버증권 실시간 직결 갱신 완료 (${nowTimeStr})`;
+                const lastUpdEl = document.getElementById('last-updated');
+                if (lastUpdEl) lastUpdEl.innerText = `${nowTimeStr} 실시간 반영`;
+                const menuUpdEl = document.getElementById('menu-last-updated');
+                if (menuUpdEl) menuUpdEl.innerText = `${nowTimeStr} 실시간 반영`;
             } catch (err) {
                 console.error('실시간 갱신 오류:', err);
                 if (statusEl) statusEl.innerText = '실시간 데이터 연동 완료 (' + (fullData.updated_at || '') + ')';
@@ -1603,21 +1730,25 @@
             if (tab === 'lead') {
                 document.getElementById('tab-lead').classList.add('active');
                 document.getElementById('view-lead').style.display = 'grid';
+                refreshTop50FromNaverRealtime(true);
             } else if (tab === 'risk') {
                 document.getElementById('tab-risk').classList.add('active');
                 document.getElementById('view-risk').style.display = 'grid';
+                refreshTop50FromNaverRealtime(true);
             } else if (tab === 'all') {
                 document.getElementById('tab-all').classList.add('active');
                 document.getElementById('view-all').style.display = 'block';
-                refreshTop50FromNaverRealtime();
+                refreshTop50FromNaverRealtime(false);
             } else if (tab === 'fav') {
                 document.getElementById('tab-fav').classList.add('active');
                 document.getElementById('view-fav').style.display = 'grid';
+                refreshTop50FromNaverRealtime(true);
             } else if (tab === 'kis-dart') {
                 if (tabKisDart) tabKisDart.classList.add('active');
                 if (viewKisDart) {
                     viewKisDart.style.display = 'block';
                     renderKisDartView();
+                    refreshTop50FromNaverRealtime(true);
                 }
             }
             window.scrollTo({ top: 0, behavior: 'smooth' });
