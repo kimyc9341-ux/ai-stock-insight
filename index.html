@@ -2370,7 +2370,7 @@ window.UserActivityTracker = UserActivityTracker;
                     </div>
                     <div class="er-input-group">
                         <label>현재 내 평균 매수가 (원)</label>
-                        <input type="number" id="er-buy-price" class="er-input-field" placeholder="예: 220000" value="220000">
+                        <input type="text" inputmode="numeric" id="er-buy-price" class="er-input-field" placeholder="예: 220,000" value="220,000" oninput="formatWonInput(this)">
                     </div>
                     <div class="er-input-group">
                         <label>현재 보유 수량 (주)</label>
@@ -2378,7 +2378,7 @@ window.UserActivityTracker = UserActivityTracker;
                     </div>
                     <div class="er-input-group">
                         <label>추가 투입 가능 예수금 (원)</label>
-                        <input type="number" id="er-add-cash" class="er-input-field" placeholder="예: 5000000" value="5000000">
+                        <input type="text" inputmode="numeric" id="er-add-cash" class="er-input-field" placeholder="예: 5,000,000" value="5,000,000" oninput="formatWonInput(this)">
                     </div>
                 </div>
 
@@ -4518,19 +4518,32 @@ window.UserActivityTracker = UserActivityTracker;
         // ==========================================
         // 1번 기능: 🚨 내 계좌 응급실 & 물타기 시뮬레이터 엔진
         // ==========================================
+        function formatWonInput(el) {
+            if (!el) return;
+            const digits = String(el.value || '').replace(/[^0-9]/g, '');
+            el.value = digits ? Number(digits).toLocaleString('ko-KR') : '';
+        }
+
+        function parseWonInput(id) {
+            const el = document.getElementById(id);
+            if (!el) return 0;
+            const digits = String(el.value || '').replace(/[^0-9]/g, '');
+            return digits ? parseInt(digits, 10) : 0;
+        }
+
         function resetErFields() {
             document.getElementById('er-stock-input').value = '삼성전자';
-            document.getElementById('er-buy-price').value = '220000';
+            document.getElementById('er-buy-price').value = '220,000';
             document.getElementById('er-hold-qty').value = '50';
-            document.getElementById('er-add-cash').value = '5000000';
+            document.getElementById('er-add-cash').value = '5,000,000';
             document.getElementById('er-result-card').style.display = 'none';
         }
 
         function runEmergencyRoomCalculation() {
             const stockNameOrCode = document.getElementById('er-stock-input').value.trim();
-            const buyPrice = parseFloat(document.getElementById('er-buy-price').value) || 0;
+            const buyPrice = parseWonInput('er-buy-price');
             const holdQty = parseInt(document.getElementById('er-hold-qty').value, 10) || 0;
-            const addCash = parseFloat(document.getElementById('er-add-cash').value) || 0;
+            const addCash = parseWonInput('er-add-cash');
 
             if (!stockNameOrCode || buyPrice <= 0 || holdQty <= 0) {
                 alert('종목명과 평균 매수가, 보유 수량을 올바르게 입력해 주세요.');
