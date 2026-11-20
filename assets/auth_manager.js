@@ -495,7 +495,8 @@ const AuthManager = (() => {
         updateMemberStatus,
         toggleExternalQuery,
         toggleApiKey,
-        resolvePublicIp
+        resolvePublicIp,
+        getDeviceFingerprint
     };
 })();
 

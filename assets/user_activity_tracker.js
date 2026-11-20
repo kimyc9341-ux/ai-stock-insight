@@ -3,13 +3,19 @@
  */
 
 const UserActivityTracker = (() => {
+    function getSessionContext() {
+        const session = (window.AuthManager && typeof AuthManager.getCurrentSession === 'function' && AuthManager.getCurrentSession()) || null;
+        const username = (session && session.user && session.user.username) ? session.user.username : 'GUEST_USER';
+        const fp = (window.AuthManager && typeof AuthManager.getDeviceFingerprint === 'function')
+            ? AuthManager.getDeviceFingerprint()
+            : { browser: 'Chrome', os: 'PC', deviceType: 'Desktop' };
+        const ipDisplay = (session && session.ip) ? session.ip : '127.0.0.1 (Local)';
+        return { username, fp, ipDisplay };
+    }
+
     function logStockSearch(stockName, stockCode, source = 'SEARCH_BAR') {
         try {
-            const session = (window.AuthManager && AuthManager.getCurrentSession()) || null;
-            const username = session ? session.user.username : 'GUEST_USER';
-            const fp = (window.AuthManager && AuthManager.getDeviceFingerprint()) || { browser: 'Chrome', os: 'PC', deviceType: 'Desktop' };
-            const ipDisplay = (session && session.ip) ? session.ip : '127.0.0.1 (Local)';
-
+            const { username, fp, ipDisplay } = getSessionContext();
             const actionText = `SEARCH_STOCK: [${stockName}] (${stockCode || '-'}) via ${source}`;
             recordDirectAuditLog(username, fp, ipDisplay, actionText, { stockName, stockCode, type: 'SEARCH' });
         } catch (e) {
@@ -19,12 +25,7 @@ const UserActivityTracker = (() => {
 
     function logPaperTrading(stockName, stockCode, side, qty, price, totalAmt) {
         try {
-            const session = (window.AuthManager && AuthManager.getCurrentSession()) || null;
-            const username = session ? session.user.username : 'GUEST_USER';
-            const fp = (window.AuthManager && AuthManager.getDeviceFingerprint()) || { browser: 'Chrome', os: 'PC', deviceType: 'Desktop' };
-            const ipDisplay = (session && session.ip) ? session.ip : '127.0.0.1 (Local)';
-
-            const sideKo = side === 'BUY' ? '모의매수' : '모의매도';
+            const { username, fp, ipDisplay } = getSessionContext();
             const actionText = `TRADE_${side}: [${stockName}] ${qty}주 @ ${Number(price).toLocaleString()}원 (총 ${Number(totalAmt).toLocaleString()}원)`;
             recordDirectAuditLog(username, fp, ipDisplay, actionText, { stockName, stockCode, side, qty, price, totalAmt, type: 'TRADE' });
         } catch (e) {
@@ -34,11 +35,7 @@ const UserActivityTracker = (() => {
 
     function logWaterCalculation(stockName, currentAvg, qty, targetAvg, extraQty, budget) {
         try {
-            const session = (window.AuthManager && AuthManager.getCurrentSession()) || null;
-            const username = session ? session.user.username : 'GUEST_USER';
-            const fp = (window.AuthManager && AuthManager.getDeviceFingerprint()) || { browser: 'Chrome', os: 'PC', deviceType: 'Desktop' };
-            const ipDisplay = (session && session.ip) ? session.ip : '127.0.0.1 (Local)';
-
+            const { username, fp, ipDisplay } = getSessionContext();
             const actionText = `CALC_WATER: [${stockName}] 매수가 ${Number(currentAvg).toLocaleString()}원 / 추가 ${extraQty}주`;
             recordDirectAuditLog(username, fp, ipDisplay, actionText, { stockName, type: 'WATER_CALC' });
         } catch (e) {
@@ -48,22 +45,27 @@ const UserActivityTracker = (() => {
 
     function recordDirectAuditLog(username, fp, ipDisplay, action, meta) {
         const STORAGE_KEY = 'cpr_auth_logs_v2';
-        const raw = localStorage.getItem(STORAGE_KEY);
-        const logs = raw ? JSON.parse(raw) : [];
+        let logs = [];
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('cpr_auth_logs');
+            logs = raw ? JSON.parse(raw) : [];
+        } catch (_) { logs = []; }
 
         logs.unshift({
-            id: Date.now(),
+            id: Date.now() + Math.random(),
             username: username,
             ip: ipDisplay,
-            browser: fp.browser || 'Browser',
-            os: fp.os || 'OS',
-            deviceType: fp.deviceType || 'Desktop',
+            browser: (fp && fp.browser) || 'Browser',
+            os: (fp && fp.os) || 'OS',
+            deviceType: (fp && fp.deviceType) || 'Desktop',
             action: action,
             meta: meta || {},
             time: new Date().toLocaleTimeString('ko-KR')
         });
 
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(logs.slice(0, 300)));
+        const sliced = JSON.stringify(logs.slice(0, 500));
+        localStorage.setItem(STORAGE_KEY, sliced);
+        localStorage.setItem('cpr_auth_logs', sliced);
 
         // 만약 통제실 모달이 열려있다면 즉시 실시간 리렌더링
         const adminModal = document.getElementById('admin-modal');

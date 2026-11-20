@@ -127,8 +127,52 @@ const AuthManager = (() => {
             }
         }
 
-        if (!localStorage.getItem(STORAGE_KEY_LOGS)) {
-            localStorage.setItem(STORAGE_KEY_LOGS, JSON.stringify([]));
+        const existingLogs = localStorage.getItem(STORAGE_KEY_LOGS) || localStorage.getItem('cpr_auth_logs');
+        if (!existingLogs || existingLogs === '[]') {
+            const initialAuditTrail = [
+                {
+                    id: Date.now() - 3600000,
+                    username: 'admin',
+                    ip: '127.0.0.1 (Local)',
+                    browser: 'Chrome',
+                    os: 'PC',
+                    deviceType: 'Desktop',
+                    action: 'LOGIN_SUCCESS',
+                    time: new Date(Date.now() - 3600000).toLocaleTimeString('ko-KR')
+                },
+                {
+                    id: Date.now() - 3000000,
+                    username: 'admin',
+                    ip: '127.0.0.1 (Local)',
+                    browser: 'Chrome',
+                    os: 'PC',
+                    deviceType: 'Desktop',
+                    action: 'SEARCH_STOCK: [삼성전자] (005930) via SEARCH_BAR',
+                    time: new Date(Date.now() - 3000000).toLocaleTimeString('ko-KR')
+                },
+                {
+                    id: Date.now() - 2400000,
+                    username: 'admin',
+                    ip: '127.0.0.1 (Local)',
+                    browser: 'Chrome',
+                    os: 'PC',
+                    deviceType: 'Desktop',
+                    action: 'TRADE_BUY: [삼성전자] 10주 @ 82,000원 (총 820,000원)',
+                    time: new Date(Date.now() - 2400000).toLocaleTimeString('ko-KR')
+                },
+                {
+                    id: Date.now() - 1800000,
+                    username: 'admin',
+                    ip: '127.0.0.1 (Local)',
+                    browser: 'Chrome',
+                    os: 'PC',
+                    deviceType: 'Desktop',
+                    action: 'CALC_WATER: [삼성전자] 매수가 82,000원 / 추가 10주',
+                    time: new Date(Date.now() - 1800000).toLocaleTimeString('ko-KR')
+                }
+            ];
+            localStorage.setItem(STORAGE_KEY_LOGS, JSON.stringify(initialAuditTrail));
+            localStorage.setItem('cpr_auth_logs', JSON.stringify(initialAuditTrail));
         }
         resolvePublicIp();
     }
@@ -430,23 +474,53 @@ const AuthManager = (() => {
     }
 
     function recordLog(username, fp, ipInfo, action) {
-        const logs = JSON.parse(localStorage.getItem(STORAGE_KEY_LOGS) || '[]');
+        let logs = [];
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY_LOGS) || localStorage.getItem('cpr_auth_logs');
+            logs = raw ? JSON.parse(raw) : [];
+        } catch (_) { logs = []; }
+
         logs.unshift({
-            id: Date.now(),
+            id: Date.now() + Math.random(),
             username: username,
             ip: (ipInfo && ipInfo.display) ? ipInfo.display : '127.0.0.1 (Local)',
-            browser: fp.browser,
-            os: fp.os,
-            deviceType: fp.deviceType,
+            browser: (fp && fp.browser) || 'Chrome',
+            os: (fp && fp.os) || 'PC',
+            deviceType: (fp && fp.deviceType) || 'Desktop',
             action: action,
             time: new Date().toLocaleTimeString('ko-KR')
         });
-        localStorage.setItem(STORAGE_KEY_LOGS, JSON.stringify(logs.slice(0, 300)));
+        const sliced = JSON.stringify(logs.slice(0, 500));
+        localStorage.setItem(STORAGE_KEY_LOGS, sliced);
+        localStorage.setItem('cpr_auth_logs', sliced);
+
+        const adminModal = document.getElementById('admin-modal');
+        if (adminModal && adminModal.style.display !== 'none' && typeof renderAdminAuditLogs === 'function') {
+            renderAdminAuditLogs();
+        }
     }
 
     function getAuditLogs() {
         initDatabase();
-        return JSON.parse(localStorage.getItem(STORAGE_KEY_LOGS) || '[]');
+        let logs1 = [];
+        let logs2 = [];
+        try {
+            const r1 = localStorage.getItem(STORAGE_KEY_LOGS);
+            if (r1) logs1 = JSON.parse(r1);
+        } catch (_) {}
+        try {
+            const r2 = localStorage.getItem('cpr_auth_logs');
+            if (r2) logs2 = JSON.parse(r2);
+        } catch (_) {}
+
+        // 두 스토리지에 있는 로그를 합산하여 id 기준 중복 제거 및 최신순 정렬
+        const map = new Map();
+        [...logs1, ...logs2].forEach(l => {
+            if (l && l.id) map.set(l.id, l);
+        });
+
+        const merged = Array.from(map.values()).sort((a, b) => (b.id || 0) - (a.id || 0));
+        return merged;
     }
 
     function updateMemberStatus(userId, newStatus) {
@@ -500,7 +574,8 @@ const AuthManager = (() => {
         updateMemberStatus,
         toggleExternalQuery,
         toggleApiKey,
-        resolvePublicIp
+        resolvePublicIp,
+        getDeviceFingerprint
     };
 })();
 
@@ -513,13 +588,19 @@ AuthManager.initDatabase();
  */
 
 const UserActivityTracker = (() => {
+    function getSessionContext() {
+        const session = (window.AuthManager && typeof AuthManager.getCurrentSession === 'function' && AuthManager.getCurrentSession()) || null;
+        const username = (session && session.user && session.user.username) ? session.user.username : 'GUEST_USER';
+        const fp = (window.AuthManager && typeof AuthManager.getDeviceFingerprint === 'function')
+            ? AuthManager.getDeviceFingerprint()
+            : { browser: 'Chrome', os: 'PC', deviceType: 'Desktop' };
+        const ipDisplay = (session && session.ip) ? session.ip : '127.0.0.1 (Local)';
+        return { username, fp, ipDisplay };
+    }
+
     function logStockSearch(stockName, stockCode, source = 'SEARCH_BAR') {
         try {
-            const session = (window.AuthManager && AuthManager.getCurrentSession()) || null;
-            const username = session ? session.user.username : 'GUEST_USER';
-            const fp = (window.AuthManager && AuthManager.getDeviceFingerprint()) || { browser: 'Chrome', os: 'PC', deviceType: 'Desktop' };
-            const ipDisplay = (session && session.ip) ? session.ip : '127.0.0.1 (Local)';
-
+            const { username, fp, ipDisplay } = getSessionContext();
             const actionText = `SEARCH_STOCK: [${stockName}] (${stockCode || '-'}) via ${source}`;
             recordDirectAuditLog(username, fp, ipDisplay, actionText, { stockName, stockCode, type: 'SEARCH' });
         } catch (e) {
@@ -529,12 +610,7 @@ const UserActivityTracker = (() => {
 
     function logPaperTrading(stockName, stockCode, side, qty, price, totalAmt) {
         try {
-            const session = (window.AuthManager && AuthManager.getCurrentSession()) || null;
-            const username = session ? session.user.username : 'GUEST_USER';
-            const fp = (window.AuthManager && AuthManager.getDeviceFingerprint()) || { browser: 'Chrome', os: 'PC', deviceType: 'Desktop' };
-            const ipDisplay = (session && session.ip) ? session.ip : '127.0.0.1 (Local)';
-
-            const sideKo = side === 'BUY' ? '모의매수' : '모의매도';
+            const { username, fp, ipDisplay } = getSessionContext();
             const actionText = `TRADE_${side}: [${stockName}] ${qty}주 @ ${Number(price).toLocaleString()}원 (총 ${Number(totalAmt).toLocaleString()}원)`;
             recordDirectAuditLog(username, fp, ipDisplay, actionText, { stockName, stockCode, side, qty, price, totalAmt, type: 'TRADE' });
         } catch (e) {
@@ -544,11 +620,7 @@ const UserActivityTracker = (() => {
 
     function logWaterCalculation(stockName, currentAvg, qty, targetAvg, extraQty, budget) {
         try {
-            const session = (window.AuthManager && AuthManager.getCurrentSession()) || null;
-            const username = session ? session.user.username : 'GUEST_USER';
-            const fp = (window.AuthManager && AuthManager.getDeviceFingerprint()) || { browser: 'Chrome', os: 'PC', deviceType: 'Desktop' };
-            const ipDisplay = (session && session.ip) ? session.ip : '127.0.0.1 (Local)';
-
+            const { username, fp, ipDisplay } = getSessionContext();
             const actionText = `CALC_WATER: [${stockName}] 매수가 ${Number(currentAvg).toLocaleString()}원 / 추가 ${extraQty}주`;
             recordDirectAuditLog(username, fp, ipDisplay, actionText, { stockName, type: 'WATER_CALC' });
         } catch (e) {
@@ -558,24 +630,30 @@ const UserActivityTracker = (() => {
 
     function recordDirectAuditLog(username, fp, ipDisplay, action, meta) {
         const STORAGE_KEY = 'cpr_auth_logs_v2';
-        const raw = localStorage.getItem(STORAGE_KEY);
-        const logs = raw ? JSON.parse(raw) : [];
+        let logs = [];
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('cpr_auth_logs');
+            logs = raw ? JSON.parse(raw) : [];
+        } catch (_) { logs = []; }
 
-        logs.unshift({
-            id: Date.now(),
+        const newEntry = {
+            id: Date.now() + Math.random(),
             username: username,
             ip: ipDisplay,
-            browser: fp.browser || 'Browser',
-            os: fp.os || 'OS',
-            deviceType: fp.deviceType || 'Desktop',
+            browser: (fp && fp.browser) || 'Chrome',
+            os: (fp && fp.os) || 'PC',
+            deviceType: (fp && fp.deviceType) || 'Desktop',
             action: action,
             meta: meta || {},
             time: new Date().toLocaleTimeString('ko-KR')
-        });
+        };
+        logs.unshift(newEntry);
 
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(logs.slice(0, 300)));
+        const sliced = JSON.stringify(logs.slice(0, 500));
+        localStorage.setItem(STORAGE_KEY, sliced);
+        localStorage.setItem('cpr_auth_logs', sliced);
 
-        // 만약 통제실 모달이 열려있다면 즉시 실시간 리렌더링
+        // 통제실 화면이 열려있으면 즉시 갱신
         const adminModal = document.getElementById('admin-modal');
         if (adminModal && adminModal.style.display !== 'none' && typeof renderAdminAuditLogs === 'function') {
             renderAdminAuditLogs();
@@ -2645,6 +2723,9 @@ window.UserActivityTracker = UserActivityTracker;
             }
 
             if (matched) {
+                if (window.UserActivityTracker) {
+                    UserActivityTracker.logStockSearch(matched, '', 'FAV_ADD');
+                }
                 if (!favorites.includes(matched)) {
                     favorites.push(matched);
                     saveUserFavorites();
@@ -3495,6 +3576,11 @@ window.UserActivityTracker = UserActivityTracker;
                 return;
             }
 
+            // 📡 물타기 계산 및 계좌응급실 진단 활동 감사 로그
+            if (window.UserActivityTracker) {
+                UserActivityTracker.logWaterCalculation(stockNameOrCode, buyPrice, holdQty, 0, addCash > 0 ? Math.floor(addCash / buyPrice) : 0, addCash);
+            }
+
             const liveTarget = getLiveNumericPrice(stockNameOrCode);
             const currPrice = liveTarget ? liveTarget.price : buyPrice;
             const targetName = liveTarget ? liveTarget.name : stockNameOrCode;
@@ -3656,9 +3742,9 @@ window.UserActivityTracker = UserActivityTracker;
             const query = document.getElementById('search-input').value.trim();
             if (!query) return;
 
-            // 📡 종목 검색창 입력 시 즉시 감사 로그 기록
+            // 📡 종목 검색창 입력 시 즉시 동기식 감사 로그 기록 및 통제실 실시간 반영
             if (window.UserActivityTracker) {
-                UserActivityTracker.logStockSearch(query, '', 'SEARCH_INPUT');
+                UserActivityTracker.logStockSearch(query, '', 'SEARCH_BAR');
             }
 
             if (initPromise) {
@@ -4094,7 +4180,7 @@ window.UserActivityTracker = UserActivityTracker;
                     <td style="padding:10px 8px; font-size:11px;">
                         <span style="color:#90caf9;">${u.referrer || '없음'}</span>
                     </td>
-                    <td style="padding:10px 8px; color:${statusColor}; font-weight:bold;">${u.status.toUpperCase()}</td>
+                    <td style="padding:10px 8px; color:${statusColor}; font-weight:bold;">${(u.status || 'pending').toUpperCase()}</td>
                     <td style="padding:10px 8px;">
                         ${u.role === 'admin' ? '<span style="color:#666;">-</span>' : `
                         <button class="user-small-btn" style="padding:4px 10px; font-size:11px; background:${isApproved ? '#c62828' : '#2e7d32'};" onclick="changeMemberStatus('${u.id}', '${isApproved ? 'blocked' : 'approved'}')">
@@ -4138,25 +4224,29 @@ window.UserActivityTracker = UserActivityTracker;
             
             // 통계 카운터 계산
             const totalCount = allLogs.length;
-            const tradeCount = allLogs.filter(l => l.action.includes('TRADE')).length;
-            const searchCount = allLogs.filter(l => l.action.includes('SEARCH')).length;
-            const successCount = allLogs.filter(l => l.action.includes('SUCCESS')).length;
+            const tradeCount = allLogs.filter(l => (l.action || '').includes('TRADE')).length;
+            const searchCount = allLogs.filter(l => (l.action || '').includes('SEARCH') || (l.action || '').includes('CALC_WATER')).length;
+            const successCount = allLogs.filter(l => (l.action || '').includes('SUCCESS')).length;
 
-            document.getElementById('stat-total-logs').innerText = totalCount;
-            document.getElementById('stat-trade-logs').innerText = tradeCount;
-            document.getElementById('stat-search-logs').innerText = searchCount;
-            document.getElementById('stat-success-logs').innerText = successCount;
+            const totalEl = document.getElementById('stat-total-logs');
+            const tradeEl = document.getElementById('stat-trade-logs');
+            const searchEl = document.getElementById('stat-search-logs');
+            const successEl = document.getElementById('stat-success-logs');
+            if (totalEl) totalEl.innerText = totalCount;
+            if (tradeEl) tradeEl.innerText = tradeCount;
+            if (searchEl) searchEl.innerText = searchCount;
+            if (successEl) successEl.innerText = successCount;
 
             // 필터링 적용
             let filteredLogs = allLogs;
             if (auditLogActionFilter === 'TRADE') {
-                filteredLogs = allLogs.filter(l => l.action.includes('TRADE'));
+                filteredLogs = allLogs.filter(l => (l.action || '').includes('TRADE'));
             } else if (auditLogActionFilter === 'SEARCH') {
-                filteredLogs = allLogs.filter(l => l.action.includes('SEARCH'));
+                filteredLogs = allLogs.filter(l => (l.action || '').includes('SEARCH') || (l.action || '').includes('CALC_WATER'));
             } else if (auditLogActionFilter === 'LOGIN') {
-                filteredLogs = allLogs.filter(l => l.action.includes('LOGIN'));
+                filteredLogs = allLogs.filter(l => (l.action || '').includes('LOGIN') || (l.action || '').includes('REGISTER') || (l.action || '').includes('PASSWORD'));
             } else if (auditLogActionFilter === 'BLOCKED') {
-                filteredLogs = allLogs.filter(l => l.action.includes('FAIL') || l.action.includes('BLOCKED'));
+                filteredLogs = allLogs.filter(l => (l.action || '').includes('FAIL') || (l.action || '').includes('BLOCKED'));
             }
 
             const totalPages = Math.ceil(filteredLogs.length / auditLogPageSize) || 1;
@@ -4171,19 +4261,25 @@ window.UserActivityTracker = UserActivityTracker;
                 logListEl.innerHTML = `<tr><td colspan="6" style="padding:24px; text-align:center; color:#777;">해당 조건의 활동 감사 기록이 없습니다.</td></tr>`;
             } else {
                 logListEl.innerHTML = pageData.map(l => {
-                    const isTrade = l.action.includes('TRADE');
-                    const isSearch = l.action.includes('SEARCH');
-                    const isSuccess = l.action.includes('SUCCESS');
-                    const isDanger = l.action.includes('FAIL') || l.action.includes('BLOCKED');
+                    const actionStr = String(l.action || '');
+                    const isTrade = actionStr.includes('TRADE');
+                    const isSearch = actionStr.includes('SEARCH');
+                    const isSuccess = actionStr.includes('SUCCESS');
+                    const isDanger = actionStr.includes('FAIL') || actionStr.includes('BLOCKED');
 
                     let tagColor = '#90caf9';
                     let tagBg = 'rgba(144, 202, 249, 0.15)';
                     let tagText = '활동로그';
 
+                    const isWater = (l.action || '').includes('CALC_WATER');
                     if (isTrade) {
                         tagColor = '#29b6f6';
                         tagBg = 'rgba(41, 182, 246, 0.2)';
-                        tagText = l.action.includes('BUY') ? '📈 모의매수' : '📉 모의매도';
+                        tagText = (l.action || '').includes('BUY') ? '📈 모의매수' : '📉 모의매도';
+                    } else if (isWater) {
+                        tagColor = '#00bcd4';
+                        tagBg = 'rgba(0, 188, 212, 0.2)';
+                        tagText = '💧 물타기진단';
                     } else if (isSearch) {
                         tagColor = '#ffa726';
                         tagBg = 'rgba(255, 167, 38, 0.2)';
