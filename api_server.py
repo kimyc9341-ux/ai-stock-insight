@@ -10,6 +10,7 @@ import sqlite3
 import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+from urllib.parse import urlparse
 
 import requests
 from fastapi import FastAPI, HTTPException, Request
@@ -26,7 +27,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "").strip().rstrip("/")
+def normalize_supabase_url(raw_url: str) -> str:
+    cleaned = (raw_url or "").strip().rstrip("/")
+    if not cleaned:
+        return ""
+    parsed = urlparse(cleaned)
+    if parsed.scheme and parsed.netloc:
+        return f"{parsed.scheme}://{parsed.netloc}"
+    return cleaned
+
+SUPABASE_URL = normalize_supabase_url(os.environ.get("SUPABASE_URL", ""))
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "").strip()
 SQLITE_PATH = os.path.join(os.path.dirname(__file__), "data", "auth_audit.db")
 

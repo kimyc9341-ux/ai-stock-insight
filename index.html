@@ -13,6 +13,7 @@ const AuthManager = (() => {
     const STORAGE_KEY_LOGS = 'cpr_auth_logs_v2';
     const STORAGE_KEY_REVIEW_CODES = 'cpr_review_codes';
     const STORAGE_KEY_API_URL = 'cpr_api_base_url';
+    const DEFAULT_API_BASE_URL = 'https://ai-stock-insight-6e94.onrender.com';
     let cachedClientIpInfo = null;
 
     function getApiBaseUrl() {
@@ -25,7 +26,7 @@ const AuthManager = (() => {
                 return clean;
             }
         } catch (_) {}
-        const stored = localStorage.getItem(STORAGE_KEY_API_URL) || window.CPR_API_BASE_URL || '';
+        const stored = localStorage.getItem(STORAGE_KEY_API_URL) || window.CPR_API_BASE_URL || DEFAULT_API_BASE_URL;
         return stored ? stored.trim().replace(/\/+$/, '') : '';
     }
 
@@ -262,9 +263,25 @@ const AuthManager = (() => {
         initDatabase();
         const cleanUser = username.trim().toLowerCase();
         const codes = getReviewCodes();
-        const target = codes.find(c => c.username.toLowerCase() === cleanUser);
+        let target = codes.find(c => c.username.toLowerCase() === cleanUser);
         const fp = getDeviceFingerprint();
         const ipInfo = await resolvePublicIp();
+
+        if (!target && getApiBaseUrl()) {
+            const remoteRes = await apiRequest('/api/auth/eval-login', 'POST', {
+                username: cleanUser,
+                password,
+                fp,
+                ip: ipInfo.display
+            });
+            if (remoteRes && remoteRes.success && remoteRes.session) {
+                localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(remoteRes.session));
+                return remoteRes;
+            }
+            if (remoteRes && remoteRes.message) {
+                return remoteRes;
+            }
+        }
 
         if (!target) {
             recordLog(username, fp, ipInfo, 'EVAL_LOGIN_FAIL_USER');
@@ -331,6 +348,13 @@ const AuthManager = (() => {
             created_at: new Date().toISOString()
         });
         saveReviewCodes(codes);
+        apiRequest('/api/admin/review-codes', 'POST', {
+            username: cleanUser,
+            password,
+            name: name.trim() || cleanUser,
+            note: note.trim() || '추가 발급된 심사용 계정',
+            canAccessAdminPanel: canAccessAdmin
+        });
         return { success: true, message: `새로운 심사용 아이디 [ ${cleanUser} ] 가 성공적으로 발급되었습니다.` };
     }
 
@@ -347,6 +371,7 @@ const AuthManager = (() => {
         if (target) {
             target.canAccessAdminPanel = canAccess;
             saveReviewCodes(codes);
+            apiRequest('/api/admin/review-codes/toggle', 'POST', { username, canAccessAdminPanel: canAccess });
             return true;
         }
         return false;
@@ -364,6 +389,7 @@ const AuthManager = (() => {
         if (target) {
             target.isActive = isActive;
             saveReviewCodes(codes);
+            apiRequest('/api/admin/review-codes/toggle', 'POST', { username, isActive });
             return true;
         }
         return false;
@@ -373,9 +399,26 @@ const AuthManager = (() => {
     async function login(username, password) {
         initDatabase();
         const users = getUsers();
-        const user = users.find(u => u.username.toLowerCase() === username.toLowerCase().trim());
+        const cleanLower = username.toLowerCase().trim();
+        const user = users.find(u => u.username.toLowerCase() === cleanLower);
         const fp = getDeviceFingerprint();
         const ipInfo = await resolvePublicIp();
+
+        if (getApiBaseUrl()) {
+            const remoteRes = await apiRequest('/api/auth/login', 'POST', {
+                username: cleanLower,
+                password,
+                fp,
+                ip: ipInfo.display
+            });
+            if (remoteRes && remoteRes.success && remoteRes.session) {
+                localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(remoteRes.session));
+                return remoteRes;
+            }
+            if (!user && remoteRes && remoteRes.message) {
+                return remoteRes;
+            }
+        }
 
         if (!user) {
             return { success: false, message: '등록되지 않은 아이디입니다. 회원가입을 먼저 진행해 주세요.' };
@@ -468,6 +511,20 @@ const AuthManager = (() => {
 
         users.push(newUser);
         saveUsers(users);
+
+        apiRequest('/api/auth/register', 'POST', {
+            username: cleanUser,
+            password,
+            name: name.trim(),
+            birthdate,
+            phone,
+            isPhoneVerified: true,
+            email: email.trim(),
+            address: address.trim(),
+            referrer: referrer.trim() || '없음',
+            fp: getDeviceFingerprint(),
+            ip: ipInfo.display
+        });
 
         recordLog(cleanUser, getDeviceFingerprint(), ipInfo, 'REGISTER_SUBMITTED');
 
