@@ -1,0 +1,43 @@
+#!/bin/bash
+# agy - WSL 전용 실습 프로젝트 런처 스크립트
+
+WORKSPACE="/mnt/c/Users/통신운용/Desktop/agent"
+
+case "$1" in
+    run)
+        echo "🚀 [WSL] AI 주식 분석 메인 프로그램 실행..."
+        cd "$WORKSPACE" && ~/miniconda3/envs/antigravity/bin/python main.py
+        ;;
+    auto)
+        echo "🤖 [WSL] 백그라운드 자동 수집 모니터링 실행..."
+        cd "$WORKSPACE" && ./run_auto.sh
+        ;;
+    status)
+        echo "📊 [WSL] 자동 모니터링 프로세스 상태 확인:"
+        ps aux | grep -v grep | grep auto_monitor.py || echo "현재 실행 중인 자동 모니터링이 없습니다."
+        ;;
+    stop)
+        echo "🛑 [WSL] 자동 모니터링 프로세스 종료 중..."
+        pkill -f auto_monitor.py && echo "종료되었습니다." || echo "실행 중인 프로세스가 없습니다."
+        ;;
+    log)
+        echo "📑 [WSL] 실시간 수집 로그 확인 (종료: Ctrl+C):"
+        tail -f "$WORKSPACE/logs/monitor.log"
+        ;;
+    cd)
+        cd "$WORKSPACE" && exec bash
+        ;;
+    *)
+        echo "================================================="
+        echo "  📈 WSL 전용 AI 주식 에이전트 CLI 도구 (agy)"
+        echo "================================================="
+        echo "사용법:"
+        echo "  agy run     : 터미널에서 AI 주식 예측 메인 메뉴 실행 (main.py)"
+        echo "  agy auto    : 백그라운드 주식 자동 수집 시작 (run_auto.sh)"
+        echo "  agy status  : 자동 수집 프로세스 실행 여부 확인"
+        echo "  agy stop    : 자동 수집 프로세스 중지"
+        echo "  agy log     : 실시간 수집 로그 확인"
+        echo "  agy cd      : 주식 에이전트 작업 폴더로 바로 이동"
+        echo "================================================="
+        ;;
+esac

@@ -1,6 +1,599 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+<script>
+    // === AUTH & ACTIVITY TRACKER INLINE BUNDLE ===
+    /**
+ * auth_manager.js - 최고관리자 심사용 계정(admin2 등) 확인, 권한 부여/제한, 추가 발급 완성형
+ */
+
+const AuthManager = (() => {
+    const STORAGE_KEY_SESSION = 'cpr_auth_session';
+    const STORAGE_KEY_USERS = 'cpr_users_v2';
+    const STORAGE_KEY_LOGS = 'cpr_auth_logs_v2';
+    const STORAGE_KEY_REVIEW_CODES = 'cpr_review_codes';
+    let cachedClientIpInfo = null;
+
+    async function resolvePublicIp() {
+        if (cachedClientIpInfo) return cachedClientIpInfo;
+        try {
+            const res = await fetch('https://ipapi.co/json/');
+            if (res.ok) {
+                const data = await res.json();
+                cachedClientIpInfo = {
+                    ip: data.ip || '127.0.0.1',
+                    city: data.city || data.region || '대한민국',
+                    display: `${data.ip} (${data.city || data.region || '대한민국'})`
+                };
+                return cachedClientIpInfo;
+            }
+        } catch (_) {}
+
+        try {
+            const res = await fetch('https://api.ipify.org?format=json');
+            if (res.ok) {
+                const data = await res.json();
+                cachedClientIpInfo = { ip: data.ip, display: `${data.ip} (공인 IP)` };
+                return cachedClientIpInfo;
+            }
+        } catch (_) {}
+
+        cachedClientIpInfo = { ip: '127.0.0.1 (Local)', display: '127.0.0.1 (Local)' };
+        return cachedClientIpInfo;
+    }
+
+    function getDeviceFingerprint() {
+        const ua = navigator.userAgent;
+        let browser = 'Chrome';
+        if (ua.includes('Firefox')) browser = 'Firefox';
+        else if (ua.includes('SamsungBrowser')) browser = 'Samsung Internet';
+        else if (ua.includes('Safari') && !ua.includes('Chrome')) browser = 'Safari';
+        else if (ua.includes('Edge')) browser = 'Edge';
+
+        let os = 'Windows';
+        if (ua.includes('Mac')) os = 'macOS';
+        else if (ua.includes('Linux')) os = 'Linux';
+        else if (ua.includes('Android')) os = 'Android';
+        else if (ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
+
+        const deviceType = /Mobi|Android/i.test(ua) ? 'Mobile' : 'Desktop';
+
+        return {
+            browser,
+            os,
+            deviceType,
+            userAgent: ua,
+            timestamp: new Date().toISOString()
+        };
+    }
+
+    function initDatabase() {
+        // 기존 버전 스토리지 자동 마이그레이션 (admin 세션 및 role 보장)
+        const storedUsers = localStorage.getItem(STORAGE_KEY_USERS);
+        if (!storedUsers) {
+            const defaultUsers = [
+                {
+                    id: 'usr-admin',
+                    username: 'admin',
+                    password: '1234',
+                    name: '최고 관리자',
+                    birthdate: '1990-01-01',
+                    phone: '010-0000-0000',
+                    isPhoneVerified: true,
+                    email: 'admin@myaccount.local',
+                    address: '서울특별시 영등포구 여의도동',
+                    referrer: 'SYSTEM',
+                    role: 'admin',
+                    status: 'approved',
+                    allowExternalQuery: true,
+                    apiKeyEnabled: true,
+                    canAccessAdminPanel: true,
+                    created_at: new Date().toISOString()
+                }
+            ];
+            localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(defaultUsers));
+        } else {
+            const users = JSON.parse(storedUsers);
+            let admin = users.find(u => u.username === 'admin');
+            if (admin) {
+                admin.role = 'admin';
+                admin.canAccessAdminPanel = true;
+                localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
+            }
+        }
+
+        // 심사용 계정 기본 목록 (admin2 / 5678)
+        const defaultReviewAccounts = [
+            {
+                username: 'admin2',
+                password: '5678',
+                name: '심사 담당자',
+                note: '심사용 공식 계정',
+                isActive: true,
+                canAccessAdminPanel: true, // 최고관리자가 보안통제실에서 ON/OFF 토글 가능
+                created_at: new Date().toISOString()
+            }
+        ];
+
+        const storedCodes = localStorage.getItem(STORAGE_KEY_REVIEW_CODES);
+        if (!storedCodes) {
+            localStorage.setItem(STORAGE_KEY_REVIEW_CODES, JSON.stringify(defaultReviewAccounts));
+        } else {
+            const codes = JSON.parse(storedCodes);
+            let target = codes.find(c => c.username === 'admin2');
+            if (!target) {
+                codes.unshift(defaultReviewAccounts[0]);
+                localStorage.setItem(STORAGE_KEY_REVIEW_CODES, JSON.stringify(codes));
+            }
+        }
+
+        if (!localStorage.getItem(STORAGE_KEY_LOGS)) {
+            localStorage.setItem(STORAGE_KEY_LOGS, JSON.stringify([]));
+        }
+        resolvePublicIp();
+    }
+
+    function getUsers() {
+        initDatabase();
+        return JSON.parse(localStorage.getItem(STORAGE_KEY_USERS) || '[]');
+    }
+
+    function saveUsers(users) {
+        localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
+    }
+
+    function getReviewCodes() {
+        initDatabase();
+        return JSON.parse(localStorage.getItem(STORAGE_KEY_REVIEW_CODES) || '[]');
+    }
+
+    function saveReviewCodes(codes) {
+        localStorage.setItem(STORAGE_KEY_REVIEW_CODES, JSON.stringify(codes));
+    }
+
+    function getCurrentSession() {
+        const s = localStorage.getItem(STORAGE_KEY_SESSION);
+        return s ? JSON.parse(s) : null;
+    }
+
+    function isLoggedIn() {
+        const session = getCurrentSession();
+        return !!(session && session.user && session.user.status === 'approved');
+    }
+
+    // 심사용 아이디 로그인 (아이디 + 비밀번호)
+    async function loginWithReviewCode(username, password) {
+        initDatabase();
+        const cleanUser = username.trim().toLowerCase();
+        const codes = getReviewCodes();
+        const target = codes.find(c => c.username.toLowerCase() === cleanUser);
+        const fp = getDeviceFingerprint();
+        const ipInfo = await resolvePublicIp();
+
+        if (!target) {
+            recordLog(username, fp, ipInfo, 'EVAL_LOGIN_FAIL_USER');
+            return { success: false, message: '등록되지 않은 심사용 아이디입니다.' };
+        }
+
+        if (target.password !== password) {
+            recordLog(username, fp, ipInfo, 'EVAL_LOGIN_FAIL_PW');
+            return { success: false, message: '비밀번호가 일치하지 않습니다.' };
+        }
+
+        if (!target.isActive) {
+            recordLog(username, fp, ipInfo, 'EVAL_LOGIN_BLOCKED');
+            return { success: false, message: '이용이 중지된 심사용 계정입니다. 관리자에게 문의하세요.' };
+        }
+
+        const session = {
+            user: {
+                id: 'eval-' + target.username,
+                username: target.username,
+                name: target.name || '심사평가자',
+                role: 'evaluator',
+                status: 'approved',
+                isReviewer: true,
+                allowExternalQuery: true,
+                apiKeyEnabled: true,
+                canAccessAdminPanel: target.canAccessAdminPanel !== false
+            },
+            device: fp,
+            ip: ipInfo.display,
+            loggedInAt: new Date().toISOString()
+        };
+
+        localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(session));
+        recordLog(target.username, fp, ipInfo, 'EVAL_LOGIN_SUCCESS');
+
+        return { success: true, session, message: '심사용 계정 로그인이 완료되었습니다.' };
+    }
+
+    // 최고관리자 전용: 심사용 아이디 추가 발급
+    function createReviewAccount(username, password, name, note = '', canAccessAdmin = true) {
+        const session = getCurrentSession();
+        if (!session || session.user.role !== 'admin') {
+            return { success: false, message: '최고관리자만 심사용 아이디를 발급할 수 있습니다.' };
+        }
+
+        const codes = getReviewCodes();
+        const cleanUser = username.trim().toLowerCase();
+
+        if (!cleanUser || cleanUser.length < 3) return { success: false, message: '아이디는 3자리 이상이어야 합니다.' };
+        if (!password || password.length < 4) return { success: false, message: '비밀번호는 4자리 이상이어야 합니다.' };
+
+        if (codes.some(c => c.username.toLowerCase() === cleanUser)) {
+            return { success: false, message: '이미 존재하는 심사용 아이디입니다.' };
+        }
+
+        codes.unshift({
+            username: cleanUser,
+            password: password,
+            name: name.trim() || cleanUser,
+            note: note.trim() || '추가 발급된 심사용 계정',
+            isActive: true,
+            canAccessAdminPanel: canAccessAdmin,
+            created_at: new Date().toISOString()
+        });
+        saveReviewCodes(codes);
+        return { success: true, message: `새로운 심사용 아이디 [ ${cleanUser} ] 가 성공적으로 발급되었습니다.` };
+    }
+
+    // 최고관리자 전용: 심사용 아이디의 보안통제실 권한 ON/OFF 토글
+    function toggleAdminPanelAccess(username, canAccess) {
+        const session = getCurrentSession();
+        if (!session || session.user.role !== 'admin') {
+            alert('최고관리자만 통제실 권한을 변경할 수 있습니다.');
+            return false;
+        }
+
+        const codes = getReviewCodes();
+        const target = codes.find(c => c.username.toLowerCase() === username.toLowerCase());
+        if (target) {
+            target.canAccessAdminPanel = canAccess;
+            saveReviewCodes(codes);
+            return true;
+        }
+        return false;
+    }
+
+    function toggleReviewCodeStatus(username, isActive) {
+        const session = getCurrentSession();
+        if (!session || session.user.role !== 'admin') {
+            alert('최고관리자만 계정 상태를 변경할 수 있습니다.');
+            return false;
+        }
+
+        const codes = getReviewCodes();
+        const target = codes.find(c => c.username === username);
+        if (target) {
+            target.isActive = isActive;
+            saveReviewCodes(codes);
+            return true;
+        }
+        return false;
+    }
+
+    // 일반 로그인
+    async function login(username, password) {
+        initDatabase();
+        const users = getUsers();
+        const user = users.find(u => u.username.toLowerCase() === username.toLowerCase().trim());
+        const fp = getDeviceFingerprint();
+        const ipInfo = await resolvePublicIp();
+
+        if (!user) {
+            return { success: false, message: '등록되지 않은 아이디입니다. 회원가입을 먼저 진행해 주세요.' };
+        }
+
+        if (user.password !== password) {
+            recordLog(user.username, fp, ipInfo, 'LOGIN_FAIL_PASSWORD');
+            return { success: false, message: '비밀번호가 일치하지 않습니다. 다시 확인해 주세요.' };
+        }
+
+        if (user.status === 'pending') {
+            recordLog(user.username, fp, ipInfo, 'LOGIN_BLOCKED_PENDING');
+            return { success: false, message: '가입 승인 심사 대기 중인 계정입니다. 관리자 승인 확인 후 로그인 가능합니다.' };
+        }
+
+        if (user.status === 'blocked') {
+            recordLog(user.username, fp, ipInfo, 'LOGIN_BLOCKED');
+            return { success: false, message: '관리자에 의해 이용이 차단된 계정입니다.' };
+        }
+
+        const session = {
+            user: {
+                id: user.id,
+                username: user.username,
+                name: user.name,
+                birthdate: user.birthdate,
+                phone: user.phone,
+                email: user.email,
+                address: user.address,
+                referrer: user.referrer,
+                role: user.role,
+                status: user.status,
+                allowExternalQuery: user.allowExternalQuery,
+                apiKeyEnabled: user.apiKeyEnabled,
+                canAccessAdminPanel: user.role === 'admin'
+            },
+            device: fp,
+            ip: ipInfo.display,
+            loggedInAt: new Date().toISOString()
+        };
+
+        localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(session));
+        recordLog(user.username, fp, ipInfo, 'LOGIN_SUCCESS');
+
+        return { success: true, session };
+    }
+
+    // 정밀 회원가입
+    async function register(formData) {
+        initDatabase();
+        const { username, password, name, birthdate, phone, isPhoneVerified, email, address, referrer } = formData;
+        const ipInfo = await resolvePublicIp();
+
+        if (!isPhoneVerified) return { success: false, message: '휴대폰 본인 실명인증을 먼저 완료해 주세요.' };
+        if (!name || name.trim().length < 2) return { success: false, message: '이름(실명)을 정확히 입력해 주세요.' };
+        if (!birthdate) return { success: false, message: '생년월일을 입력해 주세요.' };
+
+        const cleanUser = username.trim().toLowerCase();
+        if (!cleanUser || cleanUser.length < 3) return { success: false, message: '아이디는 3자리 이상이어야 합니다.' };
+        if (!password || password.length < 4) return { success: false, message: '비밀번호는 최소 4자리 이상이어야 합니다.' };
+
+        const users = getUsers();
+        if (users.some(u => u.username.toLowerCase() === cleanUser)) {
+            return { success: false, message: '이미 사용 중인 아이디입니다.' };
+        }
+
+        if (referrer && referrer.trim() && !users.some(u => u.username.toLowerCase() === referrer.trim().toLowerCase())) {
+            return { success: false, message: `추천인 아이디('${referrer}')를 찾을 수 없습니다.` };
+        }
+
+        const newUser = {
+            id: 'usr-' + Date.now().toString(36),
+            username: cleanUser,
+            password: password,
+            name: name.trim(),
+            birthdate: birthdate,
+            phone: phone,
+            isPhoneVerified: true,
+            email: email.trim(),
+            address: address.trim(),
+            referrer: referrer.trim() || '없음',
+            regIp: ipInfo.display,
+            role: cleanUser === 'admin' ? 'admin' : 'user',
+            status: cleanUser === 'admin' ? 'approved' : 'pending',
+            allowExternalQuery: cleanUser === 'admin',
+            apiKeyEnabled: cleanUser === 'admin',
+            canAccessAdminPanel: cleanUser === 'admin',
+            created_at: new Date().toISOString()
+        };
+
+        users.push(newUser);
+        saveUsers(users);
+
+        recordLog(cleanUser, getDeviceFingerprint(), ipInfo, 'REGISTER_SUBMITTED');
+
+        return {
+            success: true,
+            message: '회원가입 신청이 성공적으로 접수되었습니다!\n관리자 승인 후 정식 서비스 이용이 가능합니다.'
+        };
+    }
+
+    // 회원정보 수정
+    async function updateProfile(username, currentPw, newPw, updatedData) {
+        initDatabase();
+        const users = getUsers();
+        const user = users.find(u => u.username.toLowerCase() === username.toLowerCase().trim());
+        const session = getCurrentSession();
+
+        if (!user) return { success: false, message: '사용자를 찾을 수 없습니다.' };
+        if (user.password !== currentPw) return { success: false, message: '현재 비밀번호가 올바르지 않습니다.' };
+
+        if (newPw) {
+            if (newPw.length < 4) return { success: false, message: '새 비밀번호는 4자리 이상이어야 합니다.' };
+            user.password = newPw;
+        }
+
+        if (updatedData.name) user.name = updatedData.name.trim();
+        if (updatedData.phone) user.phone = updatedData.phone.trim();
+        if (updatedData.email) user.email = updatedData.email.trim();
+        if (updatedData.address) user.address = updatedData.address.trim();
+
+        saveUsers(users);
+
+        if (session && session.user && session.user.username.toLowerCase() === username.toLowerCase()) {
+            session.user.name = user.name;
+            session.user.phone = user.phone;
+            session.user.email = user.email;
+            session.user.address = user.address;
+            localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(session));
+        }
+
+        const ipInfo = await resolvePublicIp();
+        recordLog(username, getDeviceFingerprint(), ipInfo, newPw ? 'PASSWORD_CHANGED' : 'PROFILE_UPDATED');
+
+        return { success: true, message: '회원정보가 안전하게 업데이트되었습니다.' };
+    }
+
+    // 로그아웃
+    async function logout() {
+        const session = getCurrentSession();
+        if (session) {
+            const ipInfo = await resolvePublicIp();
+            recordLog(session.user.username, getDeviceFingerprint(), ipInfo, 'LOGOUT');
+        }
+        localStorage.removeItem(STORAGE_KEY_SESSION);
+        sessionStorage.clear();
+        return true;
+    }
+
+    function recordLog(username, fp, ipInfo, action) {
+        const logs = JSON.parse(localStorage.getItem(STORAGE_KEY_LOGS) || '[]');
+        logs.unshift({
+            id: Date.now(),
+            username: username,
+            ip: (ipInfo && ipInfo.display) ? ipInfo.display : '127.0.0.1 (Local)',
+            browser: fp.browser,
+            os: fp.os,
+            deviceType: fp.deviceType,
+            action: action,
+            time: new Date().toLocaleTimeString('ko-KR')
+        });
+        localStorage.setItem(STORAGE_KEY_LOGS, JSON.stringify(logs.slice(0, 300)));
+    }
+
+    function getAuditLogs() {
+        initDatabase();
+        return JSON.parse(localStorage.getItem(STORAGE_KEY_LOGS) || '[]');
+    }
+
+    function updateMemberStatus(userId, newStatus) {
+        const users = getUsers();
+        const target = users.find(u => u.id === userId);
+        if (target) {
+            target.status = newStatus;
+            saveUsers(users);
+            return true;
+        }
+        return false;
+    }
+
+    function toggleExternalQuery(userId, isAllowed) {
+        const users = getUsers();
+        const target = users.find(u => u.id === userId);
+        if (target) {
+            target.allowExternalQuery = isAllowed;
+            saveUsers(users);
+            return true;
+        }
+        return false;
+    }
+
+    function toggleApiKey(userId, isEnabled) {
+        const users = getUsers();
+        const target = users.find(u => u.id === userId);
+        if (target) {
+            target.apiKeyEnabled = isEnabled;
+            saveUsers(users);
+            return true;
+        }
+        return false;
+    }
+
+    return {
+        initDatabase,
+        getUsers,
+        getCurrentSession,
+        isLoggedIn,
+        login,
+        loginWithReviewCode,
+        createReviewAccount,
+        getReviewCodes,
+        toggleReviewCodeStatus,
+        toggleAdminPanelAccess,
+        register,
+        updateProfile,
+        logout,
+        getAuditLogs,
+        updateMemberStatus,
+        toggleExternalQuery,
+        toggleApiKey,
+        resolvePublicIp
+    };
+})();
+
+window.AuthManager = AuthManager;
+AuthManager.initDatabase();
+
+
+    /**
+ * user_activity_tracker.js - 동기식 즉시 로깅 및 렌더링 연동
+ */
+
+const UserActivityTracker = (() => {
+    function logStockSearch(stockName, stockCode, source = 'SEARCH_BAR') {
+        try {
+            const session = (window.AuthManager && AuthManager.getCurrentSession()) || null;
+            const username = session ? session.user.username : 'GUEST_USER';
+            const fp = (window.AuthManager && AuthManager.getDeviceFingerprint()) || { browser: 'Chrome', os: 'PC', deviceType: 'Desktop' };
+            const ipDisplay = (session && session.ip) ? session.ip : '127.0.0.1 (Local)';
+
+            const actionText = `SEARCH_STOCK: [${stockName}] (${stockCode || '-'}) via ${source}`;
+            recordDirectAuditLog(username, fp, ipDisplay, actionText, { stockName, stockCode, type: 'SEARCH' });
+        } catch (e) {
+            console.error('Error logging stock search:', e);
+        }
+    }
+
+    function logPaperTrading(stockName, stockCode, side, qty, price, totalAmt) {
+        try {
+            const session = (window.AuthManager && AuthManager.getCurrentSession()) || null;
+            const username = session ? session.user.username : 'GUEST_USER';
+            const fp = (window.AuthManager && AuthManager.getDeviceFingerprint()) || { browser: 'Chrome', os: 'PC', deviceType: 'Desktop' };
+            const ipDisplay = (session && session.ip) ? session.ip : '127.0.0.1 (Local)';
+
+            const sideKo = side === 'BUY' ? '모의매수' : '모의매도';
+            const actionText = `TRADE_${side}: [${stockName}] ${qty}주 @ ${Number(price).toLocaleString()}원 (총 ${Number(totalAmt).toLocaleString()}원)`;
+            recordDirectAuditLog(username, fp, ipDisplay, actionText, { stockName, stockCode, side, qty, price, totalAmt, type: 'TRADE' });
+        } catch (e) {
+            console.error('Error logging paper trade:', e);
+        }
+    }
+
+    function logWaterCalculation(stockName, currentAvg, qty, targetAvg, extraQty, budget) {
+        try {
+            const session = (window.AuthManager && AuthManager.getCurrentSession()) || null;
+            const username = session ? session.user.username : 'GUEST_USER';
+            const fp = (window.AuthManager && AuthManager.getDeviceFingerprint()) || { browser: 'Chrome', os: 'PC', deviceType: 'Desktop' };
+            const ipDisplay = (session && session.ip) ? session.ip : '127.0.0.1 (Local)';
+
+            const actionText = `CALC_WATER: [${stockName}] 매수가 ${Number(currentAvg).toLocaleString()}원 / 추가 ${extraQty}주`;
+            recordDirectAuditLog(username, fp, ipDisplay, actionText, { stockName, type: 'WATER_CALC' });
+        } catch (e) {
+            console.error('Error logging water calc:', e);
+        }
+    }
+
+    function recordDirectAuditLog(username, fp, ipDisplay, action, meta) {
+        const STORAGE_KEY = 'cpr_auth_logs_v2';
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const logs = raw ? JSON.parse(raw) : [];
+
+        logs.unshift({
+            id: Date.now(),
+            username: username,
+            ip: ipDisplay,
+            browser: fp.browser || 'Browser',
+            os: fp.os || 'OS',
+            deviceType: fp.deviceType || 'Desktop',
+            action: action,
+            meta: meta || {},
+            time: new Date().toLocaleTimeString('ko-KR')
+        });
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(logs.slice(0, 300)));
+
+        // 만약 통제실 모달이 열려있다면 즉시 실시간 리렌더링
+        const adminModal = document.getElementById('admin-modal');
+        if (adminModal && adminModal.style.display !== 'none' && typeof renderAdminAuditLogs === 'function') {
+            renderAdminAuditLogs();
+        }
+    }
+
+    return {
+        logStockSearch,
+        logPaperTrading,
+        logWaterCalculation,
+        recordDirectAuditLog
+    };
+})();
+
+window.UserActivityTracker = UserActivityTracker;
+
+    </script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>내 계좌 심폐소생술</title>
@@ -8,6 +601,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Jua&family=Gowun+Dodum&family=Noto+Sans+KR:wght@700;900&display=swap" rel="stylesheet">
+    
+    
     <style>
         * {
             box-sizing: border-box;
@@ -1105,6 +1700,17 @@
         <!-- 메인(홈) 화면 전용 영역: ① 상단 제목 & 4대 지수 전광판 + ② 종목 검색창 -->
         <div id="home-section">
             <header class="header">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 8px 12px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 12px; backdrop-filter: blur(8px);">
+                    <div style="font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; gap: 8px;">
+                        <span id="auth-env-badge" style="background: rgba(0, 200, 83, 0.12); color: #00e676; border: 1px solid rgba(0, 200, 83, 0.3); padding: 3px 10px; border-radius: 20px; font-weight: 700; font-size: 11px; letter-spacing: 0.5px; box-shadow: 0 0 10px rgba(0, 230, 118, 0.15);">● 보안시스템 가동</span>
+                        <span id="auth-user-status-text" style="color: #e0e0e0; font-size: 12.5px;">게스트 모드</span>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <button type="button" id="profile-edit-btn" class="user-small-btn" style="display: none; background: linear-gradient(135deg, #00897b, #004d40); color: #fff; border: 1px solid rgba(0, 150, 136, 0.4); padding: 5px 12px; border-radius: 8px; font-weight: 600; box-shadow: 0 2px 6px rgba(0, 77, 64, 0.3);" onclick="openProfileModal()">⚙️ 회원정보수정</button>
+                        <button type="button" id="admin-panel-btn" class="user-small-btn" style="display: none; background: linear-gradient(135deg, #7c4dff, #512da8); color: #fff; border: 1px solid rgba(124, 77, 255, 0.5); padding: 5px 12px; border-radius: 8px; font-weight: 600; box-shadow: 0 2px 8px rgba(124, 77, 255, 0.35);" onclick="openAdminModal()">🛡️ 보안통제실</button>
+                        <button type="button" id="auth-main-btn" class="user-small-btn" style="background: linear-gradient(135deg, #3f51b5, #1a237e); color: #fff; border: 1px solid rgba(63, 81, 181, 0.5); padding: 6px 14px; border-radius: 8px; font-weight: 600; box-shadow: 0 2px 8px rgba(63, 81, 181, 0.3); transition: all 0.2s;" onclick="openAuthModal()">🔑 로그인 / 회원가입</button>
+                    </div>
+                </div>
                 <h1><img src="./assets/stockchat_appicon.png" alt="스탁챗 아이콘" class="title-brand-icon"><span>내 계좌 심폐소생술</span></h1>
                 <p class="desc">
                     파란불 계좌를 빨간불로, 실시간 시장 데이터와 AI 정밀 진단 시스템
@@ -2064,6 +2670,7 @@
         }
 
         function toggleCurrentReportFavorite() {
+            if (!requireAuth('관심 종목 추가')) return;
             if (!currentReportStockName) return;
             if (favorites.includes(currentReportStockName)) {
                 favorites = favorites.filter(f => f !== currentReportStockName);
@@ -2081,6 +2688,7 @@
 
         function toggleFavorite(event, name) {
             event.stopPropagation();
+            if (!requireAuth('관심 종목 추가')) return;
             if (favorites.includes(name)) {
                 favorites = favorites.filter(f => f !== name);
             } else {
@@ -2117,8 +2725,32 @@
             if (btnToggle) btnToggle.classList.remove('active');
         }
 
+        // 비로그인 이용제한 검사 게이트웨이
+        function requireAuth(featureName = '해당 서비스') {
+            if (window.AuthManager && !AuthManager.isLoggedIn()) {
+                alert(`[로그인 필요]\n'${featureName}' 기능은 회원 전용 보안 서비스입니다.\n상단의 [로그인 / 회원가입]을 먼저 진행해 주세요.`);
+                openAuthModal();
+                return false;
+            }
+            return true;
+        }
+
         function switchTab(tab) {
             closeSideMenu();
+
+            // ⭐ 비로그인 회원 전용 탭 차단 (계좌응급실, 모의투자, 내 관심종목, AI 심층 레이더)
+            const protectedTabs = {
+                'er': '내 계좌 응급실 (정밀 진단 & 물타기 처방)',
+                'kis-dart': 'KIS 모의투자 & DART 공시',
+                'fav': '내 관심 종목 보관함',
+                'radar': 'AI 테마 & 수급 종합 레이더'
+            };
+
+            if (protectedTabs[tab]) {
+                if (!requireAuth(protectedTabs[tab])) {
+                    return;
+                }
+            }
 
             const btnHome = document.getElementById('btn-home');
             const homeSection = document.getElementById('home-section');
@@ -2242,6 +2874,11 @@
             const riskMap = getRiskStocksMap();
             const item = (fullData.stocks && fullData.stocks[name]) || riskMap[name] || null;
             const card = document.getElementById('report-card');
+
+            // 📡 종목 검색/조회 활동 실시간 감사 로그 기록
+            if (window.UserActivityTracker) {
+                UserActivityTracker.logStockSearch(name, item ? item.code : '', 'STOCK_SELECT');
+            }
 
             if (item) {
                 const price = item.price || {};
@@ -2538,6 +3175,7 @@
         }
 
         function executeKisPaperOrder(stockQuery, qtyInput, side) {
+            if (!requireAuth('KIS 모의투자 매수/매도 주문')) return;
             const target = getLiveNumericPrice(stockQuery);
             const qty = parseInt(qtyInput, 10);
             if (!target || !target.price || target.price <= 0) {
@@ -2563,6 +3201,10 @@
                 const newAvg = Math.round(((cur.qty * cur.avgPrice) + totalAmt) / newQty);
                 acc.holdings[target.name] = { name: target.name, code: target.code, qty: newQty, avgPrice: newAvg };
                 saveKisPaperAccount(acc);
+                // 📡 모의투자 매수 체결 실시간 감사 로깅
+                if (window.UserActivityTracker) {
+                    UserActivityTracker.logPaperTrading(target.name, target.code, 'BUY', qty, target.price, totalAmt);
+                }
                 alert(`✅ [KIS 모의투자 매수 체결]\n• 종목: ${target.name} (${target.code})\n• 수량: ${qty.toLocaleString()}주\n• 체결단가: ${target.price.toLocaleString()}원\n• 총 매수금액: ${totalAmt.toLocaleString()}원`);
             } else {
                 const cur = acc.holdings[target.name];
@@ -2578,6 +3220,10 @@
                     acc.holdings[target.name] = cur;
                 }
                 saveKisPaperAccount(acc);
+                // 📡 모의투자 매도 체결 실시간 감사 로깅
+                if (window.UserActivityTracker) {
+                    UserActivityTracker.logPaperTrading(target.name, target.code, 'SELL', qty, target.price, totalAmt);
+                }
                 alert(`✅ [KIS 모의투자 매도 체결]\n• 종목: ${target.name} (${target.code})\n• 수량: ${qty.toLocaleString()}주\n• 체결단가: ${target.price.toLocaleString()}원\n• 총 매도금액: ${totalAmt.toLocaleString()}원`);
             }
 
@@ -3010,6 +3656,11 @@
             const query = document.getElementById('search-input').value.trim();
             if (!query) return;
 
+            // 📡 종목 검색창 입력 시 즉시 감사 로그 기록
+            if (window.UserActivityTracker) {
+                UserActivityTracker.logStockSearch(query, '', 'SEARCH_INPUT');
+            }
+
             if (initPromise) {
                 try { await initPromise; } catch (_) {}
             }
@@ -3071,5 +3722,823 @@
 
         initPromise = init();
     </script>
+
+    <!-- Supabase Auth & Audit Control Module -->
+    
+    <script>
+        // 인증 UI 및 모달 연동 스크립트
+        function updateAuthUI() {
+            const session = AuthManager.getCurrentSession();
+            const badge = document.getElementById('auth-env-badge');
+            const statusText = document.getElementById('auth-user-status-text');
+            const authBtn = document.getElementById('auth-main-btn');
+            const adminBtn = document.getElementById('admin-panel-btn');
+            const profileBtn = document.getElementById('profile-edit-btn');
+
+            badge.innerHTML = '● 보안시스템 정상 가동';
+            badge.style.color = '#00e676';
+            badge.style.borderColor = 'rgba(0, 230, 118, 0.4)';
+            badge.style.background = 'rgba(0, 230, 118, 0.12)';
+
+            if (session && session.user) {
+                const user = session.user;
+                const roleBadge = user.role === 'admin' ? '🛡️ 최고관리자' : (user.isReviewer ? '🎓 심사평가자' : '👤 승인정회원');
+                const displayName = user.name ? `${user.name}(${user.username})` : user.username;
+                statusText.innerHTML = `<span style="color:#00e676; font-weight:bold;">${displayName}</span> <span style="font-size:11px; opacity:0.8;">[${roleBadge}]</span>`;
+                authBtn.innerHTML = '🚪 로그아웃';
+                authBtn.style.background = 'linear-gradient(135deg, #d32f2f, #b71c1c)';
+                authBtn.onclick = handleLogout;
+                profileBtn.style.display = user.isReviewer ? 'none' : 'inline-block';
+
+                // 최고관리자이거나, 보안통제실 권한이 부여된 심사용 계정이면 통제실 노출
+                if (user.role === 'admin' || user.canAccessAdminPanel) {
+                    adminBtn.style.display = 'inline-block';
+                } else {
+                    adminBtn.style.display = 'none';
+                }
+            } else {
+                statusText.innerHTML = '<span style="color:#aaa;">게스트 접속 모드</span>';
+                authBtn.innerHTML = '🔑 로그인 / 회원가입';
+                authBtn.style.background = 'linear-gradient(135deg, #3f51b5, #1a237e)';
+                authBtn.onclick = openAuthModal;
+                adminBtn.style.display = 'none';
+                profileBtn.style.display = 'none';
+            }
+        }
+
+        function handleLogout() {
+            if (confirm('안전하게 로그아웃하시겠습니까? 세션 정보가 종료됩니다.')) {
+                AuthManager.logout();
+                updateAuthUI();
+                alert('정상적으로 로그아웃되었습니다.');
+            }
+        }
+
+        let currentAuthTab = 'login';
+        function switchAuthTab(tab) {
+            currentAuthTab = tab;
+            const loginBox = document.getElementById('auth-login-box');
+            const regBox = document.getElementById('auth-register-box');
+            const evalBox = document.getElementById('auth-eval-box');
+            const tabLoginBtn = document.getElementById('tab-login-btn');
+            const tabRegBtn = document.getElementById('tab-reg-btn');
+            const tabEvalBtn = document.getElementById('tab-eval-btn');
+
+            loginBox.style.display = 'none';
+            regBox.style.display = 'none';
+            evalBox.style.display = 'none';
+            tabLoginBtn.style.background = 'transparent';
+            tabLoginBtn.style.color = '#aaa';
+            tabRegBtn.style.background = 'transparent';
+            tabRegBtn.style.color = '#aaa';
+            tabEvalBtn.style.background = 'transparent';
+            tabEvalBtn.style.color = '#aaa';
+
+            if (tab === 'login') {
+                loginBox.style.display = 'block';
+                tabLoginBtn.style.background = '#3f51b5';
+                tabLoginBtn.style.color = '#fff';
+            } else if (tab === 'register') {
+                regBox.style.display = 'block';
+                tabRegBtn.style.background = '#00897b';
+                tabRegBtn.style.color = '#fff';
+            } else if (tab === 'eval') {
+                evalBox.style.display = 'block';
+                tabEvalBtn.style.background = 'linear-gradient(135deg, #ff6f00, #e65100)';
+                tabEvalBtn.style.color = '#fff';
+            }
+        }
+
+        async function submitReviewCodeLogin() {
+            const username = document.getElementById('auth-eval-user-input').value.trim();
+            const password = document.getElementById('auth-eval-pw-input').value;
+
+            if (!username) {
+                alert('심사용 아이디를 입력해 주세요.');
+                return;
+            }
+            if (!password) {
+                alert('비밀번호를 입력해 주세요.');
+                return;
+            }
+
+            const res = await AuthManager.loginWithReviewCode(username, password);
+            if (res.success) {
+                alert(`${res.message}\n(접속 IP: ${res.session.ip})`);
+                closeAuthModal();
+                updateAuthUI();
+            } else {
+                alert(`[로그인 실패]\n${res.message}`);
+            }
+        }
+
+        function openAuthModal() {
+            switchAuthTab('login');
+            document.getElementById('auth-modal').style.display = 'flex';
+        }
+
+        function closeAuthModal() {
+            document.getElementById('auth-modal').style.display = 'none';
+        }
+
+        async function submitLogin() {
+            const username = document.getElementById('auth-username-input').value.trim();
+            const password = document.getElementById('auth-password-input').value;
+            if (!username) {
+                alert('아이디를 입력해 주세요.');
+                return;
+            }
+            if (!password) {
+                alert('비밀번호를 입력해 주세요.');
+                return;
+            }
+
+            const res = await AuthManager.login(username, password);
+            if (res.success) {
+                alert(`반갑습니다, ${res.session.user.name || username}님!\n접속 IP(${res.session.ip}) 및 보안 감사 로그가 안전하게 기록되었습니다.`);
+                closeAuthModal();
+                updateAuthUI();
+            } else {
+                alert(`[로그인 실패]\n${res.message}`);
+            }
+        }
+
+        // 휴대폰 실명인증 시뮬레이션
+        let isPhoneVerifiedStatus = false;
+        let generatedVerifyCode = '';
+
+        function requestPhoneVerification() {
+            const phone = document.getElementById('reg-phone-input').value.trim();
+            const name = document.getElementById('reg-name-input').value.trim();
+
+            if (!name) {
+                alert('먼저 실명(이름)을 입력해 주세요.');
+                return;
+            }
+            if (!phone || phone.length < 10) {
+                alert('휴대폰 번호를 올바르게 입력해 주세요. (예: 01012345678)');
+                return;
+            }
+
+            // 6자리 난수 인증번호 생성
+            generatedVerifyCode = Math.floor(100000 + Math.random() * 900000).toString();
+            document.getElementById('phone-verify-box').style.display = 'flex';
+            document.getElementById('phone-verify-code-input').value = '';
+            
+            alert(`[통신사 실명인증 문자 발송]\n${name}님의 휴대폰(${phone})으로 인증번호가 전송되었습니다.\n\n👉 테스트 인증번호: [ ${generatedVerifyCode} ]`);
+        }
+
+        function confirmPhoneVerification() {
+            const inputCode = document.getElementById('phone-verify-code-input').value.trim();
+            if (!inputCode) {
+                alert('인증번호 6자리를 입력해 주세요.');
+                return;
+            }
+
+            if (inputCode === generatedVerifyCode) {
+                isPhoneVerifiedStatus = true;
+                document.getElementById('phone-verify-status-msg').innerHTML = '✅ 본인 실명인증 완료 (통신사 확인됨)';
+                document.getElementById('phone-verify-status-msg').style.color = '#00e676';
+                document.getElementById('phone-verify-box').style.display = 'none';
+                document.getElementById('reg-phone-btn').disabled = true;
+                document.getElementById('reg-phone-btn').innerText = '인증완료';
+                document.getElementById('reg-phone-btn').style.background = '#2e7d32';
+                alert('본인 실명인증이 성공적으로 완료되었습니다.');
+            } else {
+                alert('인증번호가 일치하지 않습니다. 다시 확인해 주세요.');
+            }
+        }
+
+        async function submitRegister() {
+            const name = document.getElementById('reg-name-input').value.trim();
+            const birthdate = document.getElementById('reg-birthdate-input').value.trim();
+            const username = document.getElementById('reg-username-input').value.trim();
+            const password = document.getElementById('reg-password-input').value;
+            const phone = document.getElementById('reg-phone-input').value.trim();
+            const address = document.getElementById('reg-address-input').value.trim();
+            const email = document.getElementById('reg-email-input').value.trim();
+            const referrer = document.getElementById('reg-referrer-input').value.trim();
+
+            if (!name) return alert('이름을 입력해 주세요.');
+            if (!birthdate) return alert('생년월일을 선택해 주세요.');
+            if (!username || username.length < 3) return alert('아이디는 영문/숫자 3자 이상이어야 합니다.');
+            if (!password || password.length < 4) return alert('비밀번호는 최소 4자리 이상이어야 합니다.');
+            if (!phone) return alert('휴대폰 번호를 입력해 주세요.');
+            if (!isPhoneVerifiedStatus) return alert('휴대폰 실명인증을 완료해 주세요.');
+            if (!email || !email.includes('@')) return alert('이메일 주소를 올바르게 입력해 주세요.');
+            if (!address) return alert('주소를 입력해 주세요.');
+
+            const res = await AuthManager.register({
+                username,
+                password,
+                name,
+                birthdate,
+                phone,
+                isPhoneVerified: isPhoneVerifiedStatus,
+                email,
+                address,
+                referrer
+            });
+
+            if (res.success) {
+                alert(res.message);
+                switchAuthTab('login');
+                document.getElementById('auth-username-input').value = username;
+                document.getElementById('auth-password-input').value = '';
+            } else {
+                alert(res.message);
+            }
+        }
+
+        // 회원정보 수정 모달
+        function openProfileModal() {
+            const session = AuthManager.getCurrentSession();
+            if (!session || !session.user) return;
+            const u = session.user;
+            document.getElementById('edit-profile-username').value = u.username;
+            document.getElementById('edit-profile-name').value = u.name || '';
+            document.getElementById('edit-profile-birthdate').value = u.birthdate || '-';
+            document.getElementById('edit-profile-phone').value = u.phone || '';
+            document.getElementById('edit-profile-email').value = u.email || '';
+            document.getElementById('edit-profile-address').value = u.address || '';
+            document.getElementById('edit-profile-referrer').value = u.referrer || '없음';
+            document.getElementById('edit-current-pw').value = '';
+            document.getElementById('edit-new-pw').value = '';
+            document.getElementById('profile-modal').style.display = 'flex';
+        }
+
+        function closeProfileModal() {
+            document.getElementById('profile-modal').style.display = 'none';
+        }
+
+        function submitProfileUpdate() {
+            const session = AuthManager.getCurrentSession();
+            if (!session || !session.user) return;
+
+            const username = session.user.username;
+            const currentPw = document.getElementById('edit-current-pw').value;
+            const newPw = document.getElementById('edit-new-pw').value;
+            const name = document.getElementById('edit-profile-name').value.trim();
+            const phone = document.getElementById('edit-profile-phone').value.trim();
+            const email = document.getElementById('edit-profile-email').value.trim();
+            const address = document.getElementById('edit-profile-address').value.trim();
+
+            if (!currentPw) {
+                alert('보안 확인을 위해 현재 비밀번호를 입력해 주세요.');
+                return;
+            }
+
+            const res = AuthManager.updateProfile(username, currentPw, newPw, { name, phone, email, address });
+            if (res.success) {
+                alert(res.message);
+                closeProfileModal();
+                updateAuthUI();
+            } else {
+                alert(res.message);
+            }
+        }
+
+        function openAdminModal() {
+            renderAdminPanel();
+            document.getElementById('admin-modal').style.display = 'flex';
+        }
+
+        function closeAdminModal() {
+            document.getElementById('admin-modal').style.display = 'none';
+        }
+
+        // 보안통제실 전체 렌더링
+        function renderAdminPanel() {
+            renderReviewCodes();
+            renderAdminUsers();
+            renderAdminAuditLogs();
+        }
+
+        function renderReviewCodes() {
+            const codes = AuthManager.getReviewCodes();
+            const listEl = document.getElementById('admin-review-code-list');
+            const session = AuthManager.getCurrentSession();
+            const isMasterAdmin = session && session.user && session.user.role === 'admin';
+
+            // 최고관리자만 신규 계정 추가 버튼 보이기
+            const createBtn = document.getElementById('admin-create-code-btn');
+            if (createBtn) createBtn.style.display = isMasterAdmin ? 'inline-block' : 'none';
+
+            listEl.innerHTML = codes.map(c => `
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.06); font-size:12px;">
+                    <td style="padding:8px;"><strong style="color:#ffb74d; font-family:monospace; font-size:13px;">${c.username}</strong></td>
+                    <td style="padding:8px; color:#fff;">${c.name}</td>
+                    <td style="padding:8px; color:${c.isActive ? '#00e676' : '#ff5252'}; font-weight:bold;">${c.isActive ? 'ACTIVE' : 'DISABLED'}</td>
+                    <td style="padding:8px;">
+                        ${isMasterAdmin ? `
+                        <button class="user-small-btn" style="padding:3px 8px; font-size:11px; background:${c.canAccessAdminPanel ? '#673ab7' : '#424242'};" onclick="toggleAdminPanel('${c.username}', ${!c.canAccessAdminPanel})">
+                            ${c.canAccessAdminPanel ? '통제실 허용(ON)' : '통제실 차단(OFF)'}
+                        </button>
+                        ` : `<span style="color:#aaa;">${c.canAccessAdminPanel ? '허용됨' : '차단됨'}</span>`}
+                    </td>
+                    <td style="padding:8px;">
+                        ${isMasterAdmin ? `
+                        <button class="user-small-btn" style="padding:3px 8px; font-size:11px; background:${c.isActive ? '#c62828' : '#2e7d32'};" onclick="toggleCode('${c.username}', ${!c.isActive})">
+                            ${c.isActive ? '계정정지' : '정상화'}
+                        </button>
+                        ` : '-'}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function toggleAdminPanel(username, canAccess) {
+            AuthManager.toggleAdminPanelAccess(username, canAccess);
+            renderReviewCodes();
+            updateAuthUI();
+        }
+
+        function createNewReviewCode() {
+            const username = prompt('신규 발급할 심사용 아이디를 입력하세요 (예: admin3):');
+            if (!username) return;
+            const pw = prompt(`'${username}' 계정의 비밀번호를 설정하세요:`);
+            if (!pw) return;
+            const name = prompt('담당자 성함 또는 직함을 입력하세요 (예: 교수님/심사위원):', '심사위원');
+            const res = AuthManager.createReviewAccount(username, pw, name || '심사위원', '추가 발급 심사용 계정', true);
+            alert(res.message);
+            if (res.success) renderReviewCodes();
+        }
+
+        function toggleCode(username, active) {
+            AuthManager.toggleReviewCodeStatus(username, active);
+            renderReviewCodes();
+        }
+
+        function renderAdminUsers() {
+            const users = AuthManager.getUsers();
+            const userListEl = document.getElementById('admin-user-list');
+            userListEl.innerHTML = users.map(u => {
+                const statusColor = u.status === 'approved' ? '#00e676' : (u.status === 'blocked' ? '#ff3d00' : '#ffab00');
+                const isApproved = u.status === 'approved';
+                const isExtOn = u.allowExternalQuery !== false;
+                const isKeyOn = u.apiKeyEnabled !== false;
+
+                return `
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.06); font-size:12px;">
+                    <td style="padding:10px 8px;">
+                        <strong style="color:#fff;">${u.username}</strong><br>
+                        <span style="color:#aaa; font-size:11px;">${u.name} | ${u.phone || '-'}</span>
+                    </td>
+                    <td style="padding:10px 8px; font-size:11px; color:#bbb;">
+                        ${u.birthdate || '-'}<br>
+                        ${u.email || '-'}
+                    </td>
+                    <td style="padding:10px 8px; font-size:11px; color:#aaa; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${u.address || ''}">
+                        ${u.address || '-'}
+                    </td>
+                    <td style="padding:10px 8px; font-size:11px;">
+                        <span style="color:#90caf9;">${u.referrer || '없음'}</span>
+                    </td>
+                    <td style="padding:10px 8px; color:${statusColor}; font-weight:bold;">${u.status.toUpperCase()}</td>
+                    <td style="padding:10px 8px;">
+                        ${u.role === 'admin' ? '<span style="color:#666;">-</span>' : `
+                        <button class="user-small-btn" style="padding:4px 10px; font-size:11px; background:${isApproved ? '#c62828' : '#2e7d32'};" onclick="changeMemberStatus('${u.id}', '${isApproved ? 'blocked' : 'approved'}')">
+                            ${isApproved ? '차단' : '승인하기'}
+                        </button>
+                        `}
+                    </td>
+                    <td style="padding:10px 8px;">
+                        <button class="user-small-btn" style="padding:4px 10px; font-size:11px; background:${isExtOn ? '#2e7d32' : '#c62828'};" onclick="toggleExtQuery('${u.id}', ${!isExtOn})">
+                            ${isExtOn ? '허용' : '차단'}
+                        </button>
+                    </td>
+                    <td style="padding:10px 8px;">
+                        <button class="user-small-btn" style="padding:4px 10px; font-size:11px; background:${isKeyOn ? '#1565c0' : '#757575'};" onclick="toggleApiSwitch('${u.id}', ${!isKeyOn})">
+                            ${isKeyOn ? '활성' : '정지'}
+                        </button>
+                    </td>
+                </tr>
+                `;
+            }).join('');
+        }
+
+        // 2. 접속 기기 감사 로그 페이징 및 상세 대시보드 뷰어
+        let auditLogCurrentPage = 1;
+        const auditLogPageSize = 8;
+        let auditLogActionFilter = 'ALL';
+
+        function setLogFilter(filterType) {
+            auditLogActionFilter = filterType;
+            auditLogCurrentPage = 1;
+            renderAdminAuditLogs();
+        }
+
+        function changeLogPage(delta) {
+            auditLogCurrentPage += delta;
+            renderAdminAuditLogs();
+        }
+
+        function renderAdminAuditLogs() {
+            const allLogs = AuthManager.getAuditLogs();
+            
+            // 통계 카운터 계산
+            const totalCount = allLogs.length;
+            const tradeCount = allLogs.filter(l => l.action.includes('TRADE')).length;
+            const searchCount = allLogs.filter(l => l.action.includes('SEARCH')).length;
+            const successCount = allLogs.filter(l => l.action.includes('SUCCESS')).length;
+
+            document.getElementById('stat-total-logs').innerText = totalCount;
+            document.getElementById('stat-trade-logs').innerText = tradeCount;
+            document.getElementById('stat-search-logs').innerText = searchCount;
+            document.getElementById('stat-success-logs').innerText = successCount;
+
+            // 필터링 적용
+            let filteredLogs = allLogs;
+            if (auditLogActionFilter === 'TRADE') {
+                filteredLogs = allLogs.filter(l => l.action.includes('TRADE'));
+            } else if (auditLogActionFilter === 'SEARCH') {
+                filteredLogs = allLogs.filter(l => l.action.includes('SEARCH'));
+            } else if (auditLogActionFilter === 'LOGIN') {
+                filteredLogs = allLogs.filter(l => l.action.includes('LOGIN'));
+            } else if (auditLogActionFilter === 'BLOCKED') {
+                filteredLogs = allLogs.filter(l => l.action.includes('FAIL') || l.action.includes('BLOCKED'));
+            }
+
+            const totalPages = Math.ceil(filteredLogs.length / auditLogPageSize) || 1;
+            if (auditLogCurrentPage > totalPages) auditLogCurrentPage = totalPages;
+            if (auditLogCurrentPage < 1) auditLogCurrentPage = 1;
+
+            const startIndex = (auditLogCurrentPage - 1) * auditLogPageSize;
+            const pageData = filteredLogs.slice(startIndex, startIndex + auditLogPageSize);
+
+            const logListEl = document.getElementById('admin-audit-log-list');
+            if (pageData.length === 0) {
+                logListEl.innerHTML = `<tr><td colspan="6" style="padding:24px; text-align:center; color:#777;">해당 조건의 활동 감사 기록이 없습니다.</td></tr>`;
+            } else {
+                logListEl.innerHTML = pageData.map(l => {
+                    const isTrade = l.action.includes('TRADE');
+                    const isSearch = l.action.includes('SEARCH');
+                    const isSuccess = l.action.includes('SUCCESS');
+                    const isDanger = l.action.includes('FAIL') || l.action.includes('BLOCKED');
+
+                    let tagColor = '#90caf9';
+                    let tagBg = 'rgba(144, 202, 249, 0.15)';
+                    let tagText = '활동로그';
+
+                    if (isTrade) {
+                        tagColor = '#29b6f6';
+                        tagBg = 'rgba(41, 182, 246, 0.2)';
+                        tagText = l.action.includes('BUY') ? '📈 모의매수' : '📉 모의매도';
+                    } else if (isSearch) {
+                        tagColor = '#ffa726';
+                        tagBg = 'rgba(255, 167, 38, 0.2)';
+                        tagText = '🔍 종목조회';
+                    } else if (isDanger) {
+                        tagColor = '#ff5252';
+                        tagBg = 'rgba(255, 82, 82, 0.2)';
+                        tagText = '⚠️ 보안차단';
+                    } else if (isSuccess) {
+                        tagColor = '#00e676';
+                        tagBg = 'rgba(0, 230, 118, 0.2)';
+                        tagText = '🔑 정상인증';
+                    }
+
+                    const devIcon = l.deviceType === 'Mobile' ? '📱' : '💻';
+
+                    return `
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.06); font-size:12px;">
+                        <td style="padding:10px 8px; color:#aaa; font-family:monospace; font-size:11.5px;">${l.time}</td>
+                        <td style="padding:10px 8px;"><strong style="color:#fff;">${l.username}</strong></td>
+                        <td style="padding:10px 8px; color:#bbb; font-family:monospace; font-size:11.5px;">${l.ip || '127.0.0.1'}</td>
+                        <td style="padding:10px 8px; color:#ccc; font-size:11.5px;">${devIcon} ${l.browser}/${l.os}</td>
+                        <td style="padding:10px 8px;">
+                            <span style="background:${tagBg}; color:${tagColor}; border:1px solid ${tagColor}55; padding:3px 8px; border-radius:6px; font-weight:700; font-size:11px;">
+                                ${tagText}
+                            </span>
+                        </td>
+                        <td style="padding:10px 8px; font-weight:600; color:${isTrade ? '#81d4fa' : (isSearch ? '#ffe082' : '#eee')};">
+                            ${l.action}
+                        </td>
+                    </tr>
+                    `;
+                }).join('');
+            }
+
+            // 페이징 컨트롤 업데이트
+            document.getElementById('log-page-info').innerText = `${auditLogCurrentPage} / ${totalPages} 페이지 (총 ${filteredLogs.length}건)`;
+            document.getElementById('log-prev-btn').disabled = (auditLogCurrentPage <= 1);
+            document.getElementById('log-next-btn').disabled = (auditLogCurrentPage >= totalPages);
+        }
+
+        function changeMemberStatus(userId, status) {
+            AuthManager.updateMemberStatus(userId, status);
+            renderAdminPanel();
+            updateAuthUI();
+        }
+
+        function toggleExtQuery(userId, allow) {
+            AuthManager.toggleExternalQuery(userId, allow);
+            renderAdminPanel();
+        }
+
+        function toggleApiSwitch(userId, enable) {
+            AuthManager.toggleApiKey(userId, enable);
+            renderAdminPanel();
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            updateAuthUI();
+        });
+    </script>
+
+    <!-- 1. 로그인 / 상세 회원가입 / 심사용 코드 모달 -->
+    <div id="auth-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:99999; justify-content:center; align-items:center; backdrop-filter:blur(4px);">
+        <div style="background:#1a1c28; border:1px solid rgba(255,255,255,0.12); border-radius:16px; padding:28px; width:92%; max-width:520px; max-height:90vh; overflow-y:auto; box-shadow:0 15px 45px rgba(0,0,0,0.7);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:12px;">
+                <div style="display:flex; gap:6px;">
+                    <button type="button" id="tab-login-btn" class="user-small-btn" style="background:#3f51b5; color:#fff; padding:6px 14px; font-size:12.5px; font-weight:bold; border-radius:8px;" onclick="switchAuthTab('login')">로그인</button>
+                    <button type="button" id="tab-reg-btn" class="user-small-btn" style="background:transparent; color:#aaa; padding:6px 14px; font-size:12.5px; font-weight:bold; border-radius:8px;" onclick="switchAuthTab('register')">회원가입</button>
+                    <button type="button" id="tab-eval-btn" class="user-small-btn" style="background:transparent; color:#aaa; padding:6px 14px; font-size:12.5px; font-weight:bold; border-radius:8px; border:1px solid rgba(255, 111, 0, 0.4);" onclick="switchAuthTab('eval')">심사용 로그인</button>
+                </div>
+                <span style="cursor:pointer; font-size:22px; color:#aaa;" onclick="closeAuthModal()">✕</span>
+            </div>
+
+            <!-- 1) 일반 로그인 탭 -->
+            <div id="auth-login-box">
+                <div style="margin-bottom:14px;">
+                    <label style="font-size:12.5px; color:#ccc; display:block; margin-bottom:6px; font-weight:600;">아이디</label>
+                    <input type="text" id="auth-username-input" class="search-input" placeholder="아이디 입력" style="width:100%; box-sizing:border-box; height:42px;">
+                </div>
+                <div style="margin-bottom:18px;">
+                    <label style="font-size:12.5px; color:#ccc; display:block; margin-bottom:6px; font-weight:600;">비밀번호</label>
+                    <input type="password" id="auth-password-input" class="search-input" placeholder="비밀번호 입력" style="width:100%; box-sizing:border-box; height:42px;">
+                </div>
+                <button type="button" class="search-btn" style="width:100%; padding:12px; font-size:14px; font-weight:bold; background:linear-gradient(135deg, #3f51b5, #1a237e); border-radius:8px;" onclick="submitLogin()">보안 로그인</button>
+            </div>
+
+            <!-- 2) [심사용 아이디] 로그인 탭 (아이디 + 비밀번호) -->
+            <div id="auth-eval-box" style="display:none;">
+                <div style="background:rgba(255, 111, 0, 0.08); border:1px solid rgba(255, 111, 0, 0.25); padding:12px 14px; border-radius:10px; margin-bottom:16px;">
+                    <div style="font-size:12.5px; font-weight:bold; color:#ffb74d; margin-bottom:4px;">심사용 계정 로그인</div>
+                    <div style="font-size:11.5px; color:#aaa; line-height:1.5;">
+                        사전에 발급된 심사용 계정 정보(아이디/비밀번호)를 입력하여 즉시 입장합니다.
+                    </div>
+                </div>
+
+                <div style="margin-bottom:14px;">
+                    <label style="font-size:12px; color:#ccc; display:block; margin-bottom:4px; font-weight:600;">심사용 아이디 *</label>
+                    <input type="text" id="auth-eval-user-input" class="search-input" placeholder="심사용 아이디 입력" style="width:100%; box-sizing:border-box; height:42px;">
+                </div>
+
+                <div style="margin-bottom:18px;">
+                    <label style="font-size:12px; color:#ccc; display:block; margin-bottom:4px; font-weight:600;">비밀번호 *</label>
+                    <input type="password" id="auth-eval-pw-input" class="search-input" placeholder="비밀번호 입력" style="width:100%; box-sizing:border-box; height:42px;">
+                </div>
+
+                <button type="button" class="search-btn" style="width:100%; padding:12px; font-size:14px; font-weight:bold; background:linear-gradient(135deg, #ff6f00, #e65100); border-radius:8px; box-shadow:0 4px 15px rgba(230, 81, 0, 0.35);" onclick="submitReviewCodeLogin()">심사용 로그인</button>
+            </div>
+
+            <!-- 정밀 회원가입 탭 (실명/생년월일/아이디/비번/휴대폰/실명인증/주소/이메일/추천인) -->
+            <div id="auth-register-box" style="display:none;">
+                <div style="font-size:12px; color:#ffab00; background:rgba(255, 171, 0, 0.1); border:1px solid rgba(255, 171, 0, 0.25); padding:8px 12px; border-radius:8px; margin-bottom:16px;">
+                    ⚠️ 실명인증을 통한 정식 회원가입 절차입니다. 가입 후 관리자 심사를 거쳐 승인됩니다.
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px;">
+                    <div>
+                        <label style="font-size:12px; color:#ccc; display:block; margin-bottom:4px; font-weight:600;">이름 (실명) *</label>
+                        <input type="text" id="reg-name-input" class="search-input" placeholder="홍길동" style="width:100%; box-sizing:border-box;">
+                    </div>
+                    <div>
+                        <label style="font-size:12px; color:#ccc; display:block; margin-bottom:4px; font-weight:600;">생년월일 *</label>
+                        <input type="date" id="reg-birthdate-input" class="search-input" style="width:100%; box-sizing:border-box; color:#fff;">
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:12px;">
+                    <div>
+                        <label style="font-size:12px; color:#ccc; display:block; margin-bottom:4px; font-weight:600;">아이디 (3자 이상) *</label>
+                        <input type="text" id="reg-username-input" class="search-input" placeholder="영문/숫자 아이디" style="width:100%; box-sizing:border-box;">
+                    </div>
+                    <div>
+                        <label style="font-size:12px; color:#ccc; display:block; margin-bottom:4px; font-weight:600;">비밀번호 (4자 이상) *</label>
+                        <input type="password" id="reg-password-input" class="search-input" placeholder="비밀번호 설정" style="width:100%; box-sizing:border-box;">
+                    </div>
+                </div>
+
+                <!-- 휴대폰 번호 및 본인 실명인증 영역 -->
+                <div style="margin-bottom:12px; background:rgba(255,255,255,0.03); padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.06);">
+                    <label style="font-size:12px; color:#ccc; display:block; margin-bottom:4px; font-weight:600;">휴대폰 번호 (본인인증) *</label>
+                    <div style="display:flex; gap:6px;">
+                        <input type="tel" id="reg-phone-input" class="search-input" placeholder="'-' 제외 입력 (예: 01012345678)" style="flex:1; box-sizing:border-box;">
+                        <button type="button" id="reg-phone-btn" class="user-small-btn" style="background:#00897b; color:#fff; white-space:nowrap; padding:0 12px;" onclick="requestPhoneVerification()">인증번호 전송</button>
+                    </div>
+                    <div id="phone-verify-box" style="display:none; margin-top:8px; gap:6px;">
+                        <input type="text" id="phone-verify-code-input" class="search-input" placeholder="인증번호 6자리" style="flex:1; box-sizing:border-box;">
+                        <button type="button" class="user-small-btn" style="background:#3949ab; color:#fff; padding:0 12px;" onclick="confirmPhoneVerification()">확인</button>
+                    </div>
+                    <div id="phone-verify-status-msg" style="font-size:11px; margin-top:6px; color:#aaa;">※ 통신사 실명인증을 완료해야 가입이 진행됩니다.</div>
+                </div>
+
+                <div style="margin-bottom:12px;">
+                    <label style="font-size:12px; color:#ccc; display:block; margin-bottom:4px; font-weight:600;">이메일 주소 *</label>
+                    <input type="email" id="reg-email-input" class="search-input" placeholder="user@example.com" style="width:100%; box-sizing:border-box;">
+                </div>
+
+                <div style="margin-bottom:12px;">
+                    <label style="font-size:12px; color:#ccc; display:block; margin-bottom:4px; font-weight:600;">거주 주소 *</label>
+                    <input type="text" id="reg-address-input" class="search-input" placeholder="시/도 구/군 도로명 상세주소" style="width:100%; box-sizing:border-box;">
+                </div>
+
+                <div style="margin-bottom:18px;">
+                    <label style="font-size:12px; color:#ccc; display:block; margin-bottom:4px; font-weight:600;">추천인 아이디 (선택)</label>
+                    <input type="text" id="reg-referrer-input" class="search-input" placeholder="추천인 아이디가 있는 경우 입력 (예: admin)" style="width:100%; box-sizing:border-box;">
+                </div>
+
+                <button type="button" class="search-btn" style="width:100%; padding:12px; font-size:14px; font-weight:bold; background:linear-gradient(135deg, #00897b, #004d40); border-radius:8px;" onclick="submitRegister()">실명인증 회원가입 신청</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 회원정보 및 비밀번호 변경 모달 -->
+    <div id="profile-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:99999; justify-content:center; align-items:center; backdrop-filter:blur(4px);">
+        <div style="background:#1a1c28; border:1px solid #00897b; border-radius:16px; padding:28px; width:92%; max-width:460px; max-height:88vh; overflow-y:auto; box-shadow:0 15px 45px rgba(0,0,0,0.7);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:10px;">
+                <h3 style="margin:0; color:#fff; font-size:16px; display:flex; align-items:center; gap:6px;">
+                    <span>⚙️ 회원정보 & 비밀번호 수정</span>
+                </h3>
+                <span style="cursor:pointer; font-size:22px; color:#aaa;" onclick="closeProfileModal()">✕</span>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
+                <div>
+                    <label style="font-size:11.5px; color:#888; display:block; margin-bottom:4px;">아이디 (수정불가)</label>
+                    <input type="text" id="edit-profile-username" class="search-input" disabled style="width:100%; box-sizing:border-box; opacity:0.6;">
+                </div>
+                <div>
+                    <label style="font-size:11.5px; color:#888; display:block; margin-bottom:4px;">생년월일 (수정불가)</label>
+                    <input type="text" id="edit-profile-birthdate" class="search-input" disabled style="width:100%; box-sizing:border-box; opacity:0.6;">
+                </div>
+            </div>
+
+            <div style="margin-bottom:10px;">
+                <label style="font-size:11.5px; color:#ccc; display:block; margin-bottom:4px;">실명 / 성명</label>
+                <input type="text" id="edit-profile-name" class="search-input" style="width:100%; box-sizing:border-box;">
+            </div>
+
+            <div style="margin-bottom:10px;">
+                <label style="font-size:11.5px; color:#ccc; display:block; margin-bottom:4px;">휴대폰 번호</label>
+                <input type="tel" id="edit-profile-phone" class="search-input" style="width:100%; box-sizing:border-box;">
+            </div>
+
+            <div style="margin-bottom:10px;">
+                <label style="font-size:11.5px; color:#ccc; display:block; margin-bottom:4px;">이메일 주소</label>
+                <input type="email" id="edit-profile-email" class="search-input" style="width:100%; box-sizing:border-box;">
+            </div>
+
+            <div style="margin-bottom:10px;">
+                <label style="font-size:11.5px; color:#ccc; display:block; margin-bottom:4px;">주소</label>
+                <input type="text" id="edit-profile-address" class="search-input" style="width:100%; box-sizing:border-box;">
+            </div>
+
+            <div style="margin-bottom:14px;">
+                <label style="font-size:11.5px; color:#888; display:block; margin-bottom:4px;">추천인 아이디</label>
+                <input type="text" id="edit-profile-referrer" class="search-input" disabled style="width:100%; box-sizing:border-box; opacity:0.6;">
+            </div>
+
+            <div style="border-top:1px dashed rgba(255,255,255,0.1); padding-top:12px; margin-bottom:12px;">
+                <label style="font-size:11.5px; color:#ffab00; display:block; margin-bottom:4px; font-weight:600;">현재 비밀번호 (본인 확인용 필수) *</label>
+                <input type="password" id="edit-current-pw" class="search-input" placeholder="현재 비밀번호를 입력해 주세요" style="width:100%; box-sizing:border-box;">
+            </div>
+
+            <div style="margin-bottom:18px;">
+                <label style="font-size:11.5px; color:#ccc; display:block; margin-bottom:4px;">새 비밀번호 (변경 시에만 입력)</label>
+                <input type="password" id="edit-new-pw" class="search-input" placeholder="새 비밀번호 (4자리 이상)" style="width:100%; box-sizing:border-box;">
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:8px;">
+                <button type="button" class="user-small-btn" onclick="closeProfileModal()">취소</button>
+                <button type="button" class="search-btn" style="padding:8px 18px; background:linear-gradient(135deg, #00897b, #004d40); font-weight:bold;" onclick="submitProfileUpdate()">정보 수정 저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. 관리자 보안 통제실 모달 -->
+    <div id="admin-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.88); z-index:99999; justify-content:center; align-items:center; backdrop-filter:blur(5px);">
+        <div style="background:#161824; border:1px solid #7c4dff; border-radius:16px; padding:26px; width:96%; max-width:1050px; max-height:88vh; overflow-y:auto; box-shadow:0 15px 50px rgba(0,0,0,0.85);">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:14px; margin-bottom:18px;">
+                <h3 style="margin:0; color:#bb86fc; display:flex; align-items:center; gap:8px; font-size:18px;">
+                    <span>🛡️ 관리자 종합 보안통제실 (Admin Master Console)</span>
+                    <span style="font-size:11px; background:rgba(187,134,252,0.15); border:1px solid rgba(187,134,252,0.4); padding:3px 10px; border-radius:12px; color:#d1b3ff;">RLS & Audit Guard</span>
+                </h3>
+                <span style="cursor:pointer; font-size:24px; color:#aaa;" onclick="closeAdminModal()">✕</span>
+            </div>
+
+            <!-- 섹션 A-1: [심사용 아이디] 권한 관리 현황 -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin:20px 0 10px 0;">
+                <h4 style="color:#ffb74d; margin:0; font-size:14px; display:flex; align-items:center; gap:6px;">
+                    <span>🎓 심사용 계정 및 통제실 권한 관리</span>
+                </h4>
+                <button type="button" id="admin-create-code-btn" class="user-small-btn" style="display:none; background:linear-gradient(135deg, #ff6f00, #e65100); color:#fff; font-weight:bold; padding:5px 12px; font-size:11.5px;" onclick="createNewReviewCode()">+ 새 심사용 계정 추가</button>
+            </div>
+            <div style="overflow-x:auto; background:rgba(0,0,0,0.25); border-radius:10px; border:1px solid rgba(255, 111, 0, 0.25); margin-bottom:24px;">
+                <table style="width:100%; border-collapse:collapse; text-align:left;">
+                    <thead>
+                        <tr style="background:rgba(255, 111, 0, 0.08); font-size:12px; color:#ffcc80; border-bottom:1px solid rgba(255, 111, 0, 0.2);">
+                            <th style="padding:8px 10px;">심사용 아이디</th>
+                            <th style="padding:8px 10px;">담당자 / 대상</th>
+                            <th style="padding:8px 10px;">계정 상태</th>
+                            <th style="padding:8px 10px;">보안통제실 열람 권한</th>
+                            <th style="padding:8px 10px;">계정 정지 스위치</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-review-code-list"></tbody>
+                </table>
+            </div>
+
+            <!-- 섹션 A-2: 회원 정밀 인적사항 & 승인/차단/외부조회/API 킬스위치 제어 -->
+            <h4 style="color:#eee; margin:16px 0 10px 0; font-size:14px; display:flex; align-items:center; gap:6px;">
+                <span>👥 일반 등록 회원 정밀 인적사항 & 권한 킬스위치</span>
+            </h4>
+            <div style="overflow-x:auto; background:rgba(0,0,0,0.25); border-radius:10px; border:1px solid rgba(255,255,255,0.08);">
+                <table style="width:100%; border-collapse:collapse; text-align:left;">
+                    <thead>
+                        <tr style="background:rgba(255,255,255,0.06); font-size:12px; color:#aaa; border-bottom:1px solid rgba(255,255,255,0.1);">
+                            <th style="padding:10px 8px;">아이디 (성명 / 연락처)</th>
+                            <th style="padding:10px 8px;">생년월일 / 이메일</th>
+                            <th style="padding:10px 8px;">거주 주소</th>
+                            <th style="padding:10px 8px;">추천인</th>
+                            <th style="padding:10px 8px;">승인상태</th>
+                            <th style="padding:10px 8px;">승인 / 차단</th>
+                            <th style="padding:10px 8px;">외부조회 차단</th>
+                            <th style="padding:10px 8px;">API 키 제어</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-user-list"></tbody>
+                </table>
+            </div>
+
+            <!-- 섹션 B: 사용자 활동 및 감사 로그 대시보드 (KPI 카드 + 상세 필터 + 페이징) -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin:30px 0 12px 0;">
+                <h4 style="color:#eee; margin:0; font-size:15px; display:flex; align-items:center; gap:8px;">
+                    <span>📡 사용자 활동 감사 대시보드 (종목검색 / 모의투자 / 접속로그)</span>
+                </h4>
+                <!-- 필터 버튼군 -->
+                <div style="display:flex; gap:6px;">
+                    <button type="button" class="user-small-btn" style="padding:4px 10px; font-size:11px; background:#282b3d; color:#fff;" onclick="setLogFilter('ALL')">전체보기</button>
+                    <button type="button" class="user-small-btn" style="padding:4px 10px; font-size:11px; background:#1565c0; color:#fff;" onclick="setLogFilter('TRADE')">📈 모의투자</button>
+                    <button type="button" class="user-small-btn" style="padding:4px 10px; font-size:11px; background:#f57c00; color:#fff;" onclick="setLogFilter('SEARCH')">🔍 종목검색</button>
+                    <button type="button" class="user-small-btn" style="padding:4px 10px; font-size:11px; background:#1b5e20; color:#fff;" onclick="setLogFilter('LOGIN')">🔑 로그인</button>
+                    <button type="button" class="user-small-btn" style="padding:4px 10px; font-size:11px; background:#b71c1c; color:#fff;" onclick="setLogFilter('BLOCKED')">차단/실패</button>
+                </div>
+            </div>
+
+            <!-- KPI 통계 카드 4종 -->
+            <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin-bottom:14px;">
+                <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:10px; text-align:center;">
+                    <div style="font-size:11px; color:#aaa; margin-bottom:4px;">누적 활동 로그</div>
+                    <div id="stat-total-logs" style="font-size:18px; font-weight:bold; color:#90caf9;">0</div>
+                </div>
+                <div style="background:rgba(21, 101, 192, 0.08); border:1px solid rgba(21, 101, 192, 0.3); border-radius:10px; padding:10px; text-align:center;">
+                    <div style="font-size:11px; color:#64b5f6; margin-bottom:4px;">모의투자 체결</div>
+                    <div id="stat-trade-logs" style="font-size:18px; font-weight:bold; color:#2196f3;">0</div>
+                </div>
+                <div style="background:rgba(255, 152, 0, 0.08); border:1px solid rgba(255, 152, 0, 0.3); border-radius:10px; padding:10px; text-align:center;">
+                    <div style="font-size:11px; color:#ffb74d; margin-bottom:4px;">종목 검색/조회</div>
+                    <div id="stat-search-logs" style="font-size:18px; font-weight:bold; color:#ffa726;">0</div>
+                </div>
+                <div style="background:rgba(0, 200, 83, 0.08); border:1px solid rgba(0, 200, 83, 0.3); border-radius:10px; padding:10px; text-align:center;">
+                    <div style="font-size:11px; color:#81c784; margin-bottom:4px;">정상 인증 접속</div>
+                    <div id="stat-success-logs" style="font-size:18px; font-weight:bold; color:#00e676;">0</div>
+                </div>
+            </div>
+
+            <!-- 로그 데이터 테이블 -->
+            <div style="overflow-x:auto; background:rgba(0,0,0,0.25); border-radius:10px; border:1px solid rgba(255,255,255,0.08); margin-bottom:12px;">
+                <table style="width:100%; border-collapse:collapse; text-align:left;">
+                    <thead>
+                        <tr style="background:rgba(255,255,255,0.06); font-size:11px; color:#aaa; border-bottom:1px solid rgba(255,255,255,0.1);">
+                            <th style="padding:10px 8px;">발생 시각</th>
+                            <th style="padding:10px 8px;">사용자 아이디</th>
+                            <th style="padding:10px 8px;">접속 IP</th>
+                            <th style="padding:10px 8px;">기기 / 브라우저</th>
+                            <th style="padding:10px 8px;">활동 구분</th>
+                            <th style="padding:10px 8px;">상세 활동 내용 (종목/매수매도/금액)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-audit-log-list"></tbody>
+                </table>
+            </div>
+
+            <!-- 페이지네이션 컨트롤 바 -->
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 4px;">
+                <span id="log-page-info" style="font-size:12px; color:#aaa;">1 / 1 페이지</span>
+                <div style="display:flex; gap:6px;">
+                    <button type="button" id="log-prev-btn" class="user-small-btn" style="padding:4px 12px; font-size:11px; background:#282b3d; color:#fff;" onclick="changeLogPage(-1)">◀ 이전</button>
+                    <button type="button" id="log-next-btn" class="user-small-btn" style="padding:4px 12px; font-size:11px; background:#282b3d; color:#fff;" onclick="changeLogPage(1)">다음 ▶</button>
+                </div>
+            </div>
+
+            <!-- 안내 박스 -->
+            <div style="margin-top:18px; padding:12px 16px; background:rgba(124, 77, 255, 0.1); border:1px solid rgba(124, 77, 255, 0.3); border-radius:10px; font-size:11.5px; color:#d1b3ff; line-height:1.6;">
+                💡 <strong>보안 및 권한 안내:</strong> 회원이 가입 신청 시 입력한 <strong>이름, 생년월일, 연락처, 주소, 추천인</strong> 등의 인적사항은 최고관리자 전용 콘솔에서만 열람 가능하며, [승인하기]를 통해 정식 권한을 부여하거나 외부 조회 및 API 권한을 원격 차단할 수 있습니다.
+            </div>
+        </div>
+    </div>
 </body>
 </html>
