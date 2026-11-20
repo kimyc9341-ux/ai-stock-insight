@@ -44,10 +44,12 @@ const AuthManager = (() => {
         const base = getApiBaseUrl();
         if (!base) return null;
         try {
-            const opts = {
-                method,
-                headers: { 'Content-Type': 'application/json' }
-            };
+            const headers = { 'Content-Type': 'application/json' };
+            const session = getCurrentSession();
+            if (session && session.adminToken) {
+                headers['X-Admin-Token'] = session.adminToken;
+            }
+            const opts = { method, headers };
             if (body !== null) opts.body = JSON.stringify(body);
             const res = await fetch(`${base}${path}`, opts);
             if (!res.ok) return null;
@@ -712,11 +714,42 @@ const AuthManager = (() => {
         return { connected: true, database: cfg.database || 'sqlite-fallback', supabaseConnected: !!cfg.supabaseConnected };
     }
 
+    function canUseExternalQuery() {
+        const session = getCurrentSession();
+        if (!session || !session.user) return true;
+        return session.user.allowExternalQuery !== false;
+    }
+
+    function canUseApiKey() {
+        const session = getCurrentSession();
+        if (!session || !session.user) return true;
+        return session.user.apiKeyEnabled !== false;
+    }
+
+    async function syncUserPortfolioFromServer() {
+        const session = getCurrentSession();
+        if (!session || !session.user || !getApiBaseUrl()) return null;
+        return await apiRequest(`/api/user/portfolio?username=${encodeURIComponent(session.user.username)}`, 'GET');
+    }
+
+    function pushUserPortfolioToServer(favorites, paperAccount) {
+        const session = getCurrentSession();
+        if (!session || !session.user || !getApiBaseUrl()) return;
+        const payload = { username: session.user.username };
+        if (favorites !== null && favorites !== undefined) payload.favorites = favorites;
+        if (paperAccount !== null && paperAccount !== undefined) payload.paperAccount = paperAccount;
+        apiRequest('/api/user/portfolio', 'POST', payload);
+    }
+
     return {
         initDatabase,
         getUsers,
         getCurrentSession,
         isLoggedIn,
+        canUseExternalQuery,
+        canUseApiKey,
+        syncUserPortfolioFromServer,
+        pushUserPortfolioToServer,
         login,
         loginWithReviewCode,
         createReviewAccount,
@@ -2054,9 +2087,12 @@ window.UserActivityTracker = UserActivityTracker;
             </div>
 
             <div class="ai-analysis-box">
-                <div class="ai-title">
-                    <span>🤖 Google Gemini AI 심층 추천 리포트</span>
-                    <span id="rep-gemini-badge" class="ai-badge">추천 분석</span>
+                <div class="ai-title" style="justify-content:space-between; flex-wrap:wrap; gap:8px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span>🤖 Google Gemini AI 심층 추천 리포트</span>
+                        <span id="rep-gemini-badge" class="ai-badge">추천 분석</span>
+                    </div>
+                    <button type="button" class="user-small-btn" style="padding:4px 10px; font-size:11.5px; background:linear-gradient(135deg, #2563eb, #1d4ed8); color:#fff; border:none;" onclick="runServerGeminiAnalysis()">✨ Gemini 실시간 AI 분석 요청</button>
                 </div>
                 <div id="ai-text" class="ai-text">분석 결과를 불러오는 중입니다...</div>
             </div>
@@ -2270,6 +2306,9 @@ window.UserActivityTracker = UserActivityTracker;
 
         function saveUserFavorites() {
             localStorage.setItem(getFavStorageKey(currentUser), JSON.stringify(favorites));
+            if (window.AuthManager && AuthManager.isLoggedIn()) {
+                AuthManager.pushUserPortfolioToServer(favorites, null);
+            }
         }
 
         let favorites = loadUserFavorites(currentUser);
@@ -3299,25 +3338,36 @@ window.UserActivityTracker = UserActivityTracker;
             const listEl = document.getElementById('dart-disclosure-list');
             if (!listEl) return;
             const list = buildStockDisclosures(name, liveNewsItems);
-            listEl.innerHTML = list.map(d => {
-                let badgeClass = 'dart-badge-info';
-                let icon = 'ℹ️';
-                if (d.impact.includes('호재')) {
-                    badgeClass = 'dart-badge-good';
-                    icon = '🔥 호재 감지';
-                } else if (d.impact.includes('주의') || d.impact.includes('악재')) {
-                    badgeClass = 'dart-badge-danger';
-                    icon = '🚨 악재/주의';
-                }
-                return `<li class="news-item">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; flex-wrap:wrap; gap:4px;">
-                        <span class="${badgeClass}">${icon} · ${d.category}</span>
-                        <span style="font-size:11px; color:#94a3b8;">DART 자동감지 판독</span>
-                    </div>
-                    <strong>${d.title}</strong>
-                    <div class="dart-ai-summary-note">💡 <strong>AI 3초 해석:</strong> ${d.note}</div>
-                </li>`;
-            }).join('');
+            const renderItems = (items, isLiveDart = false) => {
+                listEl.innerHTML = items.map(d => {
+                    let badgeClass = 'dart-badge-info';
+                    let icon = 'ℹ️';
+                    if ((d.impact || '').includes('호재')) {
+                        badgeClass = 'dart-badge-good';
+                        icon = '🔥 호재 감지';
+                    } else if ((d.impact || '').includes('주의') || (d.impact || '').includes('악재')) {
+                        badgeClass = 'dart-badge-danger';
+                        icon = '🚨 악재/주의';
+                    }
+                    return `<li class="news-item">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; flex-wrap:wrap; gap:4px;">
+                            <span class="${badgeClass}">${icon} · ${d.category || '공시'}</span>
+                            <span style="font-size:11px; color:${isLiveDart ? '#34d399' : '#94a3b8'};">${isLiveDart ? '📡 DART 실시간 연동' : 'DART 자동감지 판독'} ${d.date ? `(${d.date})` : ''}</span>
+                        </div>
+                        <strong>${d.title}</strong>
+                        <div class="dart-ai-summary-note">💡 <strong>AI 3초 해석:</strong> ${d.note || d.impact || '공시 원문 확인'}</div>
+                    </li>`;
+                }).join('');
+            };
+            renderItems(list, false);
+
+            if (window.AuthManager && AuthManager.canUseExternalQuery() && AuthManager.getApiBaseUrl()) {
+                AuthManager.apiRequest(`/api/external/dart?q=${encodeURIComponent(name)}&count=3`, 'GET').then(res => {
+                    if (res && res.success && Array.isArray(res.items) && res.items.length > 0 && currentReportStockName === name) {
+                        renderItems(res.items, !!res.live);
+                    }
+                }).catch(() => {});
+            }
         }
 
         function getKisPaperAccountKey() {
@@ -3337,6 +3387,9 @@ window.UserActivityTracker = UserActivityTracker;
 
         function saveKisPaperAccount(acc) {
             localStorage.setItem(getKisPaperAccountKey(), JSON.stringify(acc));
+            if (window.AuthManager && AuthManager.isLoggedIn()) {
+                AuthManager.pushUserPortfolioToServer(null, acc);
+            }
         }
 
         function getLiveNumericPrice(nameOrCode, exact = false) {
@@ -3422,6 +3475,10 @@ window.UserActivityTracker = UserActivityTracker;
 
         function executeKisPaperOrder(stockQuery, qtyInput, side) {
             if (!requireAuth('KIS 모의투자 매수/매도 주문')) return;
+            if (window.AuthManager && !AuthManager.canUseApiKey()) {
+                alert('🚫 [API 키 제어 차단]\n관리자에 의해 현재 계정의 API 키 및 모의투자 주문 권한이 정지되었습니다.');
+                return;
+            }
             const target = getLiveNumericPrice(stockQuery);
             const qty = parseInt(qtyInput, 10);
             if (!target || !target.price || target.price <= 0) {
@@ -3490,6 +3547,10 @@ window.UserActivityTracker = UserActivityTracker;
         }
 
         function configureKisDartKeys() {
+            if (window.AuthManager && !AuthManager.canUseApiKey()) {
+                alert('🚫 [API 키 제어 차단]\n관리자에 의해 현재 계정의 API 키 설정 권한이 정지되었습니다.');
+                return;
+            }
             const kisKey = localStorage.getItem('kis_app_key') || '';
             const dartKey = localStorage.getItem('dart_api_key') || '';
             const newKis = prompt('한국투자증권 KIS Developers AppKey 입력 (모의투자 시뮬레이터는 미입력 시에도 무료로 즉시 사용 가능):', kisKey);
@@ -3619,11 +3680,19 @@ window.UserActivityTracker = UserActivityTracker;
         }
 
         async function fetchJsonViaApi(targetUrl) {
-            const urls = [
+            if (window.AuthManager && !AuthManager.canUseExternalQuery()) {
+                throw new Error('EXTERNAL_QUERY_BLOCKED');
+            }
+            const urls = [];
+            const apiBase = (window.AuthManager && AuthManager.getApiBaseUrl()) || '';
+            if (apiBase && targetUrl.includes('naver.com')) {
+                urls.push(`${apiBase}/api/proxy/naver?url=${encodeURIComponent(targetUrl)}`);
+            }
+            urls.push(
                 targetUrl,
                 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl),
                 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(targetUrl)
-            ];
+            );
             for (const u of urls) {
                 try {
                     const res = await fetch(u);
@@ -3631,6 +3700,35 @@ window.UserActivityTracker = UserActivityTracker;
                 } catch (_) {}
             }
             throw new Error('API fetch failed');
+        }
+
+        async function runServerGeminiAnalysis() {
+            if (!currentReportStockName) return;
+            if (window.AuthManager && !AuthManager.canUseApiKey()) {
+                alert('🚫 [API 키 제어 차단]\n관리자에 의해 현재 계정의 Gemini AI 분석 API 권한이 정지되었습니다.');
+                return;
+            }
+            const aiTextEl = document.getElementById('ai-text');
+            const badgeEl = document.getElementById('rep-gemini-badge');
+            if (!aiTextEl) return;
+
+            const prevText = aiTextEl.innerText;
+            aiTextEl.innerText = '🤖 Render 서버에서 실시간 시세·재무·공시를 분석하는 중입니다... (최대 10~30초 소요)';
+            try {
+                const res = await AuthManager.apiRequest('/api/external/gemini-analyze', 'POST', {
+                    name: currentReportStockName,
+                    code: currentReportStockCode || ''
+                });
+                if (res && res.success && res.analysis) {
+                    aiTextEl.innerText = res.analysis;
+                    if (badgeEl) badgeEl.innerText = res.source || 'Gemini 실시간 분석';
+                } else {
+                    aiTextEl.innerText = prevText;
+                    alert('Render 서버 응답을 받지 못했습니다. 잠시 후 다시 시도해 주세요.');
+                }
+            } catch (_) {
+                aiTextEl.innerText = prevText;
+            }
         }
 
         async function fetchLiveStockDetails(code, stockName) {
@@ -4007,6 +4105,22 @@ window.UserActivityTracker = UserActivityTracker;
                 } else {
                     adminBtn.style.display = 'none';
                 }
+
+                // 서버에서 관심종목 및 모의계좌 동기화
+                AuthManager.syncUserPortfolioFromServer().then(remote => {
+                    if (!remote || !remote.success) return;
+                    if (Array.isArray(remote.favorites)) {
+                        favorites = remote.favorites;
+                        localStorage.setItem(getFavStorageKey(currentUser), JSON.stringify(favorites));
+                        if (typeof updateFavCount === 'function') updateFavCount();
+                        if (typeof renderFavorites === 'function') renderFavorites();
+                        if (typeof updateReportFavBtn === 'function') updateReportFavBtn();
+                    }
+                    if (remote.paperAccount && typeof remote.paperAccount.cash === 'number') {
+                        localStorage.setItem(getKisPaperAccountKey(), JSON.stringify(remote.paperAccount));
+                        if (typeof renderKisDartView === 'function') renderKisDartView();
+                    }
+                }).catch(() => {});
             } else {
                 statusText.innerHTML = '<span style="color:#aaa;">게스트 접속 모드</span>';
                 authBtn.innerHTML = '🔑 로그인 / 회원가입';

@@ -172,9 +172,17 @@ CREATE TABLE IF NOT EXISTS public.app_audit_logs (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS public.app_user_portfolios (
+    username TEXT PRIMARY KEY,
+    favorites JSONB DEFAULT '[]'::jsonb,
+    paper_account JSONB DEFAULT '{"cash":50000000,"holdings":{}}'::jsonb,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 ALTER TABLE public.app_users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.app_review_accounts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.app_audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.app_user_portfolios ENABLE ROW LEVEL SECURITY;
 
 -- 기본 최고관리자 및 심사용 계정 시드
 INSERT INTO public.app_users (id, username, password, name, birthdate, phone, is_phone_verified, email, address, referrer, role, status, allow_external_query, api_key_enabled, can_access_admin_panel)

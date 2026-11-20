@@ -4,6 +4,8 @@ api_server.py - Render.com 배포용 FastAPI 백엔드 서버
 - 미설정 시에도 로컬 SQLite(data/auth_audit.db)로 즉시 정상 동작 (이중 폴백)
 """
 
+import hashlib
+import hmac
 import json
 import os
 import sqlite3
@@ -16,6 +18,8 @@ import requests
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+
+import stock_service
 
 app = FastAPI(title="AI Stock Insight Auth & Audit API", version="1.0.0")
 
@@ -38,7 +42,29 @@ def normalize_supabase_url(raw_url: str) -> str:
 
 SUPABASE_URL = normalize_supabase_url(os.environ.get("SUPABASE_URL", ""))
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "").strip()
+ADMIN_API_SECRET = (os.environ.get("ADMIN_API_SECRET") or SUPABASE_KEY or "cpr-local-admin-secret").strip()
 SQLITE_PATH = os.path.join(os.path.dirname(__file__), "data", "auth_audit.db")
+
+
+def create_admin_token(username: str, role: str) -> str:
+    msg = f"{username}:{role}".encode("utf-8")
+    sig = hmac.new(ADMIN_API_SECRET.encode("utf-8"), msg, hashlib.sha256).hexdigest()
+    return f"{username}:{role}:{sig}"
+
+
+def verify_admin_request(request: Request, require_master: bool = False) -> str:
+    token = request.headers.get("x-admin-token", "").strip()
+    if token:
+        parts = token.split(":")
+        if len(parts) == 3:
+            username, role, sig = parts
+            expected = hmac.new(ADMIN_API_SECRET.encode("utf-8"), f"{username}:{role}".encode("utf-8"), hashlib.sha256).hexdigest()
+            if hmac.compare_digest(sig, expected):
+                if require_master and role != "admin":
+                    raise HTTPException(status_code=403, detail="Master admin privilege required")
+                if role in ("admin", "evaluator"):
+                    return username
+    raise HTTPException(status_code=401, detail="Unauthorized admin request")
 
 
 def is_supabase_enabled() -> bool:
@@ -124,6 +150,14 @@ def init_sqlite() -> None:
             meta TEXT DEFAULT '{}',
             client_time TEXT DEFAULT '',
             created_at TEXT
+        )
+    """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS app_user_portfolios (
+            username TEXT PRIMARY KEY,
+            favorites TEXT DEFAULT '[]',
+            paper_account TEXT DEFAULT '{"cash":50000000,"holdings":{}}',
+            updated_at TEXT
         )
     """)
     now_iso = datetime.now(timezone.utc).isoformat()
@@ -333,6 +367,9 @@ def api_config() -> Dict[str, Any]:
         "backend": "render-fastapi",
         "database": "supabase" if is_supabase_enabled() else "sqlite-fallback",
         "supabaseConnected": is_supabase_enabled(),
+        "dartConfigured": bool(os.environ.get("DART_API_KEY", "").strip()),
+        "geminiConfigured": bool(os.environ.get("GEMINI_API_KEY", "").strip()),
+        "kisConfigured": bool(os.environ.get("KIS_APP_KEY", "").strip()),
     }
 
 
@@ -413,6 +450,8 @@ def api_login(req: LoginReq, request: Request) -> Dict[str, Any]:
         "ip": client_ip,
         "loggedInAt": datetime.now(timezone.utc).isoformat(),
     }
+    if user.get("role") == "admin":
+        session["adminToken"] = create_admin_token(user["username"], "admin")
     return {"success": True, "session": session}
 
 
@@ -476,6 +515,8 @@ def api_eval_login(req: LoginReq, request: Request) -> Dict[str, Any]:
         "ip": client_ip,
         "loggedInAt": datetime.now(timezone.utc).isoformat(),
     }
+    if bool(target.get("can_access_admin_panel", True)):
+        session["adminToken"] = create_admin_token(target["username"], "evaluator")
     return {"success": True, "session": session, "message": "심사용 계정 로그인이 완료되었습니다."}
 
 
@@ -589,7 +630,8 @@ def api_update_profile(req: ProfileUpdateReq, request: Request) -> Dict[str, Any
 
 
 @app.get("/api/admin/users")
-def api_get_users() -> List[Dict[str, Any]]:
+def api_get_users(request: Request) -> List[Dict[str, Any]]:
+    verify_admin_request(request)
     if is_supabase_enabled():
         rows = sb_request("GET", "app_users", params={"select": "*", "order": "created_at.desc"})
         return [row_to_user(r) for r in rows]
@@ -600,7 +642,8 @@ def api_get_users() -> List[Dict[str, Any]]:
 
 
 @app.post("/api/admin/users/status")
-def api_update_user_status(req: UserStatusReq) -> Dict[str, Any]:
+def api_update_user_status(req: UserStatusReq, request: Request) -> Dict[str, Any]:
+    verify_admin_request(request, require_master=True)
     if is_supabase_enabled():
         sb_request("PATCH", "app_users", params={"id": f"eq.{req.userId}"}, payload={"status": req.status})
     else:
@@ -612,7 +655,8 @@ def api_update_user_status(req: UserStatusReq) -> Dict[str, Any]:
 
 
 @app.post("/api/admin/users/controls")
-def api_update_user_controls(req: UserControlsReq) -> Dict[str, Any]:
+def api_update_user_controls(req: UserControlsReq, request: Request) -> Dict[str, Any]:
+    verify_admin_request(request, require_master=True)
     updates: Dict[str, Any] = {}
     if req.allowExternalQuery is not None:
         updates["allow_external_query"] = req.allowExternalQuery if is_supabase_enabled() else int(req.allowExternalQuery)
@@ -632,7 +676,8 @@ def api_update_user_controls(req: UserControlsReq) -> Dict[str, Any]:
 
 
 @app.get("/api/admin/review-codes")
-def api_get_review_codes() -> List[Dict[str, Any]]:
+def api_get_review_codes(request: Request) -> List[Dict[str, Any]]:
+    verify_admin_request(request)
     if is_supabase_enabled():
         rows = sb_request("GET", "app_review_accounts", params={"select": "*", "order": "created_at.desc"})
         return [row_to_review(r) for r in rows]
@@ -643,7 +688,8 @@ def api_get_review_codes() -> List[Dict[str, Any]]:
 
 
 @app.post("/api/admin/review-codes")
-def api_create_review_code(req: ReviewCreateReq) -> Dict[str, Any]:
+def api_create_review_code(req: ReviewCreateReq, request: Request) -> Dict[str, Any]:
+    verify_admin_request(request, require_master=True)
     clean = req.username.strip().lower()
     if len(clean) < 3:
         return {"success": False, "message": "아이디는 3자리 이상이어야 합니다."}
@@ -684,7 +730,8 @@ def api_create_review_code(req: ReviewCreateReq) -> Dict[str, Any]:
 
 
 @app.post("/api/admin/review-codes/toggle")
-def api_toggle_review_code(req: ReviewToggleReq) -> Dict[str, Any]:
+def api_toggle_review_code(req: ReviewToggleReq, request: Request) -> Dict[str, Any]:
+    verify_admin_request(request, require_master=True)
     updates: Dict[str, Any] = {}
     if req.canAccessAdminPanel is not None:
         updates["can_access_admin_panel"] = req.canAccessAdminPanel if is_supabase_enabled() else int(req.canAccessAdminPanel)
@@ -704,7 +751,8 @@ def api_toggle_review_code(req: ReviewToggleReq) -> Dict[str, Any]:
 
 
 @app.get("/api/audit-logs")
-def api_get_audit_logs(limit: int = 300) -> List[Dict[str, Any]]:
+def api_get_audit_logs(request: Request, limit: int = 300) -> List[Dict[str, Any]]:
+    verify_admin_request(request)
     if is_supabase_enabled():
         rows = sb_request("GET", "app_audit_logs", params={"select": "*", "order": "id.desc", "limit": str(limit)})
         return [row_to_log(r) for r in rows]
@@ -729,3 +777,120 @@ def api_post_audit_log(req: AuditLogReq, request: Request) -> Dict[str, Any]:
     }
     insert_audit_log(entry)
     return {"success": True, "entry": entry}
+
+
+class PortfolioReq(BaseModel):
+    username: str
+    favorites: Optional[List[str]] = None
+    paperAccount: Optional[Dict[str, Any]] = None
+
+
+@app.get("/api/user/portfolio")
+def api_get_portfolio(username: str) -> Dict[str, Any]:
+    clean = username.strip().lower()
+    if is_supabase_enabled():
+        try:
+            rows = sb_request("GET", "app_user_portfolios", params={"username": f"eq.{clean}", "select": "*"})
+            if rows:
+                r = rows[0]
+                return {
+                    "success": True,
+                    "favorites": r.get("favorites", []),
+                    "paperAccount": r.get("paper_account", {"cash": 50000000, "holdings": {}}),
+                }
+        except HTTPException:
+            pass
+    conn = get_sqlite_conn()
+    row = conn.execute("SELECT * FROM app_user_portfolios WHERE username = ?", (clean,)).fetchone()
+    conn.close()
+    if row:
+        return {
+            "success": True,
+            "favorites": json.loads(row["favorites"] or "[]"),
+            "paperAccount": json.loads(row["paper_account"] or '{"cash":50000000,"holdings":{}}'),
+        }
+    return {"success": True, "favorites": None, "paperAccount": None}
+
+
+@app.post("/api/user/portfolio")
+def api_save_portfolio(req: PortfolioReq) -> Dict[str, Any]:
+    clean = req.username.strip().lower()
+    now_iso = datetime.now(timezone.utc).isoformat()
+    current = api_get_portfolio(clean)
+    favs = req.favorites if req.favorites is not None else (current.get("favorites") or [])
+    acc = req.paperAccount if req.paperAccount is not None else (current.get("paperAccount") or {"cash": 50000000, "holdings": {}})
+
+    if is_supabase_enabled():
+        try:
+            existing = sb_request("GET", "app_user_portfolios", params={"username": f"eq.{clean}", "select": "username"})
+            if existing:
+                sb_request("PATCH", "app_user_portfolios", params={"username": f"eq.{clean}"}, payload={"favorites": favs, "paper_account": acc, "updated_at": now_iso})
+            else:
+                sb_request("POST", "app_user_portfolios", payload={"username": clean, "favorites": favs, "paper_account": acc, "updated_at": now_iso})
+            return {"success": True}
+        except HTTPException:
+            pass
+
+    conn = get_sqlite_conn()
+    conn.execute(
+        "INSERT OR REPLACE INTO app_user_portfolios (username, favorites, paper_account, updated_at) VALUES (?, ?, ?, ?)",
+        (clean, json.dumps(favs, ensure_ascii=False), json.dumps(acc, ensure_ascii=False), now_iso),
+    )
+    conn.commit()
+    conn.close()
+    return {"success": True}
+
+
+@app.get("/api/proxy/naver")
+def api_proxy_naver(url: str) -> Any:
+    parsed = urlparse(url)
+    allowed_hosts = {"m.stock.naver.com", "ac.stock.naver.com", "api.stock.naver.com", "finance.naver.com"}
+    if parsed.scheme != "https" or parsed.netloc not in allowed_hosts:
+        raise HTTPException(status_code=400, detail="Disallowed proxy target")
+    resp = requests.get(
+        url,
+        headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"},
+        timeout=8,
+    )
+    if not resp.ok:
+        raise HTTPException(status_code=resp.status_code, detail="Upstream fetch error")
+    return resp.json()
+
+
+@app.get("/api/external/dart")
+def api_external_dart(q: str, count: int = 5) -> Dict[str, Any]:
+    items = stock_service.get_dart_disclosures(q, page_count=min(max(count, 1), 10))
+    return {
+        "success": True,
+        "query": q,
+        "live": bool(os.environ.get("DART_API_KEY", "").strip()),
+        "items": items or [],
+    }
+
+
+class GeminiAnalyzeReq(BaseModel):
+    name: str
+    code: Optional[str] = ""
+
+
+@app.post("/api/external/gemini-analyze")
+def api_external_gemini_analyze(req: GeminiAnalyzeReq) -> Dict[str, Any]:
+    code = (req.code or "").strip()
+    name = req.name.strip()
+    if not code:
+        resolved_name, resolved_code = stock_service.resolve_stock_code(name)
+        if resolved_code:
+            name = resolved_name or name
+            code = resolved_code
+
+    price_info = stock_service.get_realtime_price(code) if code else None
+    finance_info = stock_service.get_financial_summary(code) if code else None
+    news_list = stock_service.get_recent_news(code, page_size=3) if code else []
+    result = stock_service.analyze_with_gemini(name, price_info, finance_info, news_list)
+    return {
+        "success": True,
+        "name": name,
+        "code": code,
+        "source": result.get("source", "AI 분석"),
+        "analysis": result.get("analysis", ""),
+    }
