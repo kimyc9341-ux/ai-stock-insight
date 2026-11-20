@@ -1920,6 +1920,202 @@ window.UserActivityTracker = UserActivityTracker;
         .diagnosis-cards li { border:1px solid #334155; border-radius:8px; padding:10px; overflow-wrap:anywhere; }
         .diagnosis-controls { display:grid; gap:8px; max-width:420px; }
         .diagnosis-controls select, .diagnosis-controls input { width:100%; min-width:0; margin:0; }
+        /* ==========================================
+           ⚙️ 시스템 작동 방식 (인터랙티브 애니메이션 구조도)
+           ========================================== */
+        .arch-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+        }
+        .arch-hero-card {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));
+            border: 1px solid #334155;
+            border-radius: 16px;
+            padding: 24px 26px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+        }
+        .arch-stage {
+            border: 1px solid #334155;
+            border-radius: 18px;
+            background: #0b1017;
+            overflow: hidden;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+        }
+        .arch-top {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 18px;
+            border-bottom: 1px solid #263244;
+            background: #131b29;
+        }
+        .arch-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 4px;
+            border-radius: 12px;
+            background: #0b1017;
+            border: 1px solid #283548;
+        }
+        .arch-tab-btn {
+            font-family: inherit;
+            font-size: 13.5px;
+            font-weight: 600;
+            background: transparent;
+            color: #94a3b8;
+            border: 0;
+            padding: 8px 14px;
+            border-radius: 9px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .arch-tab-btn.active {
+            background: #2563eb;
+            color: #ffffff;
+            box-shadow: 0 2px 10px rgba(37, 99, 235, 0.4);
+        }
+        .arch-ctl {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .arch-ctl-btn {
+            font-family: inherit;
+            font-size: 13.5px;
+            font-weight: 700;
+            background: #1e293b;
+            color: #e2e8f0;
+            border: 1px solid #334155;
+            padding: 8px 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .arch-ctl-btn:hover {
+            border-color: #38bdf8;
+            color: #ffffff;
+        }
+        .arch-ctl-btn.play {
+            background: linear-gradient(135deg, #0ea5e9, #2563eb);
+            border-color: #38bdf8;
+            color: #ffffff;
+            min-width: 104px;
+        }
+        .arch-svg-box {
+            padding: 20px 16px 10px;
+            overflow-x: auto;
+        }
+        .arch-svg-box svg {
+            width: 100%;
+            min-width: 720px;
+            height: auto;
+            display: block;
+        }
+        .arch-track {
+            fill: none;
+            stroke: #334155;
+            stroke-width: 3;
+            stroke-dasharray: 6 6;
+            transition: stroke 0.3s, stroke-width 0.3s;
+        }
+        .arch-track.hot {
+            stroke: #38bdf8;
+            stroke-width: 4;
+            stroke-dasharray: none;
+            filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.7));
+        }
+        .arch-node rect.card {
+            fill: #151e2e;
+            stroke: #334155;
+            stroke-width: 1.6;
+            transition: all 0.3s;
+        }
+        .arch-node.active rect.card {
+            fill: #172554;
+            stroke: #38bdf8;
+            stroke-width: 2.5;
+            filter: drop-shadow(0 0 12px rgba(56, 189, 248, 0.45));
+        }
+        .arch-node.dim {
+            opacity: 0.52;
+        }
+        @keyframes archPktPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.12); }
+        }
+        .arch-packet-dot {
+            animation: archPktPulse 0.9s infinite ease-in-out;
+            transform-box: fill-box;
+            transform-origin: center;
+        }
+        .arch-step-panel {
+            margin: 8px 18px 18px;
+            padding: 18px 20px;
+            background: #131b29;
+            border: 1px solid #2a3950;
+            border-left: 4px solid #38bdf8;
+            border-radius: 12px;
+        }
+        .arch-prog {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .arch-dots {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .arch-dot {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 1px solid #334155;
+            background: #0f172a;
+            color: #94a3b8;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .arch-dot.active {
+            background: #38bdf8;
+            color: #0b0f19;
+            border-color: #38bdf8;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+        .arch-dot.done {
+            background: #1e3a8a;
+            color: #93c5fd;
+            border-color: #3b82f6;
+        }
+        .arch-grid4 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 14px;
+        }
+        .arch-info-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 14px;
+            padding: 18px;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .arch-info-card:hover {
+            transform: translateY(-3px);
+            border-color: #38bdf8;
+        }
     </style>
 </head>
 <body>
@@ -1968,6 +2164,10 @@ window.UserActivityTracker = UserActivityTracker;
         </button>
         <button type="button" class="drawer-tab-btn" id="tab-kis-dart" onclick="switchTab('kis-dart')">
             <span>🏦 KIS 모의투자 & DART 공시</span>
+            <span>›</span>
+        </button>
+        <button type="button" class="drawer-tab-btn" id="tab-arch" onclick="switchTab('arch')">
+            <span>⚙️ 시스템 작동 방식 (실시간 구조도)</span>
             <span>›</span>
         </button>
     </nav>
@@ -2261,6 +2461,156 @@ window.UserActivityTracker = UserActivityTracker;
 
         <!-- 4-4. 한국투자증권(KIS) 모의투자 & DART 전자공시 뷰 -->
         <div id="view-kis-dart" style="display:none;"></div>
+
+        <!-- 4-5. ⚙️ 시스템 작동 방식 (실시간 애니메이션 구조도) -->
+        <div id="view-arch" style="display:none;">
+            <div class="arch-wrap">
+                <div class="arch-hero-card">
+                    <div>
+                        <div style="font-size:12px; font-weight:800; color:#38bdf8; letter-spacing:0.8px; margin-bottom:4px;">LIVE ARCHITECTURE · HOW IT WORKS</div>
+                        <h2 style="font-size:22px; font-weight:800; color:#f8fafc; margin-bottom:6px;">🩺 내 계좌 심폐소생술 — 실제 작동 방식</h2>
+                        <p style="font-size:14px; color:#94a3b8;">
+                            시나리오 탭을 고르고 <strong>▶ 재생</strong>을 누르면, 실제 서비스에서 데이터가 어느 서버와 DB를 오가는지 한 단계씩 애니메이션으로 확인할 수 있습니다.
+                        </p>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                        <span id="arch-live-badge" style="font-size:12.5px; font-weight:700; padding:7px 14px; border-radius:20px; background:rgba(56,189,248,0.12); color:#38bdf8; border:1px solid rgba(56,189,248,0.35);">● 서버 상태 확인 중...</span>
+                        <button type="button" class="user-small-btn" style="padding:7px 14px; font-size:12.5px;" onclick="checkArchLiveStatus()">🔄 연결 상태 점검</button>
+                    </div>
+                </div>
+
+                <!-- 인터랙티브 데이터 흐름 스테이지 -->
+                <div class="arch-stage">
+                    <div class="arch-top">
+                        <div class="arch-tabs" role="tablist">
+                            <button type="button" class="arch-tab-btn active" id="arch-sc-search" onclick="archSelectScenario('search')">🔍 종목 검색 · 시세</button>
+                            <button type="button" class="arch-tab-btn" id="arch-sc-auth" onclick="archSelectScenario('auth')">🔐 로그인 · 보안통제</button>
+                            <button type="button" class="arch-tab-btn" id="arch-sc-trade" onclick="archSelectScenario('trade')">🏦 모의투자 · 잔고동기화</button>
+                            <button type="button" class="arch-tab-btn" id="arch-sc-ai" onclick="archSelectScenario('ai')">🤖 Gemini AI · DART</button>
+                        </div>
+                        <div class="arch-ctl">
+                            <button type="button" class="arch-ctl-btn play" id="arch-play-btn" onclick="archTogglePlay()">▶ 재생</button>
+                            <button type="button" class="arch-ctl-btn" onclick="archStep(-1)">◀ 이전</button>
+                            <button type="button" class="arch-ctl-btn" onclick="archStep(1)">다음 ▶</button>
+                            <button type="button" class="arch-ctl-btn" onclick="archReset()">↺ 초기화</button>
+                        </div>
+                    </div>
+
+                    <div class="arch-svg-box">
+                        <svg viewBox="0 0 920 300" xmlns="http://www.w3.org/2000/svg">
+                            <!-- 연결선 트랙 -->
+                            <path id="track-browser-render" class="arch-track" d="M 195 145 L 365 145" />
+                            <path id="track-render-supabase" class="arch-track" d="M 555 145 L 720 75" />
+                            <path id="track-render-naver" class="arch-track" d="M 555 145 L 720 150" />
+                            <path id="track-render-ai" class="arch-track" d="M 555 145 L 720 225" />
+                            <path id="track-browser-local" class="arch-track" d="M 110 190 L 110 230" />
+
+                            <!-- 노드 1: 사용자 브라우저 (GitHub Pages) -->
+                            <g id="node-browser" class="arch-node" transform="translate(20, 95)">
+                                <rect class="card" width="175" height="96" rx="14" />
+                                <rect x="12" y="12" width="34" height="34" rx="9" fill="rgba(56,189,248,0.18)" />
+                                <text x="29" y="34" text-anchor="middle" font-size="18">🌐</text>
+                                <text x="56" y="27" fill="#f8fafc" font-size="13.5" font-weight="800">브라우저 SPA</text>
+                                <text x="56" y="44" fill="#38bdf8" font-size="11" font-weight="600">GitHub Pages</text>
+                                <text x="14" y="68" fill="#94a3b8" font-size="10.5">index.html · stocks.json</text>
+                                <text x="14" y="83" fill="#94a3b8" font-size="10.5">AuthManager · Tracker</text>
+                            </g>
+
+                            <!-- 노드 1-하단: 브라우저 LocalStorage -->
+                            <g id="node-local" class="arch-node" transform="translate(20, 232)">
+                                <rect class="card" width="175" height="54" rx="11" />
+                                <text x="14" y="23" fill="#e2e8f0" font-size="12" font-weight="700">💾 브라우저 캐시</text>
+                                <text x="14" y="40" fill="#94a3b8" font-size="10.5">세션 토큰 · 즉시 폴백</text>
+                            </g>
+
+                            <!-- 노드 2: Render FastAPI 서버 -->
+                            <g id="node-render" class="arch-node" transform="translate(365, 95)">
+                                <rect class="card" width="190" height="96" rx="14" />
+                                <rect x="12" y="12" width="34" height="34" rx="9" fill="rgba(168,85,247,0.2)" />
+                                <text x="29" y="34" text-anchor="middle" font-size="18">⚡</text>
+                                <text x="56" y="27" fill="#f8fafc" font-size="13.5" font-weight="800">Render 백엔드</text>
+                                <text x="56" y="44" fill="#c084fc" font-size="11" font-weight="600">FastAPI (api_server.py)</text>
+                                <text x="14" y="68" fill="#94a3b8" font-size="10.5">X-Admin-Token 검증</text>
+                                <text x="14" y="83" fill="#94a3b8" font-size="10.5">CORS 프록시 · API 중계</text>
+                            </g>
+
+                            <!-- 노드 3: Supabase PostgreSQL -->
+                            <g id="node-supabase" class="arch-node" transform="translate(720, 32)">
+                                <rect class="card" width="180" height="76" rx="13" />
+                                <text x="14" y="26" fill="#34d399" font-size="13" font-weight="800">🗄️ Supabase DB</text>
+                                <text x="14" y="44" fill="#cbd5e1" font-size="10.5">app_users · app_audit_logs</text>
+                                <text x="14" y="60" fill="#94a3b8" font-size="10.5">app_user_portfolios (RLS)</text>
+                            </g>
+
+                            <!-- 노드 4: 네이버 금융 실시간망 -->
+                            <g id="node-naver" class="arch-node" transform="translate(720, 115)">
+                                <rect class="card" width="180" height="72" rx="13" />
+                                <text x="14" y="26" fill="#4ade80" font-size="13" font-weight="800">📈 네이버 금융망</text>
+                                <text x="14" y="44" fill="#cbd5e1" font-size="10.5">실시간 주가 · 재무제표</text>
+                                <text x="14" y="60" fill="#94a3b8" font-size="10.5">뉴스 속보 · 캔들차트</text>
+                            </g>
+
+                            <!-- 노드 5: DART & Gemini AI -->
+                            <g id="node-ai" class="arch-node" transform="translate(720, 195)">
+                                <rect class="card" width="180" height="76" rx="13" />
+                                <text x="14" y="26" fill="#fbbf24" font-size="13" font-weight="800">🤖 Gemini · DART</text>
+                                <text x="14" y="44" fill="#cbd5e1" font-size="10.5">DART 전자공시 판독</text>
+                                <text x="14" y="60" fill="#94a3b8" font-size="10.5">AI 리포트 · 처방 생성</text>
+                            </g>
+
+                            <!-- 움직이는 패킷 알약 -->
+                            <g id="arch-packet" transform="translate(107, 143)" style="transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);">
+                                <circle class="arch-packet-dot" r="10" fill="#38bdf8" stroke="#ffffff" stroke-width="2.5" />
+                                <rect id="arch-packet-bg" x="-52" y="-33" width="104" height="20" rx="10" fill="#0ea5e9" stroke="#e0f2fe" stroke-width="1" />
+                                <text id="arch-packet-label" x="0" y="-20" text-anchor="middle" fill="#ffffff" font-size="10.5" font-weight="800">요청</text>
+                            </g>
+                        </svg>
+                    </div>
+
+                    <div class="arch-step-panel">
+                        <div class="arch-prog">
+                            <div class="arch-dots" id="arch-step-dots"></div>
+                            <span id="arch-step-badge" style="font-size:12px; font-weight:700; color:#38bdf8; font-family:monospace;">STEP 1 / 4</span>
+                        </div>
+                        <h3 id="arch-step-title" style="font-size:17px; color:#f8fafc; margin-bottom:6px;">단계 제목</h3>
+                        <p id="arch-step-desc" style="font-size:14px; color:#cbd5e1; line-height:1.65; margin-bottom:8px;">단계 설명</p>
+                        <div id="arch-step-code" style="font-family:monospace; font-size:12px; color:#93c5fd; background:#0b1017; border:1px solid #263244; padding:8px 12px; border-radius:8px; overflow-x:auto;"></div>
+                    </div>
+                </div>
+
+                <!-- 실제 구현 요약 4카드 -->
+                <div class="arch-grid4">
+                    <div class="arch-info-card">
+                        <div style="font-size:22px; margin-bottom:8px;">🌐</div>
+                        <h4 style="font-size:15.5px; color:#38bdf8; margin-bottom:6px;">GitHub Pages 프론트엔드</h4>
+                        <p style="font-size:13.5px; color:#94a3b8; line-height:1.6;">
+                            `index.html` 단일 SPA와 4,332개 종목 장부(`stocks.json`)를 무료 호스팅합니다. 사용자 행동은 `UserActivityTracker`가 즉시 기록합니다.
+                        </p>
+                    </div>
+                    <div class="arch-info-card">
+                        <div style="font-size:22px; margin-bottom:8px;">⚡</div>
+                        <h4 style="font-size:15.5px; color:#c084fc; margin-bottom:6px;">Render FastAPI 백엔드</h4>
+                        <p style="font-size:13.5px; color:#94a3b8; line-height:1.6;">
+                            `api_server.py`가 로그인/토큰 검증(`X-Admin-Token`), 네이버 시세 CORS 프록시, DART 공시 및 Gemini AI 분석을 안전하게 중계합니다.
+                        </p>
+                    </div>
+                    <div class="arch-info-card">
+                        <div style="font-size:22px; margin-bottom:8px;">🗄️</div>
+                        <h4 style="font-size:15.5px; color:#34d399; margin-bottom:6px;">Supabase PostgreSQL DB</h4>
+                        <p style="font-size:13.5px; color:#94a3b8; line-height:1.6;">
+                            회원 정보(`app_users`), 심사용 계정(`app_review_accounts`), 감사 로그(`app_audit_logs`), 관심종목·모의계좌(`app_user_portfolios`)를 중앙 저장합니다.
+                        </p>
+                    </div>
+                    <div class="arch-info-card">
+                        <div style="font-size:22px; margin-bottom:8px;">🛡️</div>
+                        <h4 style="font-size:15.5px; color:#fbbf24; margin-bottom:6px;">실시간 보안 · 권한 통제</h4>
+                        <p style="font-size:13.5px; color:#94a3b8; line-height:1.6;">
+                            최고관리자가 `보안통제실`에서 <strong>외부조회 차단</strong> 및 <strong>API키 정지</strong> 스위치를 켜면 해당 계정의 실시간 조회·주문·AI 호출이 즉시 차단됩니다.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -3052,6 +3402,8 @@ window.UserActivityTracker = UserActivityTracker;
             if (tabRadar) tabRadar.classList.remove('active');
             const tabKisDart = document.getElementById('tab-kis-dart');
             if (tabKisDart) tabKisDart.classList.remove('active');
+            const tabArch = document.getElementById('tab-arch');
+            if (tabArch) tabArch.classList.remove('active');
             if (btnHome) btnHome.classList.remove('active');
 
             document.getElementById('view-lead').style.display = 'none';
@@ -3064,6 +3416,8 @@ window.UserActivityTracker = UserActivityTracker;
             if (viewRadar) viewRadar.style.display = 'none';
             const viewKisDart = document.getElementById('view-kis-dart');
             if (viewKisDart) viewKisDart.style.display = 'none';
+            const viewArch = document.getElementById('view-arch');
+            if (viewArch) viewArch.style.display = 'none';
 
             if (tab === 'home') {
                 if (btnHome) btnHome.classList.add('active');
@@ -3083,7 +3437,8 @@ window.UserActivityTracker = UserActivityTracker;
                 'fav': `⭐ 내 관심 종목 (${favorites.length}종목)`,
                 'er': '🚨 내 계좌 응급실',
                 'radar': '⚡ 장중 특징주 & 거래대금 급증 레이더',
-                'kis-dart': '🏦 한국투자증권(KIS) 모의투자 & DART 전자공시'
+                'kis-dart': '🏦 한국투자증권(KIS) 모의투자 & DART 전자공시',
+                'arch': '⚙️ 시스템 작동 방식 (실시간 애니메이션 구조도)'
             };
             if (activeMenuTitle) {
                 activeMenuTitle.innerText = menuTitleMap[tab] || '메뉴 화면';
@@ -3125,8 +3480,351 @@ window.UserActivityTracker = UserActivityTracker;
                     renderKisDartView();
                     refreshTop50FromNaverRealtime(true);
                 }
+            } else if (tab === 'arch') {
+                if (tabArch) tabArch.classList.add('active');
+                if (viewArch) {
+                    viewArch.style.display = 'block';
+                    initArchStage();
+                }
             }
             window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // ==========================================
+        // ⚙️ 시스템 작동 방식 인터랙티브 애니메이션 엔진
+        // ==========================================
+        const ARCH_NODE_POS = {
+            browser: { x: 107, y: 143 },
+            local: { x: 107, y: 258 },
+            render: { x: 460, y: 143 },
+            supabase: { x: 810, y: 70 },
+            naver: { x: 810, y: 150 },
+            ai: { x: 810, y: 232 }
+        };
+
+        const ARCH_SCENARIOS = {
+            search: [
+                {
+                    nodes: ['browser', 'local'],
+                    tracks: ['track-browser-local'],
+                    from: 'browser',
+                    to: 'local',
+                    label: '종목 매칭',
+                    color: '#38bdf8',
+                    title: '1단계. 4,332개 종목 장부 조회 & 외부조회 권한 확인',
+                    desc: '사용자가 종목(예: 삼성전자)을 검색하면 브라우저가 `stocks.json`에서 종목코드를 찾고, `AuthManager.canUseExternalQuery()`로 외부조회 차단 여부를 먼저 검사합니다.',
+                    code: 'selectStock("삼성전자") → AuthManager.canUseExternalQuery() === true'
+                },
+                {
+                    nodes: ['browser', 'render', 'naver'],
+                    tracks: ['track-browser-render', 'track-render-naver'],
+                    from: 'browser',
+                    to: 'naver',
+                    label: '시세·재무 요청',
+                    color: '#4ade80',
+                    title: '2단계. Render CORS 프록시를 통한 네이버 금융 실시간 조회',
+                    desc: '브라우저가 Render 백엔드(`/api/proxy/naver`)를 거쳐 네이버 금융망에서 현재가·등락률·재무제표·뉴스·캔들차트를 실시간 수신합니다.',
+                    code: 'GET /api/proxy/naver?url=https://m.stock.naver.com/api/stock/005930/finance/annual'
+                },
+                {
+                    nodes: ['browser', 'render', 'supabase'],
+                    tracks: ['track-browser-render', 'track-render-supabase'],
+                    from: 'browser',
+                    to: 'supabase',
+                    label: '검색 감사로그',
+                    color: '#a855f7',
+                    title: '3단계. 검색 이력 실시간 기록 (로컬 + Supabase 동시 저장)',
+                    desc: '`UserActivityTracker.logStockSearch()`가 브라우저 캐시와 Render `/api/audit-logs`를 통해 Supabase `app_audit_logs` 테이블에 `SEARCH_STOCK` 기록을 남깁니다.',
+                    code: 'POST /api/audit-logs → INSERT INTO app_audit_logs (action="SEARCH_STOCK: [삼성전자]")'
+                },
+                {
+                    nodes: ['browser'],
+                    tracks: [],
+                    from: 'render',
+                    to: 'browser',
+                    label: '리포트 완성',
+                    color: '#38bdf8',
+                    title: '4단계. 종합 심폐소생 리포트 & DART 공시 화면 렌더링',
+                    desc: '수집된 실시간 시세, 캔들 차트, 재무제표, DART 공시 요약과 모의매수/매도 버튼을 화면 카드에 즉시 표시합니다.',
+                    code: 'renderDartDisclosuresInReport("삼성전자") + card.style.display = "block"'
+                }
+            ],
+            auth: [
+                {
+                    nodes: ['browser', 'render'],
+                    tracks: ['track-browser-render'],
+                    from: 'browser',
+                    to: 'render',
+                    label: '로그인 요청',
+                    color: '#38bdf8',
+                    title: '1단계. 로그인 / 심사용 계정 인증 요청 전송',
+                    desc: '사용자가 아이디/비밀번호(또는 심사용 계정 `admin2`)를 입력하면 브라우저가 기기 정보(브라우저·OS)와 IP를 포함해 Render `/api/auth/login`으로 전송합니다.',
+                    code: 'POST /api/auth/login { username, password, fp: { browser, os, deviceType } }'
+                },
+                {
+                    nodes: ['render', 'supabase'],
+                    tracks: ['track-render-supabase'],
+                    from: 'render',
+                    to: 'supabase',
+                    label: '계정·권한 검증',
+                    color: '#34d399',
+                    title: '2단계. Supabase 계정 조회 및 상태(승인/차단) 검증',
+                    desc: 'Render 서버가 `app_users` 또는 `app_review_accounts` 테이블에서 계정 상태(`approved`), `allow_external_query`, `api_key_enabled` 권한을 확인합니다.',
+                    code: 'GET /rest/v1/app_users?username=eq.admin → status="approved", role="admin"'
+                },
+                {
+                    nodes: ['render', 'supabase', 'browser'],
+                    tracks: ['track-render-supabase', 'track-browser-render'],
+                    from: 'render',
+                    to: 'browser',
+                    label: '보안토큰 발급',
+                    color: '#c084fc',
+                    title: '3단계. HMAC 관리자 토큰(X-Admin-Token) 발급 및 접속 로그 저장',
+                    desc: '관리자/평가자 계정일 경우 HMAC-SHA256 서명된 `adminToken`을 발급하고, `LOGIN_SUCCESS` 로그를 `app_audit_logs`에 기록합니다.',
+                    code: 'session.adminToken = HMAC_SHA256(username:role) + INSERT app_audit_logs ("LOGIN_SUCCESS")'
+                },
+                {
+                    nodes: ['browser', 'render', 'supabase'],
+                    tracks: ['track-browser-render', 'track-render-supabase'],
+                    from: 'browser',
+                    to: 'supabase',
+                    label: '보안통제실 동기화',
+                    color: '#fbbf24',
+                    title: '4단계. 보안통제실 실시간 제어 (외부조회 차단 · API키 정지)',
+                    desc: '최고관리자가 보안통제실에서 회원의 외부조회·API키 스위치를 변경하면 `X-Admin-Token` 검증을 거쳐 Supabase에 즉시 반영됩니다.',
+                    code: 'POST /api/admin/users/controls (Headers: X-Admin-Token) → allow_external_query / api_key_enabled'
+                }
+            ],
+            trade: [
+                {
+                    nodes: ['browser', 'local'],
+                    tracks: ['track-browser-local'],
+                    from: 'browser',
+                    to: 'local',
+                    label: 'API 권한 확인',
+                    color: '#fbbf24',
+                    title: '1단계. 로그인 및 API키 제어 권한(`canUseApiKey`) 검사',
+                    desc: 'KIS 모의매수/매도 버튼 클릭 시 비로그인 여부와 관리자의 `API키 제어(활성/정지)` 상태를 먼저 검증해 정지된 계정의 주문을 차단합니다.',
+                    code: 'requireAuth() && AuthManager.canUseApiKey() → 예수금/보유수량 계산'
+                },
+                {
+                    nodes: ['browser', 'render', 'supabase'],
+                    tracks: ['track-browser-render', 'track-render-supabase'],
+                    from: 'browser',
+                    to: 'supabase',
+                    label: '잔고 DB 저장',
+                    color: '#34d399',
+                    title: '2단계. 모의계좌 잔고 및 관심종목 Supabase 영구 동기화',
+                    desc: '체결된 예수금과 보유 종목, 평균 매수가를 `saveKisPaperAccount()`가 Render `/api/user/portfolio`를 통해 `app_user_portfolios` 테이블에 저장합니다.',
+                    code: 'POST /api/user/portfolio → UPSERT app_user_portfolios (favorites, paper_account)'
+                },
+                {
+                    nodes: ['browser', 'render', 'supabase'],
+                    tracks: ['track-browser-render', 'track-render-supabase'],
+                    from: 'render',
+                    to: 'supabase',
+                    label: '체결 감사로그',
+                    color: '#38bdf8',
+                    title: '3단계. 모의투자 체결 이력 감사 로그 기록',
+                    desc: '매수/매도 종목명, 수량, 체결단가, 총 거래금액이 `TRADE_BUY` / `TRADE_SELL` 형태로 `app_audit_logs`에 저장되어 보안통제실에서 추적됩니다.',
+                    code: 'UserActivityTracker.logPaperTrading() → action="TRADE_BUY: [삼성전자] 10주"'
+                },
+                {
+                    nodes: ['supabase', 'render', 'browser'],
+                    tracks: ['track-render-supabase', 'track-browser-render'],
+                    from: 'supabase',
+                    to: 'browser',
+                    label: '멀티기기 복원',
+                    color: '#4ade80',
+                    title: '4단계. 다른 PC/모바일 로그인 시 동일 계좌 자동 복원',
+                    desc: '다른 기기에서 같은 아이디로 로그인하면 `syncUserPortfolioFromServer()`가 Supabase에서 모의계좌와 관심종목을 그대로 불러옵니다.',
+                    code: 'GET /api/user/portfolio?username=admin → renderKisDartView() & renderFavorites()'
+                }
+            ],
+            ai: [
+                {
+                    nodes: ['browser', 'render'],
+                    tracks: ['track-browser-render'],
+                    from: 'browser',
+                    to: 'render',
+                    label: 'AI 분석 요청',
+                    color: '#38bdf8',
+                    title: '1단계. [Gemini 실시간 AI 분석 요청] 및 API 권한 검사',
+                    desc: '종목 리포트에서 AI 분석 버튼을 누르면 `canUseApiKey()` 확인 후 브라우저가 Render 서버(`/api/external/gemini-analyze`)로 분석을 요청합니다.',
+                    code: 'POST /api/external/gemini-analyze { name: "삼성전자", code: "005930" }'
+                },
+                {
+                    nodes: ['render', 'naver'],
+                    tracks: ['track-render-naver'],
+                    from: 'render',
+                    to: 'naver',
+                    label: '시세·뉴스 수집',
+                    color: '#4ade80',
+                    title: '2단계. Render 서버가 최신 시세 · 재무 · 뉴스 3종 수집',
+                    desc: '`stock_service.py`가 네이버 금융에서 실시간 주가, 연간 재무제표, 최신 뉴스 3건을 수집해 AI 분석 입력 데이터로 조합합니다.',
+                    code: 'stock_service.get_realtime_price() + get_financial_summary() + get_recent_news()'
+                },
+                {
+                    nodes: ['render', 'ai'],
+                    tracks: ['track-render-ai'],
+                    from: 'render',
+                    to: 'ai',
+                    label: 'DART·Gemini 판독',
+                    color: '#fbbf24',
+                    title: '3단계. DART 공시 판독 및 Gemini / Smart Rules AI 리포트 생성',
+                    desc: 'Render 환경변수의 `GEMINI_API_KEY`·`DART_API_KEY`를 외부 노출 없이 사용해 공시 호재/악재와 맞춤형 투자 리포트를 생성합니다.',
+                    code: 'stock_service.analyze_with_gemini() + stock_service.get_dart_disclosures()'
+                },
+                {
+                    nodes: ['render', 'browser'],
+                    tracks: ['track-browser-render'],
+                    from: 'render',
+                    to: 'browser',
+                    label: '진단서 출력',
+                    color: '#c084fc',
+                    title: '4단계. 분석 결과 리포트 화면 즉시 반영',
+                    desc: '생성된 분석 텍스트와 분석 엔진 배지(`Gemini` 또는 `Smart Rules Engine`)가 리포트 카드에 실시간으로 표시됩니다.',
+                    code: 'aiTextEl.innerText = res.analysis; badgeEl.innerText = res.source;'
+                }
+            ]
+        };
+
+        let archState = { scenario: 'search', step: 0, playing: false, timer: null };
+
+        function initArchStage() {
+            renderArchStep();
+            checkArchLiveStatus();
+        }
+
+        function archSelectScenario(name) {
+            if (!ARCH_SCENARIOS[name]) return;
+            archStopPlay();
+            archState.scenario = name;
+            archState.step = 0;
+            document.querySelectorAll('.arch-tab-btn').forEach(b => b.classList.remove('active'));
+            const activeBtn = document.getElementById(`arch-sc-${name}`);
+            if (activeBtn) activeBtn.classList.add('active');
+            renderArchStep();
+        }
+
+        function archStep(delta) {
+            const steps = ARCH_SCENARIOS[archState.scenario];
+            archState.step = (archState.step + delta + steps.length) % steps.length;
+            renderArchStep();
+        }
+
+        function archReset() {
+            archStopPlay();
+            archState.step = 0;
+            renderArchStep();
+        }
+
+        function archStopPlay() {
+            archState.playing = false;
+            if (archState.timer) {
+                clearInterval(archState.timer);
+                archState.timer = null;
+            }
+            const btn = document.getElementById('arch-play-btn');
+            if (btn) btn.innerText = '▶ 재생';
+        }
+
+        function archTogglePlay() {
+            if (archState.playing) {
+                archStopPlay();
+                return;
+            }
+            archState.playing = true;
+            const btn = document.getElementById('arch-play-btn');
+            if (btn) btn.innerText = '⏸ 일시정지';
+            archState.timer = setInterval(() => {
+                const steps = ARCH_SCENARIOS[archState.scenario];
+                archState.step = (archState.step + 1) % steps.length;
+                renderArchStep();
+            }, 2400);
+        }
+
+        function renderArchStep() {
+            const steps = ARCH_SCENARIOS[archState.scenario];
+            const cur = steps[archState.step];
+            if (!cur) return;
+
+            // 노드 활성/비활성
+            Object.keys(ARCH_NODE_POS).forEach(k => {
+                const el = document.getElementById(`node-${k}`);
+                if (!el) return;
+                if (cur.nodes.includes(k)) {
+                    el.classList.add('active');
+                    el.classList.remove('dim');
+                } else {
+                    el.classList.remove('active');
+                    el.classList.add('dim');
+                }
+            });
+
+            // 트랙 하이라이트
+            document.querySelectorAll('.arch-track').forEach(t => t.classList.remove('hot'));
+            (cur.tracks || []).forEach(tid => {
+                const tel = document.getElementById(tid);
+                if (tel) tel.classList.add('hot');
+            });
+
+            // 패킷 이동 애니메이션 (출발 -> 도착)
+            const pkt = document.getElementById('arch-packet');
+            const pktLabel = document.getElementById('arch-packet-label');
+            const pktBg = document.getElementById('arch-packet-bg');
+            if (pkt && ARCH_NODE_POS[cur.from] && ARCH_NODE_POS[cur.to]) {
+                const pFrom = ARCH_NODE_POS[cur.from];
+                const pTo = ARCH_NODE_POS[cur.to];
+                pkt.style.transition = 'none';
+                pkt.setAttribute('transform', `translate(${pFrom.x}, ${pFrom.y})`);
+                if (pktLabel) pktLabel.textContent = cur.label;
+                if (pktBg) pktBg.setAttribute('fill', cur.color || '#0ea5e9');
+                void pkt.getBoundingClientRect();
+                pkt.style.transition = 'transform 0.7s cubic-bezier(0.22, 1, 0.36, 1)';
+                pkt.setAttribute('transform', `translate(${pTo.x}, ${pTo.y})`);
+            }
+
+            // 단계 점 & 텍스트 갱신
+            const dotsEl = document.getElementById('arch-step-dots');
+            if (dotsEl) {
+                dotsEl.innerHTML = steps.map((_, idx) => {
+                    const cls = idx === archState.step ? 'active' : (idx < archState.step ? 'done' : '');
+                    return `<button type="button" class="arch-dot ${cls}" onclick="archState.step=${idx}; renderArchStep();">${idx + 1}</button>`;
+                }).join('');
+            }
+            const badgeEl = document.getElementById('arch-step-badge');
+            const titleEl = document.getElementById('arch-step-title');
+            const descEl = document.getElementById('arch-step-desc');
+            const codeEl = document.getElementById('arch-step-code');
+            if (badgeEl) badgeEl.innerText = `STEP ${archState.step + 1} / ${steps.length}`;
+            if (titleEl) titleEl.innerText = cur.title;
+            if (descEl) descEl.innerText = cur.desc;
+            if (codeEl) codeEl.innerText = cur.code;
+        }
+
+        async function checkArchLiveStatus() {
+            const badge = document.getElementById('arch-live-badge');
+            if (!badge) return;
+            badge.innerText = '● Render / Supabase 상태 점검 중...';
+            badge.style.color = '#38bdf8';
+            try {
+                const cfg = await AuthManager.apiRequest('/api/config', 'GET');
+                if (cfg && cfg.supabaseConnected) {
+                    badge.innerText = '🟢 Render API + Supabase 실연동 정상 가동 중';
+                    badge.style.color = '#34d399';
+                    badge.style.borderColor = 'rgba(52,211,153,0.45)';
+                    badge.style.background = 'rgba(52,211,153,0.12)';
+                } else if (cfg) {
+                    badge.innerText = '🟡 Render API 연결됨 (SQLite 폴백)';
+                    badge.style.color = '#fbbf24';
+                } else {
+                    badge.innerText = '⚪ Render 서버 절전 대기 중 (재요청 시 깨어남)';
+                    badge.style.color = '#94a3b8';
+                }
+            } catch (_) {
+                badge.innerText = '⚪ 오프라인 / 로컬 모드';
+            }
         }
 
         let currentReportStockCode = '';
