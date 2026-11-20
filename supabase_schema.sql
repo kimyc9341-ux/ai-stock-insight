@@ -124,3 +124,63 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- ==============================================================================
+-- 🔌 Render 백엔드 연동용 실전 테이블 (app_users, app_review_accounts, app_audit_logs)
+-- Render 서버에서 SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY 로 REST API 연동
+-- ==============================================================================
+
+CREATE TABLE IF NOT EXISTS public.app_users (
+    id TEXT PRIMARY KEY,
+    username TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL,
+    name TEXT DEFAULT '',
+    birthdate TEXT DEFAULT '',
+    phone TEXT DEFAULT '',
+    is_phone_verified BOOLEAN DEFAULT FALSE,
+    email TEXT DEFAULT '',
+    address TEXT DEFAULT '',
+    referrer TEXT DEFAULT '없음',
+    role TEXT NOT NULL DEFAULT 'user',
+    status TEXT NOT NULL DEFAULT 'pending',
+    allow_external_query BOOLEAN DEFAULT TRUE,
+    api_key_enabled BOOLEAN DEFAULT TRUE,
+    can_access_admin_panel BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.app_review_accounts (
+    username TEXT PRIMARY KEY,
+    password TEXT NOT NULL,
+    name TEXT DEFAULT '심사 담당자',
+    note TEXT DEFAULT '',
+    is_active BOOLEAN DEFAULT TRUE,
+    can_access_admin_panel BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.app_audit_logs (
+    id DOUBLE PRECISION PRIMARY KEY,
+    username TEXT NOT NULL,
+    ip TEXT DEFAULT '127.0.0.1',
+    browser TEXT DEFAULT 'Chrome',
+    os TEXT DEFAULT 'PC',
+    device_type TEXT DEFAULT 'Desktop',
+    action TEXT NOT NULL,
+    meta JSONB DEFAULT '{}'::jsonb,
+    client_time TEXT DEFAULT '',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.app_users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.app_review_accounts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.app_audit_logs ENABLE ROW LEVEL SECURITY;
+
+-- 기본 최고관리자 및 심사용 계정 시드
+INSERT INTO public.app_users (id, username, password, name, birthdate, phone, is_phone_verified, email, address, referrer, role, status, allow_external_query, api_key_enabled, can_access_admin_panel)
+VALUES ('usr-admin', 'admin', '1234', '최고 관리자', '1990-01-01', '010-0000-0000', TRUE, 'admin@myaccount.local', '서울특별시 영등포구 여의도동', 'SYSTEM', 'admin', 'approved', TRUE, TRUE, TRUE)
+ON CONFLICT (username) DO NOTHING;
+
+INSERT INTO public.app_review_accounts (username, password, name, note, is_active, can_access_admin_panel)
+VALUES ('admin2', '5678', '심사 담당자', '심사용 공식 계정', TRUE, TRUE)
+ON CONFLICT (username) DO NOTHING;

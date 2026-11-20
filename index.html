@@ -12,7 +12,59 @@ const AuthManager = (() => {
     const STORAGE_KEY_USERS = 'cpr_users_v2';
     const STORAGE_KEY_LOGS = 'cpr_auth_logs_v2';
     const STORAGE_KEY_REVIEW_CODES = 'cpr_review_codes';
+    const STORAGE_KEY_API_URL = 'cpr_api_base_url';
     let cachedClientIpInfo = null;
+
+    function getApiBaseUrl() {
+        try {
+            const params = new URLSearchParams(window.location.search);
+            const paramApi = params.get('api');
+            if (paramApi && paramApi.startsWith('http')) {
+                const clean = paramApi.trim().replace(/\/+$/, '');
+                localStorage.setItem(STORAGE_KEY_API_URL, clean);
+                return clean;
+            }
+        } catch (_) {}
+        const stored = localStorage.getItem(STORAGE_KEY_API_URL) || window.CPR_API_BASE_URL || '';
+        return stored ? stored.trim().replace(/\/+$/, '') : '';
+    }
+
+    function setApiBaseUrl(url) {
+        const clean = (url || '').trim().replace(/\/+$/, '');
+        if (clean) {
+            localStorage.setItem(STORAGE_KEY_API_URL, clean);
+        } else {
+            localStorage.removeItem(STORAGE_KEY_API_URL);
+        }
+        return clean;
+    }
+
+    async function apiRequest(path, method = 'GET', body = null) {
+        const base = getApiBaseUrl();
+        if (!base) return null;
+        try {
+            const opts = {
+                method,
+                headers: { 'Content-Type': 'application/json' }
+            };
+            if (body !== null) opts.body = JSON.stringify(body);
+            const res = await fetch(`${base}${path}`, opts);
+            if (!res.ok) return null;
+            return await res.json();
+        } catch (_) {
+            return null;
+        }
+    }
+
+    function pushLogToRemote(entry) {
+        const base = getApiBaseUrl();
+        if (!base) return;
+        fetch(`${base}/api/audit-logs`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(entry)
+        }).catch(() => {});
+    }
 
     async function resolvePublicIp() {
         if (cachedClientIpInfo) return cachedClientIpInfo;
@@ -480,7 +532,7 @@ const AuthManager = (() => {
             logs = raw ? JSON.parse(raw) : [];
         } catch (_) { logs = []; }
 
-        logs.unshift({
+        const entry = {
             id: Date.now() + Math.random(),
             username: username,
             ip: (ipInfo && ipInfo.display) ? ipInfo.display : '127.0.0.1 (Local)',
@@ -489,10 +541,13 @@ const AuthManager = (() => {
             deviceType: (fp && fp.deviceType) || 'Desktop',
             action: action,
             time: new Date().toLocaleTimeString('ko-KR')
-        });
+        };
+        logs.unshift(entry);
         const sliced = JSON.stringify(logs.slice(0, 500));
         localStorage.setItem(STORAGE_KEY_LOGS, sliced);
         localStorage.setItem('cpr_auth_logs', sliced);
+
+        pushLogToRemote(entry);
 
         const adminModal = document.getElementById('admin-modal');
         if (adminModal && adminModal.style.display !== 'none' && typeof renderAdminAuditLogs === 'function') {
@@ -529,6 +584,7 @@ const AuthManager = (() => {
         if (target) {
             target.status = newStatus;
             saveUsers(users);
+            apiRequest('/api/admin/users/status', 'POST', { userId, status: newStatus });
             return true;
         }
         return false;
@@ -540,6 +596,7 @@ const AuthManager = (() => {
         if (target) {
             target.allowExternalQuery = isAllowed;
             saveUsers(users);
+            apiRequest('/api/admin/users/controls', 'POST', { userId, allowExternalQuery: isAllowed });
             return true;
         }
         return false;
@@ -551,9 +608,51 @@ const AuthManager = (() => {
         if (target) {
             target.apiKeyEnabled = isEnabled;
             saveUsers(users);
+            apiRequest('/api/admin/users/controls', 'POST', { userId, apiKeyEnabled: isEnabled });
             return true;
         }
         return false;
+    }
+
+    async function syncAdminFromServer() {
+        const base = getApiBaseUrl();
+        if (!base) return { connected: false, database: 'localStorage' };
+        const cfg = await apiRequest('/api/config', 'GET');
+        if (!cfg) return { connected: false, database: 'unreachable' };
+
+        const [remoteUsers, remoteCodes, remoteLogs] = await Promise.all([
+            apiRequest('/api/admin/users', 'GET'),
+            apiRequest('/api/admin/review-codes', 'GET'),
+            apiRequest('/api/audit-logs?limit=300', 'GET')
+        ]);
+
+        if (Array.isArray(remoteUsers) && remoteUsers.length > 0) {
+            const localUsers = getUsers();
+            const map = new Map();
+            localUsers.forEach(u => map.set(u.username, u));
+            remoteUsers.forEach(u => map.set(u.username, { ...(map.get(u.username) || {}), ...u }));
+            saveUsers(Array.from(map.values()));
+        }
+        if (Array.isArray(remoteCodes) && remoteCodes.length > 0) {
+            const localCodes = getReviewCodes();
+            const map = new Map();
+            localCodes.forEach(c => map.set(c.username, c));
+            remoteCodes.forEach(c => map.set(c.username, { ...(map.get(c.username) || {}), ...c }));
+            saveReviewCodes(Array.from(map.values()));
+        }
+        if (Array.isArray(remoteLogs) && remoteLogs.length > 0) {
+            const localLogs = getAuditLogs();
+            const map = new Map();
+            [...remoteLogs, ...localLogs].forEach(l => {
+                if (l && l.id) map.set(l.id, l);
+            });
+            const merged = Array.from(map.values()).sort((a, b) => (b.id || 0) - (a.id || 0)).slice(0, 500);
+            const sliced = JSON.stringify(merged);
+            localStorage.setItem(STORAGE_KEY_LOGS, sliced);
+            localStorage.setItem('cpr_auth_logs', sliced);
+        }
+
+        return { connected: true, database: cfg.database || 'sqlite-fallback', supabaseConnected: !!cfg.supabaseConnected };
     }
 
     return {
@@ -575,7 +674,12 @@ const AuthManager = (() => {
         toggleExternalQuery,
         toggleApiKey,
         resolvePublicIp,
-        getDeviceFingerprint
+        getDeviceFingerprint,
+        getApiBaseUrl,
+        setApiBaseUrl,
+        apiRequest,
+        pushLogToRemote,
+        syncAdminFromServer
     };
 })();
 
@@ -652,6 +756,10 @@ const UserActivityTracker = (() => {
         const sliced = JSON.stringify(logs.slice(0, 500));
         localStorage.setItem(STORAGE_KEY, sliced);
         localStorage.setItem('cpr_auth_logs', sliced);
+
+        if (window.AuthManager && typeof AuthManager.pushLogToRemote === 'function') {
+            AuthManager.pushLogToRemote(newEntry);
+        }
 
         // 통제실 화면이 열려있으면 즉시 갱신
         const adminModal = document.getElementById('admin-modal');
@@ -4084,9 +4192,59 @@ window.UserActivityTracker = UserActivityTracker;
             }
         }
 
-        function openAdminModal() {
+        async function openAdminModal() {
             renderAdminPanel();
             document.getElementById('admin-modal').style.display = 'flex';
+            await refreshBackendStatusAndSync();
+        }
+
+        async function refreshBackendStatusAndSync() {
+            const statusEl = document.getElementById('admin-backend-status');
+            const apiUrl = AuthManager.getApiBaseUrl();
+            if (!apiUrl) {
+                if (statusEl) {
+                    statusEl.innerText = '로컬 모드 (Render 미연결)';
+                    statusEl.style.color = '#aaa';
+                    statusEl.style.borderColor = 'rgba(255,255,255,0.2)';
+                }
+                return;
+            }
+            if (statusEl) statusEl.innerText = '🔄 Render/DB 동기화 중...';
+            const res = await AuthManager.syncAdminFromServer();
+            if (res.connected) {
+                if (statusEl) {
+                    statusEl.innerText = res.supabaseConnected ? '🟢 Render + Supabase 실연동' : '🟡 Render API 연결됨 (SQLite)';
+                    statusEl.style.color = res.supabaseConnected ? '#00e676' : '#ffd54f';
+                    statusEl.style.borderColor = res.supabaseConnected ? 'rgba(0,230,118,0.4)' : 'rgba(255,213,79,0.4)';
+                }
+                renderAdminPanel();
+            } else if (statusEl) {
+                statusEl.innerText = '🔴 Render 연결 대기/오프라인';
+                statusEl.style.color = '#ff8a80';
+                statusEl.style.borderColor = 'rgba(255,138,128,0.4)';
+            }
+        }
+
+        async function configureRenderBackend() {
+            const current = AuthManager.getApiBaseUrl();
+            const input = prompt(
+                'Render.com에 배포한 백엔드 서버 URL을 입력하세요.\n(예: https://ai-stock-insight-api.onrender.com)\n비워두면 로컬 모드로 동작합니다:',
+                current
+            );
+            if (input === null) return;
+            AuthManager.setApiBaseUrl(input);
+            await refreshBackendStatusAndSync();
+            const newUrl = AuthManager.getApiBaseUrl();
+            if (newUrl) {
+                const cfg = await AuthManager.apiRequest('/api/config', 'GET');
+                if (cfg) {
+                    alert(`✅ Render 서버 연결 성공!\n• 주소: ${newUrl}\n• DB 모드: ${cfg.supabaseConnected ? 'Supabase 실 DB 연결 완료' : 'Render SQLite 폴백 모드'}`);
+                } else {
+                    alert(`⚠️ URL은 저장되었으나 현재 서버 응답이 없습니다.\n(${newUrl})\nRender 무료 플랜은 첫 깨어남에 30~50초가 걸릴 수 있습니다.`);
+                }
+            } else {
+                alert('로컬 브라우저 저장 모드로 전환되었습니다.');
+            }
         }
 
         function closeAdminModal() {
@@ -4517,12 +4675,16 @@ window.UserActivityTracker = UserActivityTracker;
     <!-- 3. 관리자 보안 통제실 모달 -->
     <div id="admin-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.88); z-index:99999; justify-content:center; align-items:center; backdrop-filter:blur(5px);">
         <div style="background:#161824; border:1px solid #7c4dff; border-radius:16px; padding:26px; width:96%; max-width:1050px; max-height:88vh; overflow-y:auto; box-shadow:0 15px 50px rgba(0,0,0,0.85);">
-            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:14px; margin-bottom:18px;">
-                <h3 style="margin:0; color:#bb86fc; display:flex; align-items:center; gap:8px; font-size:18px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:14px; margin-bottom:18px; flex-wrap:wrap; gap:10px;">
+                <h3 style="margin:0; color:#bb86fc; display:flex; align-items:center; gap:8px; font-size:18px; flex-wrap:wrap;">
                     <span>🛡️ 관리자 종합 보안통제실 (Admin Master Console)</span>
                     <span style="font-size:11px; background:rgba(187,134,252,0.15); border:1px solid rgba(187,134,252,0.4); padding:3px 10px; border-radius:12px; color:#d1b3ff;">RLS & Audit Guard</span>
+                    <span id="admin-backend-status" style="font-size:11px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.2); padding:3px 10px; border-radius:12px; color:#aaa;">로컬 모드</span>
                 </h3>
-                <span style="cursor:pointer; font-size:24px; color:#aaa;" onclick="closeAdminModal()">✕</span>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <button type="button" class="user-small-btn" style="padding:5px 10px; font-size:11.5px; background:rgba(0,188,212,0.18); color:#80deea; border:1px solid rgba(0,188,212,0.4);" onclick="configureRenderBackend()">🔌 Render/Supabase 연결</button>
+                    <span style="cursor:pointer; font-size:24px; color:#aaa;" onclick="closeAdminModal()">✕</span>
+                </div>
             </div>
 
             <!-- 섹션 A-1: [심사용 아이디] 권한 관리 현황 -->
