@@ -413,14 +413,14 @@ const AuthManager = (() => {
     }
 
     // 로그아웃
-    async function logout() {
+    function logout() {
         const session = getCurrentSession();
-        if (session) {
-            const ipInfo = await resolvePublicIp();
-            recordLog(session.user.username, getDeviceFingerprint(), ipInfo, 'LOGOUT');
-        }
         localStorage.removeItem(STORAGE_KEY_SESSION);
         sessionStorage.clear();
+        if (session && session.user) {
+            const ipInfo = cachedClientIpInfo || { display: session.ip || '127.0.0.1 (Local)' };
+            recordLog(session.user.username, getDeviceFingerprint(), ipInfo, 'LOGOUT');
+        }
         return true;
     }
 

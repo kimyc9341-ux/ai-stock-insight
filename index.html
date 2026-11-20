@@ -571,14 +571,14 @@ const AuthManager = (() => {
     }
 
     // 로그아웃
-    async function logout() {
+    function logout() {
         const session = getCurrentSession();
-        if (session) {
-            const ipInfo = await resolvePublicIp();
-            recordLog(session.user.username, getDeviceFingerprint(), ipInfo, 'LOGOUT');
-        }
         localStorage.removeItem(STORAGE_KEY_SESSION);
         sessionStorage.clear();
+        if (session && session.user) {
+            const ipInfo = cachedClientIpInfo || { display: session.ip || '127.0.0.1 (Local)' };
+            recordLog(session.user.username, getDeviceFingerprint(), ipInfo, 'LOGOUT');
+        }
         return true;
     }
 
@@ -4020,7 +4020,12 @@ window.UserActivityTracker = UserActivityTracker;
         function handleLogout() {
             if (confirm('안전하게 로그아웃하시겠습니까? 세션 정보가 종료됩니다.')) {
                 AuthManager.logout();
+                closeAdminModal();
+                closeProfileModal();
                 updateAuthUI();
+                if (typeof switchTab === 'function') {
+                    switchTab('home');
+                }
                 alert('정상적으로 로그아웃되었습니다.');
             }
         }
