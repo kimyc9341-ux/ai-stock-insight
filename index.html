@@ -1614,7 +1614,16 @@ window.UserActivityTracker = UserActivityTracker;
             font-size: 16px;
             font-weight: 800;
             color: #f8fafc;
-            margin-left: 4px;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            padding: 6px 10px;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .top-brand-inline:hover {
+            background: rgba(56, 189, 248, 0.12);
+            border-color: rgba(56, 189, 248, 0.35);
         }
         .top-brand-inline img {
             width: 26px;
@@ -2503,8 +2512,9 @@ window.UserActivityTracker = UserActivityTracker;
     <!-- 상단 통합 슬림 네비게이션 바 -->
     <div class="top-left-nav">
         <div class="top-nav-group">
-            <button type="button" id="btn-home" class="nav-top-btn active" onclick="switchTab('home')">
-                <span>🏠 홈</span>
+            <button type="button" id="btn-home" class="top-brand-inline active" onclick="switchTab('home')" title="홈 화면으로 이동">
+                <img src="./assets/stockchat_appicon.png" alt="스탁챗">
+                <span>내 계좌 심폐소생술</span>
             </button>
             <button type="button" id="btn-menu-toggle" class="nav-top-btn" onclick="toggleSideMenu()">
                 <span class="hamburger-icon">
@@ -2514,10 +2524,6 @@ window.UserActivityTracker = UserActivityTracker;
                 </span>
                 <span>메뉴</span>
             </button>
-            <span class="top-brand-inline">
-                <img src="./assets/stockchat_appicon.png" alt="스탁챗">
-                <span>내 계좌 심폐소생술</span>
-            </span>
         </div>
         <div class="top-nav-group">
             <span style="display:inline-flex; align-items:center; gap:6px; font-size:12px; color:#94a3b8; background:rgba(30,41,59,0.85); border:1px solid rgba(148,163,184,0.22); padding:5px 10px; border-radius:999px;">
