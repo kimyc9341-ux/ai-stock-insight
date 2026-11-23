@@ -2446,6 +2446,10 @@ window.UserActivityTracker = UserActivityTracker;
             <span>🏦 KIS 모의투자 & DART 공시</span>
             <span>›</span>
         </button>
+        <button type="button" class="drawer-tab-btn" id="tab-guide" onclick="switchTab('guide')">
+            <span>📘 주식 입문 가이드</span>
+            <span>›</span>
+        </button>
         <button type="button" class="drawer-tab-btn" id="tab-arch" onclick="switchTab('arch')">
             <span>⚙️ 시스템 작동 방식</span>
             <span>›</span>
@@ -2746,6 +2750,115 @@ window.UserActivityTracker = UserActivityTracker;
 
         <!-- 4-4. 한국투자증권(KIS) 모의투자 & DART 전자공시 뷰 -->
         <div id="view-kis-dart" style="display:none;"></div>
+
+        <!-- 4-4-2. 📘 주식 입문 가이드 (계좌 개설 · 용어 정리 · 모의투자 연습 연결) -->
+        <div id="view-guide" style="display:none;">
+            <div class="sub-box" style="margin-bottom:18px; border-color:#38bdf8;">
+                <div style="font-size:18px; font-weight:800; color:#38bdf8; margin-bottom:6px;">📘 주식이 처음이신가요? 계좌 개설부터 모의투자 연습까지</div>
+                <p style="font-size:13px; color:#94a3b8; line-height:1.6;">
+                    실제 돈을 넣기 전에 주식 계좌를 여는 순서, 꼭 알아야 할 기본 용어, 그리고 우리 앱의 <strong>KIS 모의투자(가상 5,000만원)</strong>로 안전하게 연습하는 방법을 한곳에 모았습니다.
+                </p>
+            </div>
+
+            <!-- 1. 비대면 주식 계좌 개설 4단계 -->
+            <div class="sub-box" style="margin-bottom:18px;">
+                <div class="sub-box-title" style="color:#f8fafc; font-size:16px; margin-bottom:12px;">1️⃣ 비대면 주식 계좌 개설 순서 (준비물: 신분증 · 본인 명의 휴대폰 · 은행 계좌)</div>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:10px; margin-bottom:14px;">
+                    <div style="background:#0f172a; border:1px solid #334155; border-radius:10px; padding:12px;">
+                        <div style="font-weight:800; color:#38bdf8; margin-bottom:4px;">Step 1. 증권사 앱 설치</div>
+                        <div style="font-size:12.5px; color:#cbd5e1; line-height:1.5;">원하는 증권사의 공식 모바일 앱(MTS)을 스마트폰에 설치합니다.</div>
+                    </div>
+                    <div style="background:#0f172a; border:1px solid #334155; border-radius:10px; padding:12px;">
+                        <div style="font-weight:800; color:#4ade80; margin-bottom:4px;">Step 2. 본인인증 & 신분증 촬영</div>
+                        <div style="font-size:12.5px; color:#cbd5e1; line-height:1.5;">휴대폰 인증 후 주민등록증 또는 운전면허증을 카메라로 촬영합니다.</div>
+                    </div>
+                    <div style="background:#0f172a; border:1px solid #334155; border-radius:10px; padding:12px;">
+                        <div style="font-weight:800; color:#fbbf24; margin-bottom:4px;">Step 3. 1원 계좌 인증</div>
+                        <div style="font-size:12.5px; color:#cbd5e1; line-height:1.5;">기존 은행 계좌로 1원이 입금되면 입금자명 숫자를 입력해 완료합니다.</div>
+                    </div>
+                    <div style="background:#0f172a; border:1px solid #334155; border-radius:10px; padding:12px;">
+                        <div style="font-weight:800; color:#c084fc; margin-bottom:4px;">Step 4. 소액 이체 후 첫 매매</div>
+                        <div style="font-size:12.5px; color:#cbd5e1; line-height:1.5;">개설된 위탁계좌로 투자금을 이체하면 바로 매수/매도가 가능합니다.</div>
+                    </div>
+                </div>
+                <div style="font-size:12.5px; color:#94a3b8; margin-bottom:8px;">🔗 주요 증권사 공식 홈페이지 (계좌개설 안내 바로가기):</div>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <a href="https://securities.koreainvestment.com" target="_blank" rel="noopener noreferrer" class="user-small-btn" style="text-decoration:none; display:inline-block;">한국투자증권 ↗</a>
+                    <a href="https://www.kiwoom.com" target="_blank" rel="noopener noreferrer" class="user-small-btn" style="text-decoration:none; display:inline-block;">키움증권 ↗</a>
+                    <a href="https://www.nhqv.com" target="_blank" rel="noopener noreferrer" class="user-small-btn" style="text-decoration:none; display:inline-block;">NH투자증권 ↗</a>
+                    <a href="https://www.samsungpop.com" target="_blank" rel="noopener noreferrer" class="user-small-btn" style="text-decoration:none; display:inline-block;">삼성증권 ↗</a>
+                </div>
+            </div>
+
+            <!-- 2. 꼭 알아야 할 주식 기초 용어 정리 -->
+            <div class="sub-box" style="margin-bottom:18px;">
+                <div class="sub-box-title" style="color:#f8fafc; font-size:16px; margin-bottom:12px;">2️⃣ 입문자 필수 주식 용어 한눈에 보기</div>
+                <div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px;">
+                    <div style="background:#0f172a; border:1px solid #334155; border-radius:10px; padding:12px;">
+                        <strong style="color:#f87171;">매수 (BUY)</strong> · <strong style="color:#60a5fa;">매도 (SELL)</strong>
+                        <p style="font-size:12.5px; color:#cbd5e1; margin-top:6px; line-height:1.5;">주식을 사는 것이 매수,<br>보유한 주식을 파는 것이 매도입니다.</p>
+                    </div>
+                    <div style="background:#0f172a; border:1px solid #334155; border-radius:10px; padding:12px;">
+                        <strong style="color:#38bdf8;">지정가 vs 시장가</strong>
+                        <p style="font-size:12.5px; color:#cbd5e1; margin-top:6px; line-height:1.5;">지정가는 원하는 가격으로 주문,<br>시장가는 현재가로 즉시 체결됩니다.</p>
+                    </div>
+                    <div style="background:#0f172a; border:1px solid #334155; border-radius:10px; padding:12px;">
+                        <strong style="color:#4ade80;">호가창 &amp; 체결</strong>
+                        <p style="font-size:12.5px; color:#cbd5e1; margin-top:6px; line-height:1.5;">사자·팔자 가격표가 호가창,<br>가격이 맞아 거래 성사되면 체결입니다.</p>
+                    </div>
+                    <div style="background:#0f172a; border:1px solid #334155; border-radius:10px; padding:12px;">
+                        <strong style="color:#fbbf24;">평단가 &amp; 물타기</strong>
+                        <p style="font-size:12.5px; color:#cbd5e1; margin-top:6px; line-height:1.5;">보유 주식의 평균 단가가 평단가,<br>하락 시 추가 매수로 낮추는 게 물타기입니다.</p>
+                    </div>
+                    <div style="background:#0f172a; border:1px solid #334155; border-radius:10px; padding:12px;">
+                        <strong style="color:#c084fc;">시가총액 &amp; 거래대금</strong>
+                        <p style="font-size:12.5px; color:#cbd5e1; margin-top:6px; line-height:1.5;">시가총액은 회사의 전체 규모,<br>거래대금은 하루 총 거래 금액입니다.</p>
+                    </div>
+                    <div style="background:#0f172a; border:1px solid #334155; border-radius:10px; padding:12px;">
+                        <strong style="color:#fb923c;">PER · PBR · DART 공시</strong>
+                        <p style="font-size:12.5px; color:#cbd5e1; margin-top:6px; line-height:1.5;">PER·PBR은 주가 저평가 지표,<br>DART 공시는 기업의 공식 중요 발표입니다.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. 우리 앱으로 실전처럼 모의투자 연습하기 -->
+            <div class="sub-box" style="border-color:#22c55e;">
+                <div class="sub-box-title" style="color:#f8fafc; font-size:16px; margin-bottom:10px;">3️⃣ 실전 투자 전, 우리 앱에서 무료로 모의투자 연습하기</div>
+                <p style="font-size:12.5px; color:#94a3b8; margin-bottom:14px;">
+                    아래 순서대로 버튼을 눌러 실제 시세로 <strong>종목 탐색 → 모의 매수/매도 → 계좌 비중 확인 → 응급실 대응</strong>까지 위험 없이 연습해 보세요.
+                </p>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:10px;">
+                    <div style="background:#0f172a; border:1px solid #334155; border-radius:10px; padding:12px; display:flex; flex-direction:column; justify-content:space-between; gap:10px;">
+                        <div>
+                            <div style="font-weight:800; color:#38bdf8; margin-bottom:4px;">1단계 · 종목 살펴보기</div>
+                            <div style="font-size:12px; color:#cbd5e1;">홈에서 삼성전자·현대차 등을 조회해 차트와 DART 공시를 먼저 읽어보세요.</div>
+                        </div>
+                        <button type="button" class="user-small-btn" style="background:#2563eb; color:#fff; border:none;" onclick="switchTab('home')">🔍 홈에서 종목 조회하기</button>
+                    </div>
+                    <div style="background:#0f172a; border:1px solid #334155; border-radius:10px; padding:12px; display:flex; flex-direction:column; justify-content:space-between; gap:10px;">
+                        <div>
+                            <div style="font-weight:800; color:#4ade80; margin-bottom:4px;">2단계 · 모의 매수/매도 연습</div>
+                            <div style="font-size:12px; color:#cbd5e1;">가상 예수금으로 실제 주가에 맞춰 1주~10주씩 사고파는 연습을 해보세요.</div>
+                        </div>
+                        <button type="button" class="user-small-btn" style="background:#059669; color:#fff; border:none;" onclick="switchTab('kis-dart')">🏦 KIS 모의투자 연습하기</button>
+                    </div>
+                    <div style="background:#0f172a; border:1px solid #334155; border-radius:10px; padding:12px; display:flex; flex-direction:column; justify-content:space-between; gap:10px;">
+                        <div>
+                            <div style="font-weight:800; color:#fbbf24; margin-bottom:4px;">3단계 · 내 계좌 관리 확인</div>
+                            <div style="font-size:12px; color:#cbd5e1;">모의투자에서 산 종목이 내 계좌의 현금·주식 비중에 어떻게 반영되는지 확인합니다.</div>
+                        </div>
+                        <button type="button" class="user-small-btn" style="background:#0284c7; color:#fff; border:none;" onclick="switchTab('account')">💼 내 계좌 관리 보기</button>
+                    </div>
+                    <div style="background:#0f172a; border:1px solid #334155; border-radius:10px; padding:12px; display:flex; flex-direction:column; justify-content:space-between; gap:10px;">
+                        <div>
+                            <div style="font-weight:800; color:#f87171; margin-bottom:4px;">4단계 · 계좌 응급실 체험</div>
+                            <div style="font-size:12px; color:#cbd5e1;">주가가 하락했을 때 물타기 시 평단가와 탈출 수익률이 어떻게 바뀌는지 계산해 봅니다.</div>
+                        </div>
+                        <button type="button" class="user-small-btn" style="background:#dc2626; color:#fff; border:none;" onclick="switchTab('er')">🚨 계좌 응급실 가기</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- 4-5. ⚙️ 시스템 작동 방식 (실시간 애니메이션 구조도) -->
         <div id="view-arch" style="display:none;">
@@ -3704,6 +3817,8 @@ window.UserActivityTracker = UserActivityTracker;
             if (tabRadar) tabRadar.classList.remove('active');
             const tabKisDart = document.getElementById('tab-kis-dart');
             if (tabKisDart) tabKisDart.classList.remove('active');
+            const tabGuide = document.getElementById('tab-guide');
+            if (tabGuide) tabGuide.classList.remove('active');
             const tabArch = document.getElementById('tab-arch');
             if (tabArch) tabArch.classList.remove('active');
             if (btnHome) btnHome.classList.remove('active');
@@ -3720,6 +3835,8 @@ window.UserActivityTracker = UserActivityTracker;
             if (viewRadar) viewRadar.style.display = 'none';
             const viewKisDart = document.getElementById('view-kis-dart');
             if (viewKisDart) viewKisDart.style.display = 'none';
+            const viewGuide = document.getElementById('view-guide');
+            if (viewGuide) viewGuide.style.display = 'none';
             const viewArch = document.getElementById('view-arch');
             if (viewArch) viewArch.style.display = 'none';
 
@@ -3743,6 +3860,7 @@ window.UserActivityTracker = UserActivityTracker;
                 'er': '🚨 계좌 응급실',
                 'radar': '⚡ 장중 특징주 & 거래대금 급증 레이더',
                 'kis-dart': '🏦 한국투자증권(KIS) 모의투자 & DART 전자공시',
+                'guide': '📘 주식 입문 가이드 (계좌 개설 · 용어 · 모의투자 연습)',
                 'arch': '⚙️ 시스템 작동 방식'
             };
             if (activeMenuTitle) {
@@ -3792,6 +3910,9 @@ window.UserActivityTracker = UserActivityTracker;
                     renderKisDartView();
                     refreshTop50FromNaverRealtime(true);
                 }
+            } else if (tab === 'guide') {
+                if (tabGuide) tabGuide.classList.add('active');
+                if (viewGuide) viewGuide.style.display = 'block';
             } else if (tab === 'arch') {
                 if (tabArch) tabArch.classList.add('active');
                 if (viewArch) {
@@ -5783,6 +5904,12 @@ window.UserActivityTracker = UserActivityTracker;
                 label: 'KIS 모의투자 & DART 공시',
                 keywords: ['모의계좌', '모의투자', '공시', 'dart', 'kis'],
                 run: () => runTabAction('kis-dart', '🏦 KIS 모의투자 & DART 공시')
+            },
+            {
+                id: 'tab_guide',
+                label: '📘 주식 입문 가이드',
+                keywords: ['입문 가이드', '주식 입문', '계좌 개설', '용어 정리', '초보 가이드', '가이드'],
+                run: () => runTabAction('guide', '📘 주식 입문 가이드')
             },
             {
                 id: 'tab_arch',
