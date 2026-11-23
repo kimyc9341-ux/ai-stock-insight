@@ -2492,6 +2492,94 @@ window.UserActivityTracker = UserActivityTracker;
         .branch-action-btn:hover {
             filter: brightness(1.1);
         }
+
+        /* 📱 모바일 전용 반응형 최적화 (PC 화면은 그대로 유지) */
+        .guide-terms-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+        }
+        @media (max-width: 768px) {
+            body {
+                padding: 10px 10px 84px !important;
+            }
+            .top-left-nav {
+                position: sticky;
+                top: 0;
+                margin: -10px -10px 12px -10px;
+                padding: 10px 12px;
+                gap: 8px;
+            }
+            .top-brand-inline {
+                font-size: 14px;
+                padding: 4px 6px;
+            }
+            .top-brand-inline img {
+                width: 22px;
+                height: 22px;
+            }
+            .nav-top-btn {
+                padding: 7px 10px;
+                font-size: 13px;
+            }
+            .index-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 8px;
+            }
+            .index-card {
+                padding: 9px 10px;
+            }
+            .index-val {
+                font-size: 16px;
+            }
+            .search-section {
+                padding: 10px;
+            }
+            .search-box {
+                flex-direction: column;
+                gap: 8px;
+            }
+            .search-btn {
+                width: 100%;
+                padding: 10px 14px;
+            }
+            .guide-terms-grid {
+                grid-template-columns: 1fr;
+            }
+            .all-table-box {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .table-view {
+                min-width: 640px;
+            }
+            .report-card {
+                padding: 14px;
+            }
+            .report-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            .nl-command-bar {
+                left: 10px;
+                right: 10px;
+                bottom: 58px;
+                width: auto;
+                max-width: none;
+            }
+            .nl-fab-btn {
+                right: 12px;
+                bottom: 12px;
+            }
+            .side-menu-drawer {
+                top: 58px;
+                left: 10px;
+                width: calc(100vw - 20px);
+                max-height: calc(100vh - 80px);
+                overflow-y: auto;
+            }
+        }
     </style>
 </head>
 <body>
@@ -2900,7 +2988,7 @@ window.UserActivityTracker = UserActivityTracker;
             <!-- 2. 꼭 알아야 할 주식 기초 용어 정리 -->
             <div class="sub-box" style="margin-bottom:18px;">
                 <div class="sub-box-title" style="color:#f8fafc; font-size:16px; margin-bottom:12px;">2️⃣ 입문자 필수 주식 용어 한눈에 보기</div>
-                <div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px;">
+                <div class="guide-terms-grid">
                     <div style="background:#0f172a; border:1px solid #334155; border-radius:10px; padding:12px;">
                         <strong style="color:#f87171;">매수 (BUY)</strong> · <strong style="color:#60a5fa;">매도 (SELL)</strong>
                         <p style="font-size:12.5px; color:#cbd5e1; margin-top:6px; line-height:1.5;">주식을 사는 것이 매수,<br>보유한 주식을 파는 것이 매도입니다.</p>
