@@ -822,6 +822,17 @@ const UserActivityTracker = (() => {
         }
     }
 
+    function logQuickCommand(rawCommand, actionLabel, status = 'changed') {
+        try {
+            const { username, fp, ipDisplay } = getSessionContext();
+            const tag = status === 'unchanged' ? '중복방지' : (status === 'blocked' ? '권한차단' : '실행');
+            const actionText = `QUICK_CMD(${tag}): "${rawCommand}" → ${actionLabel}`;
+            recordDirectAuditLog(username, fp, ipDisplay, actionText, { rawCommand, actionLabel, status, type: 'QUICK_CMD' });
+        } catch (e) {
+            console.error('Error logging quick command:', e);
+        }
+    }
+
     function recordDirectAuditLog(username, fp, ipDisplay, action, meta) {
         const STORAGE_KEY = 'cpr_auth_logs_v2';
         let logs = [];
@@ -862,6 +873,7 @@ const UserActivityTracker = (() => {
         logStockSearch,
         logPaperTrading,
         logWaterCalculation,
+        logQuickCommand,
         recordDirectAuditLog
     };
 })();
@@ -5792,7 +5804,11 @@ window.UserActivityTracker = UserActivityTracker;
             return { status: 'changed', message: `'${currentReportStockName}' 차트를 '${label}'(으)로 새로 변경했습니다.` };
         }
 
-        function applyNlFeedbackResult(result, modeTag, fallbackLabel) {
+        function applyNlFeedbackResult(result, modeTag, fallbackLabel, rawCommand = '') {
+            const status = (!result || result === true) ? 'changed' : (result.status || 'changed');
+            if (window.UserActivityTracker && typeof UserActivityTracker.logQuickCommand === 'function') {
+                UserActivityTracker.logQuickCommand(rawCommand || fallbackLabel, fallbackLabel, status);
+            }
             if (!result || result === true) {
                 setNlFeedback(`✅ '${fallbackLabel}' 기능을 새로 실행했습니다.`, 'ok');
                 return;
@@ -6056,7 +6072,7 @@ window.UserActivityTracker = UserActivityTracker;
                 const opened = await openStockForCommand(replyStock);
                 if (opened) {
                     const res = waitingAction.run(text);
-                    applyNlFeedbackResult(res, modeTag, `${replyStock} · ${waitingAction.label}`);
+                    applyNlFeedbackResult(res, modeTag, `${replyStock} · ${waitingAction.label}`, text);
                 } else {
                     setNlFeedback(`⚠️ '${replyStock}' 종목을 찾지 못했습니다.`, 'warn');
                 }
@@ -6068,12 +6084,15 @@ window.UserActivityTracker = UserActivityTracker;
                     if (inlineStock) {
                         if (matchedAction.id === 'search_stock' && isReportOpen() && norm(currentReportStockName) === norm(inlineStock)) {
                             setNlFeedback(`ℹ️ '${currentReportStockName}' 리포트가 이미 열려 있어 중복 조회하지 않았습니다.`, 'info');
+                            if (window.UserActivityTracker && typeof UserActivityTracker.logQuickCommand === 'function') {
+                                UserActivityTracker.logQuickCommand(text, matchedAction.label, 'unchanged');
+                            }
                             return;
                         }
                         const opened = await openStockForCommand(inlineStock);
                         if (opened) {
                             const res = matchedAction.run(text);
-                            applyNlFeedbackResult(res, modeTag, matchedAction.label);
+                            applyNlFeedbackResult(res, modeTag, matchedAction.label, text);
                         } else {
                             setNlFeedback(`⚠️ '${inlineStock}' 종목을 찾지 못했습니다.`, 'warn');
                         }
@@ -6086,7 +6105,7 @@ window.UserActivityTracker = UserActivityTracker;
                     }
                 }
                 const res = matchedAction.run(text);
-                applyNlFeedbackResult(res, modeTag, matchedAction.label);
+                applyNlFeedbackResult(res, modeTag, matchedAction.label, text);
                 return;
             }
 
@@ -6099,6 +6118,9 @@ window.UserActivityTracker = UserActivityTracker;
                     searchInput.value = stockQuery;
                     searchBtn.click();
                     setNlFeedback(`✅ '종목 조회' 버튼 기능으로 '${stockQuery}' 검색 실행`, 'ok');
+                    if (window.UserActivityTracker && typeof UserActivityTracker.logQuickCommand === 'function') {
+                        UserActivityTracker.logQuickCommand(text, `종목 조회 (${stockQuery})`, 'changed');
+                    }
                     return;
                 }
             }
@@ -7017,7 +7039,7 @@ window.UserActivityTracker = UserActivityTracker;
 
     <!-- 3. 관리자 보안 통제실 모달 -->
     <div id="admin-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.88); z-index:99999; justify-content:center; align-items:center; backdrop-filter:blur(5px);">
-        <div style="background:#161824; border:1px solid #7c4dff; border-radius:16px; padding:26px; width:96%; max-width:1050px; max-height:88vh; overflow-y:auto; box-shadow:0 15px 50px rgba(0,0,0,0.85);">
+        <div style="background:#161824; border:1px solid #7c4dff; border-radius:16px; padding:26px; width:98%; max-width:1440px; max-height:92vh; overflow-y:auto; box-shadow:0 15px 50px rgba(0,0,0,0.85);">
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:14px; margin-bottom:18px; flex-wrap:wrap; gap:10px;">
                 <h3 style="margin:0; color:#bb86fc; display:flex; align-items:center; gap:8px; font-size:18px; flex-wrap:wrap;">
                     <span>🛡️ 관리자 종합 보안통제실 (Admin Master Console)</span>
