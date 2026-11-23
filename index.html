@@ -3215,6 +3215,12 @@ window.UserActivityTracker = UserActivityTracker;
             });
         }
 
+        function formatTradingValueText(st, tvNum) {
+            const raw = (st && st.tradingValue != null) ? String(st.tradingValue).trim() : '';
+            if (raw) return /[가-힣]/.test(raw) ? raw : `${raw}백만`;
+            return tvNum > 0 ? `${tvNum.toLocaleString()}원` : '-';
+        }
+
         function getScoredMarketPool() {
             const pool = (typeof getKospiSearchPool === 'function') ? getKospiSearchPool() : [];
             const parseNum = (v) => parseFloat(String(v || '0').replace(/[^0-9.-]/g, '')) || 0;
@@ -3244,7 +3250,7 @@ window.UserActivityTracker = UserActivityTracker;
             const entries = dynamicTop6.length > 0
                 ? dynamicTop6.map(({ st, rate, tv, rank }) => {
                     const existing = staticStocks[st.name] || {};
-                    const tvText = st.tradingValue ? `${st.tradingValue}백만` : (tv > 0 ? `${tv.toLocaleString()}원` : '-');
+                    const tvText = formatTradingValueText(st, tv);
                     return {
                         name: st.name,
                         tag: existing.tag || `시총 #${rank} 대형 우량주`,
@@ -3324,8 +3330,9 @@ window.UserActivityTracker = UserActivityTracker;
                 const safeName = (st.name || '').replace(/'/g, "\\'");
                 const aiScore = Math.min(98, Math.max(62, Math.round(50 + score)));
                 const marketLabel = st.market || 'KOSPI';
-                const tvDisplay = st.tradingValue ? `${st.tradingValue}백만` : (tv > 0 ? `${tv.toLocaleString()}원` : '-');
-                const mcapDisplay = st.marketValueHangeul || (st.marketValue ? `${st.marketValue}억` : '-');
+                const tvDisplay = formatTradingValueText(st, tv);
+                const rawMcap = st.marketValue ? String(st.marketValue).trim() : '';
+                const mcapDisplay = st.marketValueHangeul || (rawMcap ? (/[가-힣]/.test(rawMcap) ? rawMcap : `${rawMcap}억`) : '-');
 
                 const momentumNote = rate >= 3
                     ? `금일 <strong>+${rate.toFixed(2)}%</strong>의 강한 매수 수급이 유입되며 단기 주도 모멘텀을 형성 중입니다. 거래대금 집중(${tvDisplay})으로 장중 탄력이 우수합니다.`
@@ -3440,7 +3447,7 @@ window.UserActivityTracker = UserActivityTracker;
             if (liquidRisk.length >= 6) {
                 const map = {};
                 liquidRisk.forEach(({ st, rate, tv }) => {
-                    const tvText = st.tradingValue ? `${st.tradingValue}백만` : (tv > 0 ? `${tv.toLocaleString()}원` : '-');
+                    const tvText = formatTradingValueText(st, tv);
                     map[st.name] = {
                         name: st.name,
                         code: st.code,

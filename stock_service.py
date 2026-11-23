@@ -251,8 +251,9 @@ def analyze_with_gemini(stock_name: str, price_info: dict, finance_info: dict, n
             "analysis": response.text.strip()
         }
     except Exception:
+        import html as _html
         p_str = f"{price_info['price']}원 ({price_info['sign']} {price_info['change_rate']}%)" if price_info else "실시간 시세 확인 필요"
-        news_top = news_list[0]["title"] if news_list else "최근 주요 공시·뉴스 모니터링 중"
+        news_top = _html.unescape(news_list[0]["title"]) if news_list else "최근 주요 공시·뉴스 모니터링 중"
         return {
             "source": "실시간 Smart 분석 엔진",
             "analysis": (
