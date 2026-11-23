@@ -883,9 +883,17 @@ def api_external_gemini_analyze(req: GeminiAnalyzeReq) -> Dict[str, Any]:
             name = resolved_name or name
             code = resolved_code
 
-    price_info = stock_service.get_realtime_price(code) if code else None
-    finance_info = stock_service.get_financial_summary(code) if code else None
-    news_list = stock_service.get_recent_news(code, page_size=3) if code else []
+    if code:
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            f_price = executor.submit(stock_service.get_realtime_price, code)
+            f_fin = executor.submit(stock_service.get_financial_summary, code)
+            f_news = executor.submit(stock_service.get_recent_news, code, 3)
+            price_info = f_price.result()
+            finance_info = f_fin.result()
+            news_list = f_news.result()
+    else:
+        price_info, finance_info, news_list = None, None, []
     result = stock_service.analyze_with_gemini(name, price_info, finance_info, news_list)
     return {
         "success": True,

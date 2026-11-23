@@ -210,7 +210,8 @@ def analyze_with_gemini(stock_name: str, price_info: dict, finance_info: dict, n
         
     try:
         from google import genai
-        client = genai.Client(api_key=api_key)
+        from concurrent.futures import ThreadPoolExecutor
+        client = genai.Client(api_key=api_key, http_options={'timeout': 8000})
         
         # 분석용 프롬프트 패킷 조립
         news_context = "\n".join([f"- [{n['office']}] {n['title']}: {n['body'][:80]}..." for n in news_list])
@@ -238,37 +239,27 @@ def analyze_with_gemini(stock_name: str, price_info: dict, finance_info: dict, n
 3. 📰 핵심 뉴스 이슈 및 AI 향후 전망 (상승/하락 변수 및 투자 포인트)
 """
         primary_model = os.getenv("MODEL_NAME", "gemini-3.8-flash")
-        candidate_models = []
-        for m in [primary_model, "gemini-3.8-flash-lite", "gemini-2.5-flash-lite"]:
-            if m and m not in candidate_models:
-                candidate_models.append(m)
-
-        last_err = None
-        for m in candidate_models:
-            try:
-                response = client.models.generate_content(
-                    model=m,
-                    contents=prompt
-                )
-                return {
-                    "source": f"Google Gemini ({m})",
-                    "analysis": response.text.strip()
-                }
-            except Exception as model_err:
-                last_err = model_err
-                continue
-
-        raise last_err if last_err else RuntimeError("Gemini model unavailable")
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(
+                client.models.generate_content,
+                model=primary_model,
+                contents=prompt
+            )
+            response = future.result(timeout=10)
+        return {
+            "source": f"Google Gemini ({primary_model})",
+            "analysis": response.text.strip()
+        }
     except Exception:
-        p_str = f"{price_info['price']}원 ({price_info['sign']} {price_info['rate']}%)" if price_info else "실시간 시세 확인 필요"
+        p_str = f"{price_info['price']}원 ({price_info['sign']} {price_info['change_rate']}%)" if price_info else "실시간 시세 확인 필요"
         news_top = news_list[0]["title"] if news_list else "최근 주요 공시·뉴스 모니터링 중"
         return {
             "source": "실시간 Smart 분석 엔진",
             "analysis": (
-                f"1. 🎯 주가 및 수급 모멘텀: {name} 현재가 {p_str} 기준으로 단기 수급과 거래량 변화를 점검하는 구간입니다.\n"
+                f"1. 🎯 주가 및 수급 모멘텀: {stock_name} 현재가 {p_str} 기준으로 단기 수급과 거래량 변화를 점검하는 구간입니다.\n"
                 f"2. 📊 재무 및 밸류에이션: 수집된 최근 결산 재무 지표와 영업이익률 추이를 바탕으로 안정성을 평가합니다.\n"
                 f"3. 📰 핵심 이슈: '{news_top}' 등 최신 시장 뉴스 및 DART 공시 흐름을 함께 확인하세요.\n\n"
-                f"※ 현재 Google Gemini 서버 일시적 혼잡(503)으로 실시간 데이터 기반 자동 분석을 대신 표시했습니다."
+                f"※ 현재 Google Gemini 서버 일시적 혼잡(503) 또는 응답 지연으로 실시간 데이터 기반 자동 분석을 대신 표시했습니다."
             )
         }
 

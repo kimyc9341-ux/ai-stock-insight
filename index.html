@@ -5141,12 +5141,22 @@ window.UserActivityTracker = UserActivityTracker;
             if (!aiTextEl) return;
 
             const prevText = aiTextEl.innerText;
-            aiTextEl.innerText = '🤖 Render 서버에서 실시간 시세·재무·공시를 분석하는 중입니다... (최대 10~30초 소요)';
+            aiTextEl.innerText = '🤖 Render 서버에서 실시간 시세·재무·공시를 분석하는 중입니다... (최대 15초 소요)';
             try {
-                const res = await AuthManager.apiRequest('/api/external/gemini-analyze', 'POST', {
-                    name: currentReportStockName,
-                    code: currentReportStockCode || ''
+                const base = (window.AuthManager && AuthManager.getApiBaseUrl()) || '';
+                const controller = new AbortController();
+                const timer = setTimeout(() => controller.abort(), 16000);
+                const resp = await fetch(`${base}/api/external/gemini-analyze`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: currentReportStockName,
+                        code: currentReportStockCode || ''
+                    }),
+                    signal: controller.signal
                 });
+                clearTimeout(timer);
+                const res = resp.ok ? await resp.json() : null;
                 if (res && res.success && res.analysis) {
                     aiTextEl.innerText = res.analysis;
                     if (badgeEl) badgeEl.innerText = res.source || 'Gemini 실시간 분석';
@@ -5155,7 +5165,7 @@ window.UserActivityTracker = UserActivityTracker;
                     alert('Render 서버 응답을 받지 못했습니다. 잠시 후 다시 시도해 주세요.');
                 }
             } catch (_) {
-                aiTextEl.innerText = prevText;
+                aiTextEl.innerText = `${prevText}\n\n※ 서버 응답이 15초를 초과해 기존 실시간 분석 리포트를 유지합니다.`;
             }
         }
 
