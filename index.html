@@ -982,21 +982,21 @@ window.UserActivityTracker = UserActivityTracker;
             box-shadow: 0 0 8px #22c55e;
         }
 
-        /* 1. 주요 증시 4대 전광판 */
+        /* 1. 주요 증시 4대 전광판 (컴팩트 슬림형) */
         .index-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
-            margin-bottom: 28px;
+            gap: 10px;
+            margin-bottom: 12px;
         }
         .index-card {
             background: #1e293b;
             border: 1px solid #334155;
-            border-radius: 12px;
-            padding: 18px 22px;
+            border-radius: 10px;
+            padding: 10px 14px;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 3px;
             transition: transform 0.2s;
         }
         .index-card:hover {
@@ -1004,16 +1004,16 @@ window.UserActivityTracker = UserActivityTracker;
             border-color: #475569;
         }
         .index-title {
-            font-size: 15px;
+            font-size: 12.5px;
             color: #94a3b8;
             font-weight: 600;
         }
         .index-val {
-            font-size: 24px;
+            font-size: 19px;
             font-weight: 800;
         }
         .index-change {
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 700;
         }
 
@@ -1021,23 +1021,23 @@ window.UserActivityTracker = UserActivityTracker;
         .search-section {
             background: #1e293b;
             border: 1px solid #334155;
-            border-radius: 14px;
-            padding: 18px 24px;
-            margin-bottom: 28px;
+            border-radius: 12px;
+            padding: 10px 14px;
+            margin-bottom: 12px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         }
         .search-box {
             display: flex;
-            gap: 12px;
+            gap: 10px;
         }
         .search-input {
             flex: 1;
             background: #0f172a;
             border: 1px solid #475569;
-            border-radius: 10px;
-            padding: 14px 18px;
+            border-radius: 8px;
+            padding: 10px 14px;
             color: #ffffff;
-            font-size: 16px;
+            font-size: 14px;
             outline: none;
             transition: border-color 0.2s;
         }
@@ -1048,10 +1048,10 @@ window.UserActivityTracker = UserActivityTracker;
             background: #2563eb;
             color: #ffffff;
             border: none;
-            padding: 14px 28px;
-            font-size: 16px;
+            padding: 10px 20px;
+            font-size: 14px;
             font-weight: 700;
-            border-radius: 10px;
+            border-radius: 8px;
             cursor: pointer;
             transition: background 0.2s;
         }
@@ -1263,6 +1263,21 @@ window.UserActivityTracker = UserActivityTracker;
         @media (max-width: 768px) {
             .kis-stat-row-4 {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+        .daily-top6-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+        }
+        @media (max-width: 1024px) {
+            .daily-top6-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+        @media (max-width: 640px) {
+            .daily-top6-grid {
+                grid-template-columns: 1fr;
             }
         }
         .kis-stat-card {
@@ -1566,15 +1581,79 @@ window.UserActivityTracker = UserActivityTracker;
             }
         }
 
-        /* 좌측 상단 홈 & 3줄탭(햄버거 메뉴) 네비게이션 */
+        /* 좌측 상단 홈 & 3줄탭(햄버거 메뉴) + 통합 슬림 헤더 네비게이션 */
+        body {
+            padding-top: 68px;
+        }
         .top-left-nav {
             position: fixed;
-            top: 18px;
-            left: 24px;
+            top: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px 20px;
+            background: rgba(15, 23, 42, 0.92);
+            border-bottom: 1px solid rgba(56, 189, 248, 0.25);
+            backdrop-filter: blur(12px);
+            z-index: 1100;
+            flex-wrap: wrap;
+        }
+        .top-nav-group {
             display: flex;
             align-items: center;
             gap: 10px;
-            z-index: 1100;
+            flex-wrap: wrap;
+        }
+        .top-brand-inline {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 16px;
+            font-weight: 800;
+            color: #f8fafc;
+            margin-left: 4px;
+        }
+        .top-brand-inline img {
+            width: 26px;
+            height: 26px;
+            border-radius: 7px;
+            object-fit: cover;
+        }
+        .intro-splash {
+            position: fixed;
+            inset: 0;
+            z-index: 200000;
+            background: radial-gradient(circle at top, #0f172a 0%, #020617 75%);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 24px;
+            cursor: pointer;
+            transition: opacity 0.45s ease;
+        }
+        .intro-splash.open {
+            display: flex;
+        }
+        .intro-splash.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .intro-ecg-line {
+            width: 180px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #38bdf8, #ef4444, #22c55e, transparent);
+            border-radius: 999px;
+            margin: 18px auto;
+            animation: pulseGlow 1.6s infinite ease-in-out;
+        }
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.45; transform: scaleX(0.92); }
+            50% { opacity: 1; transform: scaleX(1.06); }
         }
         .nav-top-btn {
             background: #1e293b;
@@ -2407,19 +2486,51 @@ window.UserActivityTracker = UserActivityTracker;
     </style>
 </head>
 <body>
-    <!-- 좌측 상단 홈 & 3줄탭 버튼 -->
+    <!-- 최초 1회 인트로 웰컴 화면 (클릭 또는 Enter로 입장) -->
+    <div id="intro-splash" class="intro-splash" role="dialog" aria-label="서비스 시작 화면">
+        <img src="./assets/stockchat_appicon.png" alt="스탁챗 아이콘" style="width:76px; height:76px; border-radius:20px; box-shadow:0 12px 32px rgba(56,189,248,0.35); margin-bottom:14px;">
+        <h1 style="font-size:32px; font-weight:900; color:#f8fafc; margin:0;">내 계좌 심폐소생술</h1>
+        <div class="intro-ecg-line"></div>
+        <p style="font-size:15px; color:#cbd5e1; max-width:460px; line-height:1.6; margin:0 0 22px;">
+            파란불 계좌를 빨간불로, 실시간 시장 데이터와 AI 정밀 진단 시스템
+        </p>
+        <div id="intro-status-msg" style="font-size:13px; color:#38bdf8; min-height:20px; margin-bottom:14px; font-weight:700;"></div>
+        <button type="button" id="intro-enter-btn" class="search-btn" style="padding:12px 26px; font-size:15px; border-radius:999px; box-shadow:0 8px 24px rgba(37,99,235,0.45);">
+            🩺 마우스 클릭 또는 Enter로 살려주세요
+        </button>
+    </div>
+
+    <!-- 상단 통합 슬림 네비게이션 바 -->
     <div class="top-left-nav">
-        <button type="button" id="btn-home" class="nav-top-btn active" onclick="switchTab('home')">
-            <span>🏠 홈</span>
-        </button>
-        <button type="button" id="btn-menu-toggle" class="nav-top-btn" onclick="toggleSideMenu()">
-            <span class="hamburger-icon">
-                <span></span>
-                <span></span>
-                <span></span>
+        <div class="top-nav-group">
+            <button type="button" id="btn-home" class="nav-top-btn active" onclick="switchTab('home')">
+                <span>🏠 홈</span>
+            </button>
+            <button type="button" id="btn-menu-toggle" class="nav-top-btn" onclick="toggleSideMenu()">
+                <span class="hamburger-icon">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </span>
+                <span>메뉴</span>
+            </button>
+            <span class="top-brand-inline">
+                <img src="./assets/stockchat_appicon.png" alt="스탁챗">
+                <span>내 계좌 심폐소생술</span>
             </span>
-            <span>메뉴</span>
-        </button>
+        </div>
+        <div class="top-nav-group">
+            <span style="display:inline-flex; align-items:center; gap:6px; font-size:12px; color:#94a3b8; background:rgba(30,41,59,0.85); border:1px solid rgba(148,163,184,0.22); padding:5px 10px; border-radius:999px;">
+                <span class="live-dot"></span>
+                <span>실시간 (<span id="last-updated">수신 중...</span>)</span>
+                <button type="button" class="user-small-btn" style="padding:2px 8px; font-size:11px;" onclick="refreshTop50FromNaverRealtime(false)">🔄 새로고침</button>
+            </span>
+            <span id="auth-env-badge" style="background: rgba(0, 200, 83, 0.12); color: #00e676; border: 1px solid rgba(0, 200, 83, 0.3); padding: 4px 9px; border-radius: 20px; font-weight: 700; font-size: 11px;">● 보안가동</span>
+            <span id="auth-user-status-text" style="color: #e0e0e0; font-size: 12px;">게스트 모드</span>
+            <button type="button" id="profile-edit-btn" class="user-small-btn" style="display: none; background: linear-gradient(135deg, #00897b, #004d40); color: #fff; border: 1px solid rgba(0, 150, 136, 0.4); padding: 5px 10px; border-radius: 8px; font-weight: 600;" onclick="openProfileModal()">⚙️ 회원정보수정</button>
+            <button type="button" id="admin-panel-btn" class="user-small-btn" style="display: none; background: linear-gradient(135deg, #7c4dff, #512da8); color: #fff; border: 1px solid rgba(124, 77, 255, 0.5); padding: 5px 10px; border-radius: 8px; font-weight: 600;" onclick="openAdminModal()">🛡️ 보안통제실</button>
+            <button type="button" id="auth-main-btn" class="user-small-btn" style="background: linear-gradient(135deg, #3f51b5, #1a237e); color: #fff; border: 1px solid rgba(63, 81, 181, 0.5); padding: 5px 12px; border-radius: 8px; font-weight: 600;" onclick="openAuthModal()">🔑 로그인 / 회원가입</button>
+        </div>
     </div>
 
     <!-- 3줄탭 클릭 시 열리는 5개 메뉴 드로어 -->
@@ -2431,7 +2542,7 @@ window.UserActivityTracker = UserActivityTracker;
             <span>›</span>
         </button>
         <button type="button" class="drawer-tab-btn" id="tab-lead" onclick="switchTab('lead')">
-            <span>🔥 추천 주도주</span>
+            <span>🏛️ 안정 대장주</span>
             <span>›</span>
         </button>
         <button type="button" class="drawer-tab-btn" id="tab-risk" onclick="switchTab('risk')">
@@ -2469,33 +2580,8 @@ window.UserActivityTracker = UserActivityTracker;
     </nav>
 
     <div class="container">
-        <!-- 메인(홈) 화면 전용 영역: ① 상단 제목 & 4대 지수 전광판 + ② 종목 검색창 -->
+        <!-- 메인(홈) 화면 전용 영역: ① 4대 지수 전광판 + ② 종목 검색창 + ③ AI Top 6 -->
         <div id="home-section">
-            <header class="header">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 8px 12px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 12px; backdrop-filter: blur(8px);">
-                    <div style="font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; gap: 8px;">
-                        <span id="auth-env-badge" style="background: rgba(0, 200, 83, 0.12); color: #00e676; border: 1px solid rgba(0, 200, 83, 0.3); padding: 3px 10px; border-radius: 20px; font-weight: 700; font-size: 11px; letter-spacing: 0.5px; box-shadow: 0 0 10px rgba(0, 230, 118, 0.15);">● 보안시스템 가동</span>
-                        <span id="auth-user-status-text" style="color: #e0e0e0; font-size: 12.5px;">게스트 모드</span>
-                    </div>
-                    <div style="display: flex; gap: 8px; align-items: center;">
-                        <button type="button" id="profile-edit-btn" class="user-small-btn" style="display: none; background: linear-gradient(135deg, #00897b, #004d40); color: #fff; border: 1px solid rgba(0, 150, 136, 0.4); padding: 5px 12px; border-radius: 8px; font-weight: 600; box-shadow: 0 2px 6px rgba(0, 77, 64, 0.3);" onclick="openProfileModal()">⚙️ 회원정보수정</button>
-                        <button type="button" id="admin-panel-btn" class="user-small-btn" style="display: none; background: linear-gradient(135deg, #7c4dff, #512da8); color: #fff; border: 1px solid rgba(124, 77, 255, 0.5); padding: 5px 12px; border-radius: 8px; font-weight: 600; box-shadow: 0 2px 8px rgba(124, 77, 255, 0.35);" onclick="openAdminModal()">🛡️ 보안통제실</button>
-                        <button type="button" id="auth-main-btn" class="user-small-btn" style="background: linear-gradient(135deg, #3f51b5, #1a237e); color: #fff; border: 1px solid rgba(63, 81, 181, 0.5); padding: 6px 14px; border-radius: 8px; font-weight: 600; box-shadow: 0 2px 8px rgba(63, 81, 181, 0.3); transition: all 0.2s;" onclick="openAuthModal()">🔑 로그인 / 회원가입</button>
-                    </div>
-                </div>
-                <h1><img src="./assets/stockchat_appicon.png" alt="스탁챗 아이콘" class="title-brand-icon"><span>내 계좌 심폐소생술</span></h1>
-                <p class="desc">
-                    파란불 계좌를 빨간불로, 실시간 시장 데이터와 AI 정밀 진단 시스템
-                </p>
-                <div class="live-status-bar">
-                    <span class="live-dot"></span>
-                    <span>네이버증권 실시간 자동 동기화 중 (<span id="last-updated">수신 중...</span>)</span>
-                    <button type="button" class="user-small-btn" style="padding:3px 10px; font-size:12px; margin-left:6px;" onclick="refreshTop50FromNaverRealtime(false)">🔄 즉시 새로고침</button>
-                </div>
-            </header>
-
-            <button type="button" class="search-btn" onclick="switchTab('er')" style="margin-bottom:14px;">내 계좌 진단하기</button>
-
             <!-- 1. 주요 증시 4대 지표 전광판 -->
             <div id="index-grid" class="index-grid"></div>
 
@@ -2504,8 +2590,12 @@ window.UserActivityTracker = UserActivityTracker;
                 <div class="search-box">
                     <input type="text" id="search-input" class="search-input" placeholder="종목명 또는 코드 입력 (실시간 검색 / 예: 삼성전자, 대한항공, KT, 현대차, 005930)">
                     <button type="button" id="search-btn" class="search-btn">종목 조회</button>
+                    <button type="button" class="search-btn" onclick="switchTab('er')" style="background:#dc2626; white-space:nowrap;">🚨 내 계좌 진단</button>
                 </div>
             </div>
+
+            <!-- 3. 루틴 1: 전 종목(4,332개) AI 자동 선별 Top 6 상세 추천 리포트 -->
+            <div id="daily-top2-section" style="margin-top:8px;"></div>
         </div>
 
         <!-- 5개 메뉴 선택 시 상단에 표시되는 와이드 화면 헤더 -->
@@ -3084,9 +3174,11 @@ window.UserActivityTracker = UserActivityTracker;
                 renderIndexes();
                 renderLeadStocks6();
                 renderRiskStocks6();
+                renderDailyTop2Report();
                 renderKospiTop50();
                 renderFavorites();
                 updateFavCount();
+                renderDailyTop2Report();
                 setTimeout(() => refreshTop50FromNaverRealtime(true), 100);
                 setInterval(() => refreshTop50FromNaverRealtime(true), 10000);
             } catch (err) {
@@ -3117,14 +3209,55 @@ window.UserActivityTracker = UserActivityTracker;
             });
         }
 
-        // Gemini 추천 6종목 렌더링
+        function getScoredMarketPool() {
+            const pool = (typeof getKospiSearchPool === 'function') ? getKospiSearchPool() : [];
+            const parseNum = (v) => parseFloat(String(v || '0').replace(/[^0-9.-]/g, '')) || 0;
+            return pool.map(st => {
+                const rate = parseNum(st.rate);
+                const tv = parseNum(st.tradingValue);
+                const rank = parseNum(st.rank) || 999;
+                const momentumScore = (rate > 0 && rate <= 15) ? rate * 3 : (rate > 15 ? 18 : rate * 0.5);
+                const tvScore = Math.log10(Math.max(tv, 1) + 1) * 4;
+                const rankScore = rank <= 50 ? (55 - rank) * 0.4 : 0;
+                return { st, score: momentumScore + tvScore + rankScore, rate, tv, rank };
+            });
+        }
+
+        // 시총 상위 50대 대형 우량주 기반 안정 대장주 6종목 렌더링
         function renderLeadStocks6() {
             const container = document.getElementById('view-lead');
+            if (!container) return;
             container.innerHTML = '';
-            const stocks = fullData.stocks || {};
 
-            Object.keys(stocks).forEach(name => {
-                const item = stocks[name];
+            const staticStocks = fullData.stocks || {};
+            const scored = getScoredMarketPool()
+                .filter(x => x.rank <= 50)
+                .sort((a, b) => (b.rate * 2 + Math.log10(Math.max(b.tv, 1) + 1) * 3 - b.rank * 0.2) - (a.rate * 2 + Math.log10(Math.max(a.tv, 1) + 1) * 3 - a.rank * 0.2));
+            const dynamicTop6 = scored.slice(0, 6);
+
+            const entries = dynamicTop6.length > 0
+                ? dynamicTop6.map(({ st, rate, tv, rank }) => {
+                    const existing = staticStocks[st.name] || {};
+                    const tvText = st.tradingValue ? `${st.tradingValue}백만` : (tv > 0 ? `${tv.toLocaleString()}원` : '-');
+                    return {
+                        name: st.name,
+                        tag: existing.tag || `시총 #${rank} 대형 우량주`,
+                        price: {
+                            price: st.price || '0',
+                            sign: st.sign || '-',
+                            change_val: st.change || '0',
+                            change_rate: rate.toFixed(2)
+                        },
+                        analysis: existing.analysis || {
+                            recommendation: rate >= 2 ? '우량 대장주 강세' : '대형주 안정 흐름',
+                            analysis: `대형 우량주 요약\n시총 ${rank}위 · 거래대금 ${tvText} · 등락률 ${rate.toFixed(2)}%\n코스피 시가총액 상위 50대 대표 우량주 중 수급 안정성이 돋보이는 대장주입니다.`
+                        }
+                    };
+                })
+                : Object.keys(staticStocks).map(name => ({ name, ...staticStocks[name] }));
+
+            entries.forEach(item => {
+                const name = item.name;
                 const price = item.price || {};
                 const sign = price.sign || '-';
                 const rate = price.change_rate || '0.00';
@@ -3140,7 +3273,7 @@ window.UserActivityTracker = UserActivityTracker;
                         <div class="card-name-box">
                             <span class="card-name" onclick="selectStock('${name}')">${name}</span>
                             <span class="card-tag">${item.tag || '주도주'}</span>
-                            <span class="gemini-badge">Gemini: ${recom}</span>
+                            <span class="gemini-badge">AI: ${recom}</span>
                         </div>
                         <button class="fav-star-btn ${isFav ? 'active' : ''}" onclick="toggleFavorite(event, '${name}')">★</button>
                     </div>
@@ -3158,6 +3291,130 @@ window.UserActivityTracker = UserActivityTracker;
             });
         }
 
+        const openTop6Codes = new Set();
+
+        function toggleTop6Detail(code, isOpen) {
+            if (!code) return;
+            if (isOpen) openTop6Codes.add(code);
+            else openTop6Codes.delete(code);
+        }
+
+        function renderDailyTop2Report() {
+            const box = document.getElementById('daily-top2-section');
+            if (!box) return;
+            const scored = getScoredMarketPool().sort((a, b) => b.score - a.score);
+            if (scored.length === 0) {
+                box.innerHTML = '';
+                return;
+            }
+            const poolLen = scored.length;
+            const top2 = scored.slice(0, 6);
+            const nowTime = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+            const cardsHtml = top2.map(({ st, score, rate, tv, rank }, idx) => {
+                const colorClass = getColorClass(st.sign, st.rate);
+                const disc = (typeof buildStockDisclosures === 'function') ? buildStockDisclosures(st.name)[0] : null;
+                const leadData = (fullData && fullData.stocks && fullData.stocks[st.name]) || null;
+                const fin = leadData && leadData.finance && leadData.finance.metrics ? leadData.finance.metrics : null;
+                const safeName = (st.name || '').replace(/'/g, "\\'");
+                const aiScore = Math.min(98, Math.max(62, Math.round(50 + score)));
+                const marketLabel = st.market || 'KOSPI';
+                const tvDisplay = st.tradingValue ? `${st.tradingValue}백만` : (tv > 0 ? `${tv.toLocaleString()}원` : '-');
+                const mcapDisplay = st.marketValueHangeul || (st.marketValue ? `${st.marketValue}억` : '-');
+
+                const momentumNote = rate >= 3
+                    ? `금일 <strong>+${rate.toFixed(2)}%</strong>의 강한 매수 수급이 유입되며 단기 주도 모멘텀을 형성 중입니다. 거래대금 집중(${tvDisplay})으로 장중 탄력이 우수합니다.`
+                    : `안정적인 거래대금(${tvDisplay})과 시총 상위권(${rank <= 50 ? `TOP ${rank}` : marketLabel}) 수급 기반 위에서 완만한 추세 확장이 기대되는 구간입니다.`;
+
+                let financeNote = '';
+                if (fin) {
+                    const rev = fin['매출액'] ? fin['매출액'].slice(-1)[0] : '-';
+                    const op = fin['영업이익'] ? fin['영업이익'].slice(-1)[0] : '-';
+                    const roe = fin['ROE'] ? fin['ROE'].slice(-1)[0] : '-';
+                    const per = fin['PER'] ? fin['PER'].slice(-1)[0] : '-';
+                    financeNote = `최근 결산 기준 매출액 <strong>${rev}억</strong> · 영업이익 <strong>${op}억</strong> · ROE <strong>${roe}%</strong> · PER <strong>${per}배</strong>로 펀더멘털 지표가 확인됩니다.`;
+                } else {
+                    financeNote = `${marketLabel} 시가총액 <strong>${mcapDisplay}</strong> 규모의 종목으로, 거래량·체결강도 및 분기 영업이익률 개선 여부를 병행 점검하는 구간입니다.`;
+                }
+
+                const strategyNote = rate >= 5
+                    ? `단기 급등에 따른 이격도 과열을 감안해 <strong>추격 매수보다 눌림목 분할 접근</strong>이 유리합니다.`
+                    : `현재가 부근 <strong>1차 분할 매수 후 직전 저점 이탈 여부</strong>를 기준선으로 삼는 전략이 유효합니다.`;
+
+                return `
+                    <div style="background:#0f172a; border:1px solid rgba(56,189,248,0.4); border-radius:12px; padding:10px 12px; display:flex; flex-direction:column; gap:7px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; border-bottom:1px solid rgba(148,163,184,0.16); padding-bottom:6px;">
+                            <div style="min-width:0;">
+                                <span style="background:linear-gradient(135deg,#0284c7,#2563eb); color:#fff; font-size:10px; font-weight:800; padding:2px 6px; border-radius:999px; margin-right:4px;">AI #${idx + 1}</span>
+                                <span style="font-size:10.5px; color:#34d399; font-weight:700;">${aiScore}점</span>
+                                <div style="margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                                    <strong style="font-size:14.5px; color:#f8fafc;">${st.name}</strong>
+                                    <span style="font-size:11px; color:#94a3b8; margin-left:3px;">${st.code}</span>
+                                </div>
+                            </div>
+                            <div style="text-align:right; flex-shrink:0;">
+                                <div style="font-size:14.5px; font-weight:800; color:#f8fafc;">${st.price}원</div>
+                                <div class="${colorClass}" style="font-size:11.5px; font-weight:700;">${st.sign} ${rate.toFixed(2)}%</div>
+                            </div>
+                        </div>
+
+                        <div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:5px;">
+                            <div style="background:#1e293b; border-radius:6px; padding:4px 6px;">
+                                <div style="font-size:10px; color:#94a3b8;">시총</div>
+                                <div style="font-size:11px; font-weight:700; color:#e2e8f0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${mcapDisplay}</div>
+                            </div>
+                            <div style="background:#1e293b; border-radius:6px; padding:4px 6px;">
+                                <div style="font-size:10px; color:#94a3b8;">거래대금</div>
+                                <div style="font-size:11px; font-weight:700; color:#fbbf24; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${tvDisplay}</div>
+                            </div>
+                            <div style="background:#1e293b; border-radius:6px; padding:4px 6px;">
+                                <div style="font-size:10px; color:#94a3b8;">순위</div>
+                                <div style="font-size:11px; font-weight:700; color:#38bdf8;">${rank < 999 ? `#${rank}위` : marketLabel}</div>
+                            </div>
+                        </div>
+
+                        <div style="font-size:11.5px; color:#cbd5e1; line-height:1.4;">
+                            ${disc ? `<span style="color:#34d399; font-weight:700;">[${disc.category}]</span> ` : ''}${rate >= 3 ? `거래대금 유입(${tvDisplay}) · 상승 모멘텀 강세` : `시총·거래대금 상위 안정 수급 구간`}
+                        </div>
+
+                        <details style="font-size:11.5px; color:#cbd5e1;" ${openTop6Codes.has(st.code) ? 'open' : ''} ontoggle="toggleTop6Detail('${st.code}', this.open)">
+                            <summary style="cursor:pointer; color:#38bdf8; font-weight:700; user-select:none;">상세 3단 분석 펼치기 ▾</summary>
+                            <div style="display:flex; flex-direction:column; gap:5px; margin-top:6px; line-height:1.45;">
+                                <div style="background:rgba(30,41,59,0.55); border-left:3px solid #38bdf8; padding:5px 7px; border-radius:0 6px 6px 0;">
+                                    <strong style="color:#38bdf8;">1. 수급·모멘텀:</strong> ${momentumNote}
+                                </div>
+                                <div style="background:rgba(30,41,59,0.55); border-left:3px solid #4ade80; padding:5px 7px; border-radius:0 6px 6px 0;">
+                                    <strong style="color:#4ade80;">2. 재무·밸류:</strong> ${financeNote}
+                                </div>
+                                <div style="background:rgba(30,41,59,0.55); border-left:3px solid #fbbf24; padding:5px 7px; border-radius:0 6px 6px 0;">
+                                    <strong style="color:#fbbf24;">3. 공시·대응:</strong> ${disc ? `<span style="color:#a7f3d0;">[${disc.category}]</span> ` : ''}${strategyNote}
+                                </div>
+                            </div>
+                        </details>
+
+                        <div style="display:flex; gap:6px; margin-top:auto;">
+                            <button type="button" class="user-small-btn" style="flex:1; padding:5px 8px; font-size:11.5px; background:#1e293b; color:#e2e8f0; border:1px solid #334155;" onclick="selectStock('${safeName}')">📊 상세 리포트</button>
+                            <button type="button" class="user-small-btn" style="flex:1; padding:5px 8px; font-size:11.5px; background:linear-gradient(135deg,#0284c7,#2563eb); color:#fff; border:none;" onclick="selectStock('${safeName}'); setTimeout(() => { if (typeof runServerGeminiAnalysis === 'function') runServerGeminiAnalysis(); }, 180);">✨ Gemini 분석</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            box.innerHTML = `
+                <div class="sub-box" style="border-color:rgba(56,189,248,0.45);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+                        <div>
+                            <strong style="font-size:16px; color:#38bdf8;">🏆 오늘의 AI 자동 선정 Top 6 리서치 리포트</strong>
+                            <span style="font-size:12px; color:#94a3b8; margin-left:6px;">전체 ${poolLen.toLocaleString()}개 종목 스캔 완료 (${nowTime} 기준)</span>
+                        </div>
+                        <button type="button" class="user-small-btn" onclick="renderDailyTop2Report()">🔄 Top 6 다시 선정</button>
+                    </div>
+                    <div class="daily-top6-grid">
+                        ${cardsHtml}
+                    </div>
+                </div>
+            `;
+        }
+
         const DEFAULT_RISK_STOCKS_6 = [
             { name: "롯데케미칼", code: "011170", tag: "석유화학 업황부진", recom: "비중 축소/관망", reason: "글로벌 공급 과잉 장기화 및 석유화학 스프레드 둔화로 실적 턴어라운드 확인 전까지 보수적 접근이 필요합니다." },
             { name: "엔씨소프트", code: "036570", tag: "신작 모멘텀 둔화", recom: "실적 확인 후 접근", reason: "기존 주력 IP 매출 자연 감소 및 신작 흥행 변동성이 존재하여 분기 영업이익 반등 시점까지 관망이 권장됩니다." },
@@ -3168,6 +3425,35 @@ window.UserActivityTracker = UserActivityTracker;
         ];
 
         function getRiskStocksMap() {
+            const scored = getScoredMarketPool();
+            const liquidRisk = scored
+                .filter(x => x.rate < 0 && (x.tv > 0 || x.rank <= 200))
+                .sort((a, b) => a.rate - b.rate)
+                .slice(0, 6);
+
+            if (liquidRisk.length >= 6) {
+                const map = {};
+                liquidRisk.forEach(({ st, rate, tv }) => {
+                    const tvText = st.tradingValue ? `${st.tradingValue}백만` : (tv > 0 ? `${tv.toLocaleString()}원` : '-');
+                    map[st.name] = {
+                        name: st.name,
+                        code: st.code,
+                        tag: rate <= -5 ? '급락 변동성 주의' : '단기 약세 경계',
+                        price: {
+                            price: st.price || '-',
+                            change_val: st.change || '0',
+                            change_rate: rate.toFixed(2),
+                            sign: st.sign || '▼'
+                        },
+                        analysis: {
+                            recommendation: rate <= -5 ? '단기 리스크 관리' : '지지선 확인 후 접근',
+                            analysis: `실시간 약세 경보\n거래대금 ${tvText} · 당일 ${rate.toFixed(2)}% 하락\n단기 하락 압력이 커지고 있어 직전 지지선 방어 여부와 DART 공시 점검이 필요합니다.`
+                        }
+                    };
+                });
+                return map;
+            }
+
             if (fullData.risk_stocks && Object.keys(fullData.risk_stocks).length > 0) {
                 return fullData.risk_stocks;
             }
@@ -3466,6 +3752,7 @@ window.UserActivityTracker = UserActivityTracker;
 
                 renderLeadStocks6();
                 renderRiskStocks6();
+                renderDailyTop2Report();
                 renderKospiTop50();
 
                 // 내 관심 종목 탭 입력창에 포커스가 없을 때만 재렌더링
@@ -3864,7 +4151,7 @@ window.UserActivityTracker = UserActivityTracker;
             if (activeMenuHeader) activeMenuHeader.style.display = 'flex';
 
             const menuTitleMap = {
-                'lead': '🔥 추천 주도주',
+                'lead': '🏛️ 안정 대장주',
                 'risk': '⚠️ 추천 위험주',
                 'all': '📋 KOSPI 전체 종목 (시총 Top 50)',
                 'fav': `⭐ 관심 종목 (${favorites.length}종목)`,
@@ -4810,6 +5097,47 @@ window.UserActivityTracker = UserActivityTracker;
             `;
         }
 
+        function renderAccountDailyBriefing(acc, holdingDetails, worstHolding) {
+            const box = document.getElementById('account-daily-briefing-box');
+            if (!box) return;
+            if (!holdingDetails || holdingDetails.length === 0) {
+                box.innerHTML = `
+                    <div style="background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.35); border-radius:10px; padding:12px; font-size:12.5px; color:#cbd5e1;">
+                        <strong style="color:#38bdf8;">📌 오늘의 내 계좌 브리핑:</strong> 현재 현금 100%(${acc.cash.toLocaleString()}원) 상태입니다. 홈 화면의 <strong>AI Top 6 추천</strong>이나 <strong>모의투자</strong>에서 첫 종목을 추가해 보세요.
+                    </div>
+                `;
+                return;
+            }
+            const topHolding = holdingDetails.slice().sort((a, b) => b.evalAmt - a.evalAmt)[0];
+            const disc = (typeof buildStockDisclosures === 'function') ? buildStockDisclosures(topHolding.name)[0] : null;
+            let erHint = '모든 보유 종목이 양호한 수익 구간을 유지하고 있습니다.';
+            let erActionBtn = '';
+            if (worstHolding && worstHolding.costAmt > 0) {
+                const lossPct = ((worstHolding.evalAmt - worstHolding.costAmt) / worstHolding.costAmt) * 100;
+                if (lossPct <= -5 && worstHolding.curPrice > 0) {
+                    const addQty = Math.floor(acc.cash / worstHolding.curPrice);
+                    const estAvg = (worstHolding.h.qty + addQty) > 0
+                        ? Math.round((worstHolding.costAmt + addQty * worstHolding.curPrice) / (worstHolding.h.qty + addQty))
+                        : worstHolding.h.avgPrice;
+                    const safeWorst = worstHolding.name.replace(/'/g, "\\'");
+                    erHint = `⚠️ <strong>${worstHolding.name}</strong>(${lossPct.toFixed(1)}%) — 현재 예수금 활용 물타기 시 예상 평단가 <strong>${estAvg.toLocaleString()}원</strong>`;
+                    erActionBtn = `<button type="button" class="user-small-btn" style="background:#dc2626; color:#fff; border:none;" onclick="openErWithHolding('${safeWorst}', ${worstHolding.h.avgPrice}, ${worstHolding.h.qty}, ${acc.cash})">🚨 예약 진단 열기</button>`;
+                } else if (lossPct < 0) {
+                    erHint = `주의 종목: <strong>${worstHolding.name}</strong>(${lossPct.toFixed(1)}%) — 손실폭이 크지 않아 추세 관찰 구간입니다.`;
+                }
+            }
+            box.innerHTML = `
+                <div style="background:rgba(15,23,42,0.88); border:1px solid rgba(56,189,248,0.35); border-radius:10px; padding:12px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+                    <div style="font-size:12.5px; color:#e2e8f0; line-height:1.55;">
+                        <div><strong style="color:#38bdf8;">📌 오늘의 내 계좌 데일리 브리핑</strong> (보유 ${holdingDetails.length}종목 · 최대 비중: <strong>${topHolding.name}</strong>)</div>
+                        <div>${erHint}</div>
+                        ${disc ? `<div style="color:#94a3b8; font-size:12px;">📢 핵심 공시(${topHolding.name}): ${disc.note || disc.impact}</div>` : ''}
+                    </div>
+                    ${erActionBtn}
+                </div>
+            `;
+        }
+
         function openErWithHolding(name, avgPrice, qty, cash) {
             const stockInput = document.getElementById('er-stock-input');
             const buyInput = document.getElementById('er-buy-price');
@@ -5007,6 +5335,9 @@ window.UserActivityTracker = UserActivityTracker;
                         </div>
                     </div>
 
+                    <!-- 루틴 3: 개인 계좌 데일리 브리핑 -->
+                    <div id="account-daily-briefing-box" style="margin-bottom:14px;"></div>
+
                     <div class="kis-stat-row-4">
                         <div class="kis-stat-card">
                             <div class="index-title">총 평가자산 (예수금+주식)</div>
@@ -5082,6 +5413,9 @@ window.UserActivityTracker = UserActivityTracker;
             const worstHolding = holdingDetails
                 .slice()
                 .sort((a, b) => (a.evalAmt - a.costAmt) - (b.evalAmt - b.costAmt))[0];
+
+            renderAccountDailyBriefing(acc, holdingDetails, worstHolding);
+
             if (worstHolding && (worstHolding.evalAmt - worstHolding.costAmt) < 0) {
                 renderBranchActionBox('account-branch-box', {
                     firstResult: `⚠️ 손실 종목 관리 필요 (${worstHolding.name})`,
@@ -5099,6 +5433,163 @@ window.UserActivityTracker = UserActivityTracker;
                     onAction: () => { switchTab('radar'); switchRadarMode('gainers'); }
                 });
             }
+        }
+
+        let lastSummaryState = null;
+
+        function getAuditVersionKey(logs) {
+            if (!Array.isArray(logs) || logs.length === 0) return 'empty';
+            const latestId = Math.floor(Number(logs[0].id) || 0);
+            return `v${logs.length}-${latestId % 100000}`;
+        }
+
+        function buildSummaryFromLogs(logs) {
+            const searchCount = logs.filter(l => (l.action || '').includes('SEARCH_STOCK') || l?.meta?.type === 'SEARCH').length;
+            const tradeCount = logs.filter(l => (l.action || '').includes('TRADE_') || l?.meta?.type === 'TRADE').length;
+            const quickCount = logs.filter(l => (l.action || '').includes('QUICK_CMD') || l?.meta?.type === 'QUICK_CMD').length;
+            return {
+                versionKey: getAuditVersionKey(logs),
+                totalCount: logs.length,
+                searchCount,
+                tradeCount,
+                quickCount,
+                recentLogs: logs.slice(0, 4).map(l => ({ time: l.time || '-', action: l.action || '-' })),
+                generatedAt: new Date().toLocaleTimeString('ko-KR')
+            };
+        }
+
+        function refreshAccountActivitySummary(isManualRefresh = true) {
+            const box = document.getElementById('account-activity-summary-box');
+            if (!box) return;
+
+            const logs = (window.AuthManager && typeof AuthManager.getAuditLogs === 'function')
+                ? AuthManager.getAuditLogs()
+                : [];
+
+            // 실습 ②: 필요한 기록이 비었을 때 멈추고 대기 이유 표시
+            if (!Array.isArray(logs) || logs.length === 0) {
+                lastSummaryState = null;
+                box.innerHTML = `
+                    <div style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.45); border-radius:12px; padding:14px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+                            <strong style="color:#fbbf24; font-size:14.5px;">📊 활동 자동 요약 보고서 — ⏸️ 대기 중</strong>
+                            <button type="button" class="user-small-btn" onclick="refreshAccountActivitySummary(true)">🔄 다시 확인</button>
+                        </div>
+                        <div style="font-size:13px; color:#fde68a; line-height:1.55;">
+                            <strong>대기 이유:</strong> 현재 저장된 활동 기록(<code>cpr_auth_logs_v2</code>)이 비어 있어(0건) 요약 보고서를 만들 수 없습니다.<br>
+                            종목 검색, 빠른 실행, 모의투자를 1회 이상 진행한 뒤 다시 확인해 주세요.
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            // 실습 ③: 자료 버전 비교 → 같으면 '기존 결과', 다르면 '갱신됨'
+            const currentKey = getAuditVersionKey(logs);
+            let statusBadge = '';
+            if (!lastSummaryState || lastSummaryState.versionKey !== currentKey) {
+                lastSummaryState = buildSummaryFromLogs(logs);
+                statusBadge = '<span style="background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.45); padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700;">갱신됨</span>';
+            } else {
+                statusBadge = '<span style="background:rgba(56,189,248,0.16); color:#38bdf8; border:1px solid rgba(56,189,248,0.4); padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700;">기존 결과</span>';
+            }
+
+            let savedReportHtml = '';
+            try {
+                const rawSaved = localStorage.getItem(`cpr_saved_summary_report_v1_${currentUser}`);
+                if (rawSaved) {
+                    const sr = JSON.parse(rawSaved);
+                    savedReportHtml = `<div style="margin-top:10px; padding:8px 10px; border-radius:8px; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.35); font-size:12px; color:#a7f3d0;">✅ <strong>최종 저장 완료 (1건):</strong> ${sr.savedAt} · 기준 버전 ${sr.versionKey} · 총 ${sr.totalCount}건 (검색 ${sr.searchCount} / 모의투자 ${sr.tradeCount} / 빠른실행 ${sr.quickCount})</div>`;
+                }
+            } catch (_) {}
+
+            const sourceListHtml = lastSummaryState.recentLogs.map(item =>
+                `<li style="font-size:12px; color:#cbd5e1; padding:3px 0; border-bottom:1px dashed rgba(148,163,184,0.15);">[${item.time}] ${item.action}</li>`
+            ).join('');
+
+            box.innerHTML = `
+                <div style="background:rgba(15,23,42,0.85); border:1px solid rgba(56,189,248,0.35); border-radius:12px; padding:14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                            <strong style="color:#f8fafc; font-size:14.5px;">📊 활동 자동 요약 보고서</strong>
+                            ${statusBadge}
+                            <span style="font-size:11.5px; color:#94a3b8;">자료 번호: <code>${lastSummaryState.versionKey}</code> · 생성 ${lastSummaryState.generatedAt}</span>
+                        </div>
+                        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                            <button type="button" class="user-small-btn" onclick="refreshAccountActivitySummary(true)">🔄 요약 보고서 갱신</button>
+                            <button type="button" class="user-small-btn" style="background:#059669; color:#fff; border:none;" onclick="previewAndSaveActivitySummary()">📋 보고서 저장 미리보기</button>
+                            <button type="button" class="user-small-btn" style="color:#fca5a5;" onclick="clearLogsForWaitTest()">🧹 기록 비우기(대기 테스트)</button>
+                        </div>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:8px; margin-bottom:10px;">
+                        <div style="background:#1e293b; border-radius:8px; padding:8px 10px;">
+                            <div style="font-size:11px; color:#94a3b8;">총 활동 건수</div>
+                            <div style="font-size:16px; font-weight:800; color:#f8fafc;">${lastSummaryState.totalCount}건</div>
+                        </div>
+                        <div style="background:#1e293b; border-radius:8px; padding:8px 10px;">
+                            <div style="font-size:11px; color:#94a3b8;">종목 검색</div>
+                            <div style="font-size:16px; font-weight:800; color:#38bdf8;">${lastSummaryState.searchCount}건</div>
+                        </div>
+                        <div style="background:#1e293b; border-radius:8px; padding:8px 10px;">
+                            <div style="font-size:11px; color:#94a3b8;">모의투자 체결</div>
+                            <div style="font-size:16px; font-weight:800; color:#4ade80;">${lastSummaryState.tradeCount}건</div>
+                        </div>
+                        <div style="background:#1e293b; border-radius:8px; padding:8px 10px;">
+                            <div style="font-size:11px; color:#94a3b8;">빠른 실행</div>
+                            <div style="font-size:16px; font-weight:800; color:#fbbf24;">${lastSummaryState.quickCount}건</div>
+                        </div>
+                    </div>
+
+                    <div style="font-size:11.5px; color:#94a3b8; margin-bottom:4px;">📌 요약에 사용된 최근 기록 (${lastSummaryState.recentLogs.length}건):</div>
+                    <ul style="list-style:none; padding:0; margin:0;">${sourceListHtml}</ul>
+                    <div id="summary-verify-msg" style="margin-top:8px; font-size:12px;"></div>
+                    ${savedReportHtml}
+                </div>
+            `;
+        }
+
+        function clearLogsForWaitTest() {
+            if (!confirm('대기 이유 화면을 테스트하기 위해 현재 로컬 활동 기록을 비울까요?')) return;
+            localStorage.setItem('cpr_auth_logs_v2', '[]');
+            localStorage.setItem('cpr_auth_logs', '[]');
+            refreshAccountActivitySummary(true);
+        }
+
+        // 실습 ④: 보고서 값과 원래 기록을 대조 → 같으면 미리보기 승인 저장, 다르면 멈추고 어긋난 값 표시
+        function previewAndSaveActivitySummary() {
+            if (!lastSummaryState) {
+                refreshAccountActivitySummary(true);
+                return;
+            }
+            const liveLogs = (window.AuthManager && typeof AuthManager.getAuditLogs === 'function')
+                ? AuthManager.getAuditLogs()
+                : [];
+            const liveCount = Array.isArray(liveLogs) ? liveLogs.length : 0;
+            const liveKey = getAuditVersionKey(liveLogs);
+            const msgEl = document.getElementById('summary-verify-msg');
+
+            if (lastSummaryState.totalCount !== liveCount || lastSummaryState.versionKey !== liveKey) {
+                if (msgEl) {
+                    msgEl.innerHTML = `<span style="color:#f87171; font-weight:700;">⚠️ 값 불일치로 미리보기 중단: 보고서 건수(${lastSummaryState.totalCount}건, ${lastSummaryState.versionKey}) ≠ 현재 원본 기록(${liveCount}건, ${liveKey}). 먼저 [요약 보고서 갱신]을 눌러 주세요.</span>`;
+                }
+                return;
+            }
+
+            if (msgEl) msgEl.innerHTML = '';
+            const snapshot = { ...lastSummaryState, savedAt: new Date().toLocaleTimeString('ko-KR') };
+            requestSaveConfirmation({
+                candidateKey: `summary:${snapshot.versionKey}`,
+                title: '📋 활동 요약 보고서 최종 저장 미리보기',
+                label1: '대조 확인 (보고서 = 원본 기록)',
+                value1: `${snapshot.totalCount}건 일치 (${snapshot.versionKey})`,
+                label2: '저장될 요약 내용',
+                value2: `검색 ${snapshot.searchCount} · 모의투자 ${snapshot.tradeCount} · 빠른실행 ${snapshot.quickCount}`,
+                onApprove: () => {
+                    localStorage.setItem(`cpr_saved_summary_report_v1_${currentUser}`, JSON.stringify(snapshot));
+                    refreshAccountActivitySummary(false);
+                }
+            });
         }
 
         function renderKisDartView() {
@@ -5233,8 +5724,8 @@ window.UserActivityTracker = UserActivityTracker;
                 renderBranchActionBox('kis-branch-box', {
                     firstResult: '📌 아직 보유 중인 모의투자 종목이 없습니다',
                     branchType: 'a',
-                    selectedAction: '추천 주도주에서 첫 모의매수 대상 종목을 살펴보세요.',
-                    buttonText: '🔥 추천 주도주 보기',
+                    selectedAction: '안정 대장주에서 첫 모의매수 대상 종목을 살펴보세요.',
+                    buttonText: '🏛️ 안정 대장주 보기',
                     onAction: () => switchTab('lead')
                 });
             }
@@ -5514,8 +6005,8 @@ window.UserActivityTracker = UserActivityTracker;
                 renderBranchActionBox('er-branch-box', {
                     firstResult: `✨ 현재 수익 구간 (+${currentLossRate.toFixed(2)}%)`,
                     branchType: 'b',
-                    selectedAction: '수익권 유지 중입니다. 추천 주도주에서 추가 투자 기회를 살펴보세요.',
-                    buttonText: '🔥 추천 주도주 보기',
+                    selectedAction: '수익권 유지 중입니다. 안정 대장주에서 추가 투자 기회를 살펴보세요.',
+                    buttonText: '🏛️ 안정 대장주 보기',
                     onAction: () => switchTab('lead')
                 });
             }
@@ -5952,9 +6443,9 @@ window.UserActivityTracker = UserActivityTracker;
             },
             {
                 id: 'tab_lead',
-                label: '🔥 추천 주도주',
-                keywords: ['주도주', '상승 유망', '유망 종목'],
-                run: () => runTabAction('lead', '🔥 추천 주도주')
+                label: '🏛️ 안정 대장주',
+                keywords: ['안정 대장주', '대장주', '주도주', '상승 유망', '유망 종목'],
+                run: () => runTabAction('lead', '🏛️ 안정 대장주')
             },
             {
                 id: 'tab_risk',
@@ -6239,6 +6730,35 @@ window.UserActivityTracker = UserActivityTracker;
             modal.style.display = 'flex';
         }
 
+        function initIntroSplash() {
+            const splash = document.getElementById('intro-splash');
+            if (!splash || sessionStorage.getItem('cpr_intro_seen') === '1') return;
+            splash.classList.add('open');
+
+            let entered = false;
+            const enterApp = () => {
+                if (entered) return;
+                entered = true;
+                sessionStorage.setItem('cpr_intro_seen', '1');
+                const msgEl = document.getElementById('intro-status-msg');
+                if (msgEl) msgEl.textContent = '⚡ 실시간 시장 맥박 연결 중... 계좌 심폐소생을 시작합니다!';
+                setTimeout(() => {
+                    splash.classList.add('fade-out');
+                    setTimeout(() => {
+                        splash.classList.remove('open');
+                    }, 450);
+                }, 380);
+            };
+
+            splash.addEventListener('click', enterApp);
+            document.addEventListener('keydown', function onIntroKey(e) {
+                if (e.key === 'Enter' && splash.classList.contains('open')) {
+                    document.removeEventListener('keydown', onIntroKey);
+                    enterApp();
+                }
+            });
+        }
+
         function initNlQuickRunner() {
             const fabBtn = document.getElementById('nl-fab-btn');
             const closeBtn = document.getElementById('nl-cmd-close-btn');
@@ -6319,8 +6839,12 @@ window.UserActivityTracker = UserActivityTracker;
         }
 
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initNlQuickRunner);
+            document.addEventListener('DOMContentLoaded', () => {
+                initIntroSplash();
+                initNlQuickRunner();
+            });
         } else {
+            initIntroSplash();
             initNlQuickRunner();
         }
         initPromise = init();
@@ -6624,8 +7148,73 @@ window.UserActivityTracker = UserActivityTracker;
 
         async function openAdminModal() {
             renderAdminPanel();
+            refreshAccountActivitySummary(false);
             document.getElementById('admin-modal').style.display = 'flex';
+            runAdminSelfHealingCheck();
             await refreshBackendStatusAndSync();
+        }
+
+        async function runAdminSelfHealingCheck() {
+            const box = document.getElementById('admin-self-healing-box');
+            if (!box) return;
+            box.innerHTML = `<div style="background:rgba(15,23,42,0.85); border:1px solid #334155; border-radius:12px; padding:12px; font-size:12.5px; color:#94a3b8;">🩺 시스템 자가 점검 및 자동 조치를 실행 중입니다...</div>`;
+
+            const actionsTaken = [];
+            const issues = [];
+            const t0 = performance.now();
+            let healthOk = false;
+            let cfg = null;
+
+            try {
+                const h = await AuthManager.apiRequest('/health', 'GET');
+                const ms = Math.round(performance.now() - t0);
+                if (h && h.status === 'ok') {
+                    healthOk = true;
+                    actionsTaken.push(`Render /health 웜업 및 응답 확인 완료 (${ms}ms)`);
+                } else {
+                    issues.push('Render /health 응답 지연 또는 오프라인');
+                    actionsTaken.push('로컬 캐시·오프라인 폴백 모드로 자동 전환 유지');
+                }
+            } catch (_) {
+                issues.push('Render /health 연결 실패');
+                actionsTaken.push('로컬 캐시·오프라인 폴백 모드로 자동 전환 유지');
+            }
+
+            try {
+                cfg = await AuthManager.apiRequest('/api/config', 'GET');
+                if (cfg) {
+                    if (!cfg.geminiConfigured) {
+                        issues.push('Gemini API 키 미설정 감지');
+                    }
+                    actionsTaken.push('Gemini 503·지연 대비 Smart 분석 엔진 폴백 대기 확인');
+                }
+            } catch (_) {}
+
+            const logs = (window.AuthManager && typeof AuthManager.getAuditLogs === 'function') ? AuthManager.getAuditLogs() : [];
+            const blockedCount = logs.filter(l => (l.action || '').includes('BLOCKED') || (l.action || '').includes('권한차단')).length;
+            const dupCount = logs.filter(l => (l.action || '').includes('중복방지')).length;
+            if (blockedCount > 0) issues.push(`권한 차단/실패 로그 ${blockedCount}건 감지`);
+            if (dupCount > 0) actionsTaken.push(`빠른 실행 중복 요청 ${dupCount}건 자동 차단 완료`);
+
+            const statusBadge = healthOk
+                ? '<span style="background:rgba(16,185,129,0.2); color:#34d399; border:1px solid rgba(16,185,129,0.45); padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700;">🟢 정상 운영 중</span>'
+                : '<span style="background:rgba(245,158,11,0.2); color:#fbbf24; border:1px solid rgba(245,158,11,0.45); padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700;">🟡 폴백 보호 가동</span>';
+
+            box.innerHTML = `
+                <div style="background:rgba(15,23,42,0.88); border:1px solid rgba(124,77,255,0.45); border-radius:12px; padding:14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <strong style="color:#d1b3ff; font-size:14.5px;">🩺 시스템 자가 점검 &amp; 자동 조치 리포트</strong>
+                            ${statusBadge}
+                        </div>
+                        <button type="button" class="user-small-btn" onclick="runAdminSelfHealingCheck()">🔄 지금 재점검</button>
+                    </div>
+                    <div style="font-size:12.5px; color:#cbd5e1; line-height:1.6;">
+                        <div><strong>감지된 상태:</strong> ${issues.length > 0 ? issues.join(' · ') : '이상 징후 없음 (정상)'}</div>
+                        <div><strong>자동 조치 내역:</strong> ${actionsTaken.join(' · ')}</div>
+                    </div>
+                </div>
+            `;
         }
 
         async function refreshBackendStatusAndSync() {
@@ -7176,6 +7765,12 @@ window.UserActivityTracker = UserActivityTracker;
                 </div>
             </div>
 
+            <!-- 🩺 루틴 2: 관리자 시스템 자가 점검 & 자동 조치 리포트 -->
+            <div id="admin-self-healing-box" style="margin-bottom:14px;"></div>
+
+            <!-- 📊 관리자 전용 활동 자동 요약 보고서 (6회 실습) -->
+            <div id="account-activity-summary-box" style="margin-bottom:16px;"></div>
+
             <!-- KPI 통계 카드 4종 -->
             <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin-bottom:14px;">
                 <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:10px; text-align:center;">
@@ -7253,7 +7848,7 @@ window.UserActivityTracker = UserActivityTracker;
                 <div class="nl-group-title">📊 시세 · 화면</div>
                 <div class="nl-chip-grid">
                     <button type="button" class="nl-chip-btn" data-cmd="시세 새로고침해줘">🔄 시세 새로고침</button>
-                    <button type="button" class="nl-chip-btn" data-cmd="오늘의 주도주 보여줘">🔥 추천 주도주</button>
+                    <button type="button" class="nl-chip-btn" data-cmd="안정 대장주 보여줘">🏛️ 안정 대장주</button>
                     <button type="button" class="nl-chip-btn" data-cmd="급등주 TOP 30 보여줘">🚀 급등주 TOP 30</button>
                     <button type="button" class="nl-chip-btn" data-cmd="시총 TOP 50 보여줘">📋 시총 TOP 50</button>
                 </div>
@@ -7283,7 +7878,7 @@ window.UserActivityTracker = UserActivityTracker;
     </section>
 
     <!-- 🛡️ 저장 전 확인 화면 모달 (저장 승인 / 저장 거절 & 중복 승인 방지) -->
-    <div id="save-confirm-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.72); z-index:99998; justify-content:center; align-items:center; backdrop-filter:blur(4px); padding:16px;">
+    <div id="save-confirm-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.72); z-index:100001; justify-content:center; align-items:center; backdrop-filter:blur(4px); padding:16px;">
         <div style="width:100%; max-width:420px; background:#0f172a; border:1px solid rgba(56,189,248,0.5); border-radius:16px; padding:20px; box-shadow:0 20px 50px rgba(0,0,0,0.65); color:#f8fafc;">
             <div id="sc-title" style="font-size:16px; font-weight:800; color:#38bdf8; margin-bottom:12px;">저장 확인</div>
             <div style="background:rgba(30,41,59,0.85); border:1px solid #334155; border-radius:10px; padding:12px; display:flex; flex-direction:column; gap:8px; margin-bottom:12px;">
