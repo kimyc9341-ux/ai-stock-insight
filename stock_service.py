@@ -237,12 +237,13 @@ def analyze_with_gemini(stock_name: str, price_info: dict, finance_info: dict, n
 2. 📊 재무 건전성 및 실적 포인트 (수익성 및 밸류에이션)
 3. 📰 핵심 뉴스 이슈 및 AI 향후 전망 (상승/하락 변수 및 투자 포인트)
 """
+        model_name = os.getenv("MODEL_NAME", "gemini-3.8-flash")
         response = client.models.generate_content(
-            model='gemini-2.5-flash',
+            model=model_name,
             contents=prompt
         )
         return {
-            "source": "Google Gemini 2.5 Flash API",
+            "source": f"Google Gemini ({model_name})",
             "analysis": response.text.strip()
         }
     except Exception as e:
@@ -275,7 +276,7 @@ def _extract_stock_from_text(text: str):
 def chat_with_agent(user_message: str, history: list = None):
     """
     멀티턴 대화를 지원하는 AI 주식 상담 챗봇 함수.
-    - .env의 GEMINI_API_KEY(또는 API_KEY)와 MODEL_NAME(기본값: gemini-2.5-flash)을 런타임에 참조
+    - .env의 GEMINI_API_KEY(또는 API_KEY)와 MODEL_NAME(기본값: gemini-3.8-flash)을 런타임에 참조
     - 질문 내 종목 감지 시 실시간 시세·재무·뉴스 컨텍스트 자동 결합
     - API 키 미설정 시 실시간 데이터 기반 스마트 폴백 응답 반환
     """
@@ -311,7 +312,7 @@ def chat_with_agent(user_message: str, history: list = None):
             context_blocks.append(f"[최근 뉴스] {news_str}")
 
     api_key = os.getenv("GEMINI_API_KEY") or os.getenv("API_KEY")
-    model_name = os.getenv("MODEL_NAME", "gemini-2.5-flash")
+    model_name = os.getenv("MODEL_NAME", "gemini-3.8-flash")
 
     if not api_key:
         if stock_code and (price_info or finance_info or news_list):

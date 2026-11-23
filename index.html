@@ -1080,7 +1080,7 @@ window.UserActivityTracker = UserActivityTracker;
             border-radius: 14px;
             border: 1px solid #38bdf8;
             padding: 24px;
-            margin-bottom: 24px;
+            margin-bottom: 76px;
             display: none;
             position: relative;
         }
@@ -1241,6 +1241,17 @@ window.UserActivityTracker = UserActivityTracker;
             grid-template-columns: repeat(3, 1fr);
             gap: 10px;
             margin-bottom: 14px;
+        }
+        .kis-stat-row-4 {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        @media (max-width: 768px) {
+            .kis-stat-row-4 {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
         }
         .kis-stat-card {
             background: #0f172a;
@@ -2119,6 +2130,268 @@ window.UserActivityTracker = UserActivityTracker;
             transform: translateY(-3px);
             border-color: #38bdf8;
         }
+        /* 💬 빠른 실행 플로팅 위젯 (우측 하단 고정 챗봇 형태) */
+        .nl-fab-btn {
+            position: fixed;
+            right: 14px;
+            bottom: 14px;
+            z-index: 9990;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            border: 1px solid rgba(56, 189, 248, 0.55);
+            background: linear-gradient(135deg, #0284c7, #2563eb);
+            color: #ffffff;
+            font-size: 12.5px;
+            font-weight: 700;
+            cursor: pointer;
+            opacity: 0.92;
+            box-shadow: 0 8px 20px rgba(2, 132, 199, 0.4);
+            transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+        }
+        .nl-fab-btn:hover {
+            opacity: 1;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 26px rgba(37, 99, 235, 0.55);
+        }
+        .nl-command-bar {
+            position: fixed;
+            right: 14px;
+            bottom: 56px;
+            z-index: 9990;
+            width: 360px;
+            max-width: calc(100vw - 28px);
+            background: rgba(15, 23, 42, 0.96);
+            border: 1px solid rgba(56, 189, 248, 0.45);
+            border-radius: 16px;
+            padding: 14px 16px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(14px);
+            display: none;
+        }
+        .nl-command-bar.open {
+            display: block;
+        }
+        .nl-cmd-close-btn {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 2px 6px;
+            line-height: 1;
+        }
+        .nl-cmd-close-btn:hover {
+            color: #f8fafc;
+        }
+        .nl-cmd-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .nl-cmd-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .nl-model-badge {
+            font-size: 11.5px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(245, 158, 11, 0.16);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.45);
+        }
+        .nl-model-badge.connected {
+            background: rgba(16, 185, 129, 0.16);
+            color: #34d399;
+            border-color: rgba(16, 185, 129, 0.45);
+        }
+        .nl-cmd-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .nl-cmd-input {
+            flex: 1;
+            min-width: 0;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            background: rgba(15, 23, 42, 0.9);
+            color: #f8fafc;
+            font-size: 13.5px;
+            outline: none;
+        }
+        .nl-cmd-input:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+        }
+        .nl-cmd-run-btn {
+            padding: 10px 18px;
+            border-radius: 10px;
+            border: none;
+            background: linear-gradient(135deg, #0284c7, #2563eb);
+            color: #fff;
+            font-weight: 700;
+            font-size: 13.5px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .nl-cmd-run-btn:hover {
+            filter: brightness(1.1);
+        }
+        .nl-preset-chips {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding-right: 2px;
+        }
+        .nl-group-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: #94a3b8;
+            margin-bottom: 5px;
+            letter-spacing: 0.3px;
+        }
+        .nl-chip-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 6px;
+        }
+        .nl-chip-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            background: rgba(30, 41, 59, 0.85);
+            color: #e2e8f0;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .nl-chip-btn:hover {
+            border-color: #38bdf8;
+            color: #fff;
+            background: rgba(56, 189, 248, 0.18);
+            transform: translateY(-1px);
+        }
+        .nl-cmd-feedback {
+            margin-top: 8px;
+            font-size: 12.5px;
+            color: #94a3b8;
+            min-height: 18px;
+        }
+        .nl-cmd-feedback.ok { color: #34d399; }
+        .nl-cmd-feedback.info { color: #38bdf8; }
+        .nl-cmd-feedback.warn { color: #fbbf24; }
+        .nl-stock-picker {
+            display: none;
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px dashed rgba(148, 163, 184, 0.25);
+        }
+        .nl-stock-picker.open {
+            display: block;
+        }
+        .nl-stock-picker-label {
+            font-size: 11.5px;
+            color: #93c5fd;
+            margin-bottom: 6px;
+        }
+        .nl-stock-picker-chips {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .nl-stock-chip {
+            padding: 4px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(56, 189, 248, 0.45);
+            background: rgba(2, 132, 199, 0.22);
+            color: #e0f2fe;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .nl-stock-chip:hover {
+            background: rgba(56, 189, 248, 0.38);
+            color: #fff;
+        }
+        /* 🔀 결과 분기(A/B) 기반 다음 행동 연결 박스 (공통) */
+        .branch-action-box {
+            margin-top: 14px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            background: rgba(15, 23, 42, 0.85);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .branch-action-box.is-a {
+            border-color: rgba(245, 158, 11, 0.45);
+            background: rgba(245, 158, 11, 0.08);
+        }
+        .branch-action-box.is-b {
+            border-color: rgba(34, 197, 94, 0.45);
+            background: rgba(34, 197, 94, 0.08);
+        }
+        .branch-action-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 12.5px;
+            color: #e2e8f0;
+        }
+        .branch-mode-pill {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: rgba(245, 158, 11, 0.18);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.45);
+            margin-right: 6px;
+        }
+        .branch-mode-pill.connected {
+            background: rgba(16, 185, 129, 0.18);
+            color: #34d399;
+            border-color: rgba(16, 185, 129, 0.45);
+        }
+        .branch-action-btn {
+            padding: 8px 14px;
+            border-radius: 8px;
+            border: none;
+            background: linear-gradient(135deg, #0284c7, #2563eb);
+            color: #fff;
+            font-size: 12.5px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .branch-action-btn:hover {
+            filter: brightness(1.1);
+        }
     </style>
 </head>
 <body>
@@ -2141,12 +2414,16 @@ window.UserActivityTracker = UserActivityTracker;
     <div id="menu-backdrop" class="menu-backdrop" onclick="closeSideMenu()"></div>
     <nav id="side-menu-drawer" class="side-menu-drawer">
         <div class="side-menu-title">📂 전체 분석 메뉴 (클릭 시 화면 전환)</div>
+        <button type="button" class="drawer-tab-btn" id="tab-account" onclick="switchTab('account')">
+            <span>💼 내 계좌 관리</span>
+            <span>›</span>
+        </button>
         <button type="button" class="drawer-tab-btn" id="tab-lead" onclick="switchTab('lead')">
-            <span>🔥 Gemini 추천 주도주 (6종목)</span>
+            <span>🔥 추천 주도주</span>
             <span>›</span>
         </button>
         <button type="button" class="drawer-tab-btn" id="tab-risk" onclick="switchTab('risk')">
-            <span>⚠️ Gemini 추천 위험주 (6종목)</span>
+            <span>⚠️ 추천 위험주</span>
             <span>›</span>
         </button>
         <button type="button" class="drawer-tab-btn" id="tab-all" onclick="switchTab('all')">
@@ -2154,11 +2431,11 @@ window.UserActivityTracker = UserActivityTracker;
             <span>›</span>
         </button>
         <button type="button" class="drawer-tab-btn" id="tab-fav" onclick="switchTab('fav')">
-            <span>⭐ 내 관심 종목 (<span id="fav-count">0</span>)</span>
+            <span>⭐ 관심 종목 (<span id="fav-count">0</span>)</span>
             <span>›</span>
         </button>
         <button type="button" class="drawer-tab-btn" id="tab-er" onclick="switchTab('er')">
-            <span>🚨 내 계좌 응급실</span>
+            <span>🚨 계좌 응급실</span>
             <span>›</span>
         </button>
         <button type="button" class="drawer-tab-btn" id="tab-radar" onclick="switchTab('radar')">
@@ -2299,6 +2576,7 @@ window.UserActivityTracker = UserActivityTracker;
                 </div>
                 <div id="ai-text" class="ai-text">분석 결과를 불러오는 중입니다...</div>
             </div>
+            <div id="report-branch-box"></div>
         </div>
 
         <!-- 4-1. Gemini 추천 주도주 6종목 뷰 (초기 홈 화면에서는 숨김) -->
@@ -2336,6 +2614,9 @@ window.UserActivityTracker = UserActivityTracker;
         <!-- 4-3. 내 관심 종목 뷰 -->
         <div id="view-fav" class="stock-grid" style="display:none;"></div>
 
+        <!-- 4-4-1. 💼 내 계좌 관리 (로그인 회원 전용 포트폴리오 구성 & 응급실·모의투자 연동) -->
+        <div id="view-account" style="display:none;"></div>
+
         <!-- 4-5. 🚨 내 계좌 응급실 (물타기 계산기 & 평단가 탈출 시뮬레이터) 뷰 -->
         <div id="view-er" style="display:none;">
             <section id="account-diagnosis" class="er-calc-container" aria-labelledby="diagnosis-title">
@@ -2360,7 +2641,7 @@ window.UserActivityTracker = UserActivityTracker;
             <div class="er-calc-container">
                 <div class="er-calc-title">
                     <span>🚨</span>
-                    <span>내 계좌 응급실 : 물린 종목 심폐소생 & 물타기 시뮬레이터</span>
+                    <span>계좌 응급실 : 물린 종목 심폐소생 & 물타기 시뮬레이터</span>
                 </div>
                 <p style="font-size:14px; color:#94a3b8; margin-bottom:18px;">
                     현재 보유 중인 종목의 매수단가와 수량을 입력하면, 현재 실시간 시장가와 비교하여 정확한 손실률을 진단하고, 목표 평단가 도달을 위한 추가 매수 처방전을 즉시 도출해 드립니다.
@@ -2424,6 +2705,7 @@ window.UserActivityTracker = UserActivityTracker;
                         <strong>👨‍⚕️ AI 심폐소생 처방 가이드:</strong>
                         <div id="er-ai-prescription-text" style="margin-top:6px;"></div>
                     </div>
+                    <div id="er-branch-box"></div>
                 </div>
             </div>
         </div>
@@ -3307,13 +3589,11 @@ window.UserActivityTracker = UserActivityTracker;
             btn.innerText = isFav ? '★ 관심종목 등록됨 (해제)' : '☆ 관심종목 추가';
         }
 
-        function toggleCurrentReportFavorite() {
-            if (!requireAuth('관심 종목 추가')) return;
-            if (!currentReportStockName) return;
-            if (favorites.includes(currentReportStockName)) {
-                favorites = favorites.filter(f => f !== currentReportStockName);
+        function applyFavoriteToggleConfirmed(targetName) {
+            if (favorites.includes(targetName)) {
+                favorites = favorites.filter(f => f !== targetName);
             } else {
-                favorites.push(currentReportStockName);
+                favorites.push(targetName);
             }
             saveUserFavorites();
             updateFavCount();
@@ -3324,21 +3604,34 @@ window.UserActivityTracker = UserActivityTracker;
             renderFavorites();
         }
 
+        function toggleCurrentReportFavorite() {
+            if (!requireAuth('관심 종목 추가')) return;
+            if (!currentReportStockName) return;
+            const willRemove = favorites.includes(currentReportStockName);
+            requestSaveConfirmation({
+                candidateKey: `fav:${currentReportStockName}:${willRemove ? 'remove' : 'add'}`,
+                title: '⭐ 관심 종목 변경 확인',
+                label1: '대상 종목',
+                value1: currentReportStockName,
+                label2: '반영될 상태',
+                value2: willRemove ? '관심 종목에서 해제' : '관심 종목에 등록',
+                onApprove: () => applyFavoriteToggleConfirmed(currentReportStockName)
+            });
+        }
+
         function toggleFavorite(event, name) {
             event.stopPropagation();
             if (!requireAuth('관심 종목 추가')) return;
-            if (favorites.includes(name)) {
-                favorites = favorites.filter(f => f !== name);
-            } else {
-                favorites.push(name);
-            }
-            saveUserFavorites();
-            updateFavCount();
-            updateReportFavBtn();
-            renderLeadStocks6();
-            renderRiskStocks6();
-            renderKospiTop50();
-            renderFavorites();
+            const willRemove = favorites.includes(name);
+            requestSaveConfirmation({
+                candidateKey: `fav:${name}:${willRemove ? 'remove' : 'add'}`,
+                title: '⭐ 관심 종목 변경 확인',
+                label1: '대상 종목',
+                value1: name,
+                label2: '반영될 상태',
+                value2: willRemove ? '관심 종목에서 해제' : '관심 종목에 등록',
+                onApprove: () => applyFavoriteToggleConfirmed(name)
+            });
         }
 
         function updateFavCount() {
@@ -3373,14 +3666,17 @@ window.UserActivityTracker = UserActivityTracker;
             return true;
         }
 
+        let currentActiveTab = 'home';
+
         function switchTab(tab) {
             closeSideMenu();
 
-            // ⭐ 비로그인 회원 전용 탭 차단 (계좌응급실, 모의투자, 내 관심종목, AI 심층 레이더)
+            // ⭐ 비로그인 회원 전용 탭 차단 (내 계좌 관리, 계좌응급실, 모의투자, 내 관심종목, AI 심층 레이더)
             const protectedTabs = {
-                'er': '내 계좌 응급실 (정밀 진단 & 물타기 처방)',
+                'account': '내 계좌 관리 (포트폴리오 구성 및 응급실·모의투자 연동)',
+                'er': '계좌 응급실 (정밀 진단 & 물타기 처방)',
                 'kis-dart': 'KIS 모의투자 & DART 공시',
-                'fav': '내 관심 종목 보관함',
+                'fav': '관심 종목 보관함',
                 'radar': 'AI 테마 & 수급 종합 레이더'
             };
 
@@ -3389,6 +3685,7 @@ window.UserActivityTracker = UserActivityTracker;
                     return;
                 }
             }
+            currentActiveTab = tab;
 
             const btnHome = document.getElementById('btn-home');
             const homeSection = document.getElementById('home-section');
@@ -3399,6 +3696,8 @@ window.UserActivityTracker = UserActivityTracker;
             document.getElementById('tab-risk').classList.remove('active');
             document.getElementById('tab-all').classList.remove('active');
             document.getElementById('tab-fav').classList.remove('active');
+            const tabAccount = document.getElementById('tab-account');
+            if (tabAccount) tabAccount.classList.remove('active');
             const tabEr = document.getElementById('tab-er');
             if (tabEr) tabEr.classList.remove('active');
             const tabRadar = document.getElementById('tab-radar');
@@ -3413,6 +3712,8 @@ window.UserActivityTracker = UserActivityTracker;
             document.getElementById('view-risk').style.display = 'none';
             document.getElementById('view-all').style.display = 'none';
             document.getElementById('view-fav').style.display = 'none';
+            const viewAccount = document.getElementById('view-account');
+            if (viewAccount) viewAccount.style.display = 'none';
             const viewEr = document.getElementById('view-er');
             if (viewEr) viewEr.style.display = 'none';
             const viewRadar = document.getElementById('view-radar');
@@ -3434,11 +3735,12 @@ window.UserActivityTracker = UserActivityTracker;
             if (activeMenuHeader) activeMenuHeader.style.display = 'flex';
 
             const menuTitleMap = {
-                'lead': '🔥 Gemini 추천 주도주 (6종목)',
-                'risk': '⚠️ Gemini 추천 위험주 (6종목)',
+                'lead': '🔥 추천 주도주',
+                'risk': '⚠️ 추천 위험주',
                 'all': '📋 KOSPI 전체 종목 (시총 Top 50)',
-                'fav': `⭐ 내 관심 종목 (${favorites.length}종목)`,
-                'er': '🚨 내 계좌 응급실',
+                'fav': `⭐ 관심 종목 (${favorites.length}종목)`,
+                'account': '💼 내 계좌 관리',
+                'er': '🚨 계좌 응급실',
                 'radar': '⚡ 장중 특징주 & 거래대금 급증 레이더',
                 'kis-dart': '🏦 한국투자증권(KIS) 모의투자 & DART 전자공시',
                 'arch': '⚙️ 시스템 작동 방식'
@@ -3463,6 +3765,13 @@ window.UserActivityTracker = UserActivityTracker;
                 document.getElementById('tab-fav').classList.add('active');
                 document.getElementById('view-fav').style.display = 'grid';
                 refreshTop50FromNaverRealtime(true);
+            } else if (tab === 'account') {
+                if (tabAccount) tabAccount.classList.add('active');
+                if (viewAccount) {
+                    viewAccount.style.display = 'block';
+                    renderAccountManagementView();
+                    refreshTop50FromNaverRealtime(true);
+                }
             } else if (tab === 'er') {
                 if (tabEr) tabEr.classList.add('active');
                 if (viewEr) {
@@ -3947,6 +4256,29 @@ window.UserActivityTracker = UserActivityTracker;
             }
 
             renderDartDisclosuresInReport(name);
+
+            const liveForBranch = getLiveNumericPrice(name);
+            const repChangeText = (document.getElementById('rep-change')?.innerText || '').trim();
+            const isRising = repChangeText.startsWith('▲');
+            const branchPrice = (liveForBranch && liveForBranch.price) || 0;
+            if (isRising) {
+                renderBranchActionBox('report-branch-box', {
+                    firstResult: `📈 현재 상승 흐름 (${repChangeText || '▲'})`,
+                    branchType: 'b',
+                    selectedAction: '상승 탄력을 활용해 모의매수하거나 관심종목에 추가해 보세요.',
+                    buttonText: '🏦 바로 모의매수하기',
+                    onAction: () => quickPaperOrderFromReport('BUY')
+                });
+            } else {
+                renderBranchActionBox('report-branch-box', {
+                    firstResult: `📉 현재 하락/보합 흐름 (${repChangeText || '-'})`,
+                    branchType: 'a',
+                    selectedAction: '계좌 응급실에서 물타기·평단가 대응 전략을 점검해 보세요.',
+                    buttonText: '🚨 계좌 응급실 진단',
+                    onAction: () => openErWithHolding(currentReportStockName || name, branchPrice, 10, loadKisPaperAccount().cash)
+                });
+            }
+
             card.style.display = 'block';
             card.scrollIntoView({ behavior: 'smooth' });
         }
@@ -4035,6 +4367,47 @@ window.UserActivityTracker = UserActivityTracker;
             return results.slice(0, 3);
         }
 
+        function buildDartAiInterpretation(d) {
+            if (d && d.note) return d.note;
+            const title = (d && d.title) || '';
+            const impact = (d && d.impact) || '';
+            const cleanTitle = title.replace(/\[[^\]]+\]\s*/g, '').trim();
+
+            if (/단일판매|공급계약|수주|체결/.test(title)) {
+                return '신규 수주·공급계약 공시로 향후 매출 및 실적 성장 모멘텀으로 연결될 가능성이 높습니다.';
+            }
+            if (/자기주식|자사주|소각|배당|밸류업|기업가치/.test(title)) {
+                return '자사주 매입·소각 또는 배당 관련 주주환원 공시로 주당 가치 제고에 긍정적입니다.';
+            }
+            if (/유상증자|전환사채|신주인수권|교환사채|CB|BW/.test(title)) {
+                return '자본 조달 및 주식 수 희석 가능성이 있는 공시이므로 발행 조건과 자금 사용 목적을 확인하세요.';
+            }
+            if (/분기보고서|사업보고서|반기보고서|감사보고서|영업.*실적|잠정.*실적|매출액|손익구조/.test(title)) {
+                return '재무·실적 보고 공시입니다. 매출액과 영업이익률 추이를 직전 분기·전년 대비로 점검하세요.';
+            }
+            if (/지분|소유상황|대량보유|특정증권|임원|최대주주|특수관계인|주식변동/.test(title)) {
+                return '최대주주·임원 또는 주요 주주의 지분·주식 보유 변동 공시입니다. 수급 및 경영권 변화 여부를 확인하세요.';
+            }
+            if (/타법인|출자증권|시설투자|양수|양도|합병|분할/.test(title)) {
+                return '사업 확장·투자 또는 지배구조 변동 관련 주요사항 공시입니다. 투자 금액과 재무 영향을 점검하세요.';
+            }
+            if (/기업설명회|IR|주주총회|사외이사|대표이사/.test(title)) {
+                return '경영·지배구조 및 IR 일정 공시입니다. 주요 안건 및 경영진 코멘트를 확인하세요.';
+            }
+            if (/기재정정|정정/.test(title)) {
+                return '기존 공시의 수치·일정 등이 정정된 공시입니다. 변경 전후 주요 항목 차이를 확인하세요.';
+            }
+            if (impact.includes('호재')) {
+                return '단기 수급 및 투자심리에 긍정적으로 작용할 수 있는 공시로 판단됩니다.';
+            }
+            if (impact.includes('주의') || impact.includes('악재')) {
+                return '단기 주가 변동성이 확대될 수 있는 공시이므로 세부 조건을 주의 깊게 확인하세요.';
+            }
+            return cleanTitle
+                ? `'${cleanTitle}' 공시입니다. 세부 금액·일정 및 직전 공시 대비 변동 사항을 확인하세요.`
+                : '정기 경영·공시 사항 보고입니다. 직전 공시 대비 수치 변화와 본문 핵심 내용을 함께 점검하세요.';
+        }
+
         function renderDartDisclosuresInReport(name, liveNewsItems) {
             const listEl = document.getElementById('dart-disclosure-list');
             if (!listEl) return;
@@ -4050,13 +4423,14 @@ window.UserActivityTracker = UserActivityTracker;
                         badgeClass = 'dart-badge-danger';
                         icon = '🚨 악재/주의';
                     }
+                    const noteText = buildDartAiInterpretation(d);
                     return `<li class="news-item">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; flex-wrap:wrap; gap:4px;">
                             <span class="${badgeClass}">${icon} · ${d.category || '공시'}</span>
                             <span style="font-size:11px; color:${isLiveDart ? '#34d399' : '#94a3b8'};">${isLiveDart ? '📡 DART 실시간 연동' : 'DART 자동감지 판독'} ${d.date ? `(${d.date})` : ''}</span>
                         </div>
                         <strong>${d.title}</strong>
-                        <div class="dart-ai-summary-note">💡 <strong>AI 3초 해석:</strong> ${d.note || d.impact || '공시 원문 확인'}</div>
+                        <div class="dart-ai-summary-note">💡 <strong>AI 3초 해석:</strong> ${noteText}</div>
                     </li>`;
                 }).join('');
             };
@@ -4194,42 +4568,65 @@ window.UserActivityTracker = UserActivityTracker;
             const acc = loadKisPaperAccount();
             const totalAmt = target.price * qty;
 
-            if (side === 'BUY') {
-                if (acc.cash < totalAmt) {
-                    alert(`모의투자 주문가능 예수금이 부족합니다.\n(필요 금액: ${totalAmt.toLocaleString()}원 / 현재 예수금: ${acc.cash.toLocaleString()}원)`);
-                    return;
-                }
-                acc.cash -= totalAmt;
-                const cur = acc.holdings[target.name] || { name: target.name, code: target.code, qty: 0, avgPrice: 0 };
-                const newQty = cur.qty + qty;
-                const newAvg = Math.round(((cur.qty * cur.avgPrice) + totalAmt) / newQty);
-                acc.holdings[target.name] = { name: target.name, code: target.code, qty: newQty, avgPrice: newAvg };
-                saveKisPaperAccount(acc);
-                // 📡 모의투자 매수 체결 실시간 감사 로깅
-                if (window.UserActivityTracker) {
-                    UserActivityTracker.logPaperTrading(target.name, target.code, 'BUY', qty, target.price, totalAmt);
-                }
-                alert(`✅ [KIS 모의투자 매수 체결]\n• 종목: ${target.name} (${target.code})\n• 수량: ${qty.toLocaleString()}주\n• 체결단가: ${target.price.toLocaleString()}원\n• 총 매수금액: ${totalAmt.toLocaleString()}원`);
-            } else {
-                const cur = acc.holdings[target.name];
-                if (!cur || cur.qty < qty) {
-                    alert(`보유 수량이 부족합니다. (현재 보유: ${cur ? cur.qty : 0}주)`);
-                    return;
-                }
-                acc.cash += totalAmt;
-                cur.qty -= qty;
-                if (cur.qty <= 0) {
-                    delete acc.holdings[target.name];
-                } else {
-                    acc.holdings[target.name] = cur;
-                }
-                saveKisPaperAccount(acc);
-                // 📡 모의투자 매도 체결 실시간 감사 로깅
-                if (window.UserActivityTracker) {
-                    UserActivityTracker.logPaperTrading(target.name, target.code, 'SELL', qty, target.price, totalAmt);
-                }
-                alert(`✅ [KIS 모의투자 매도 체결]\n• 종목: ${target.name} (${target.code})\n• 수량: ${qty.toLocaleString()}주\n• 체결단가: ${target.price.toLocaleString()}원\n• 총 매도금액: ${totalAmt.toLocaleString()}원`);
+            if (side === 'BUY' && acc.cash < totalAmt) {
+                alert(`모의투자 주문가능 예수금이 부족합니다.\n(필요 금액: ${totalAmt.toLocaleString()}원 / 현재 예수금: ${acc.cash.toLocaleString()}원)`);
+                return;
             }
+            if (side !== 'BUY') {
+                const curCheck = acc.holdings[target.name];
+                if (!curCheck || curCheck.qty < qty) {
+                    alert(`보유 수량이 부족합니다. (현재 보유: ${curCheck ? curCheck.qty : 0}주)`);
+                    return;
+                }
+            }
+
+            requestSaveConfirmation({
+                candidateKey: `order:${side}:${target.name}:${qty}:${target.price}`,
+                title: `🏦 KIS 모의투자 ${side === 'BUY' ? '매수' : '매도'} 확인`,
+                label1: '주문 종목 · 수량',
+                value1: `${target.name} (${target.code}) · ${side === 'BUY' ? '매수' : '매도'} ${qty.toLocaleString()}주`,
+                label2: '체결 단가 · 총 주문금액',
+                value2: `${target.price.toLocaleString()}원 · ${totalAmt.toLocaleString()}원`,
+                onApprove: () => {
+                    const latestAcc = loadKisPaperAccount();
+                    if (side === 'BUY') {
+                        if (latestAcc.cash < totalAmt) {
+                            alert(`모의투자 주문가능 예수금이 부족합니다.\n(필요 금액: ${totalAmt.toLocaleString()}원 / 현재 예수금: ${latestAcc.cash.toLocaleString()}원)`);
+                            return;
+                        }
+                        latestAcc.cash -= totalAmt;
+                        const cur = latestAcc.holdings[target.name] || { name: target.name, code: target.code, qty: 0, avgPrice: 0 };
+                        const newQty = cur.qty + qty;
+                        const newAvg = Math.round(((cur.qty * cur.avgPrice) + totalAmt) / newQty);
+                        latestAcc.holdings[target.name] = { name: target.name, code: target.code, qty: newQty, avgPrice: newAvg };
+                        saveKisPaperAccount(latestAcc);
+                        if (window.UserActivityTracker) {
+                            UserActivityTracker.logPaperTrading(target.name, target.code, 'BUY', qty, target.price, totalAmt);
+                        }
+                    } else {
+                        const cur = latestAcc.holdings[target.name];
+                        if (!cur || cur.qty < qty) {
+                            alert(`보유 수량이 부족합니다. (현재 보유: ${cur ? cur.qty : 0}주)`);
+                            return;
+                        }
+                        latestAcc.cash += totalAmt;
+                        cur.qty -= qty;
+                        if (cur.qty <= 0) {
+                            delete latestAcc.holdings[target.name];
+                        } else {
+                            latestAcc.holdings[target.name] = cur;
+                        }
+                        saveKisPaperAccount(latestAcc);
+                        if (window.UserActivityTracker) {
+                            UserActivityTracker.logPaperTrading(target.name, target.code, 'SELL', qty, target.price, totalAmt);
+                        }
+                    }
+                    renderKisDartView();
+                    if (currentActiveTab === 'account') renderAccountManagementView();
+                    renderAccountDiagnosis();
+                }
+            });
+            return;
 
             renderKisDartView();
         }
@@ -4259,6 +4656,316 @@ window.UserActivityTracker = UserActivityTracker;
             const newDart = prompt('금융감독원 DART 오픈API 인증키 입력 (미입력 시 내장 AI 공시 감지기 자동 동작):', dartKey);
             if (newDart !== null) localStorage.setItem('dart_api_key', newDart.trim());
             renderKisDartView();
+        }
+
+        const branchActionHandlers = {};
+
+        function renderBranchActionBox(containerId, opts) {
+            const el = document.getElementById(containerId);
+            if (!el) return;
+            const boxClass = opts.branchType === 'a' ? 'branch-action-box is-a' : 'branch-action-box is-b';
+            branchActionHandlers[containerId] = opts.onAction;
+
+            el.innerHTML = `
+                <div class="${boxClass}">
+                    <div class="branch-action-meta">
+                        <div><strong>${opts.firstResult}</strong></div>
+                        <div style="color:#94a3b8;">${opts.selectedAction}</div>
+                    </div>
+                    <button type="button" class="branch-action-btn" onclick="if (branchActionHandlers['${containerId}']) branchActionHandlers['${containerId}']()">${opts.buttonText}</button>
+                </div>
+            `;
+        }
+
+        function openErWithHolding(name, avgPrice, qty, cash) {
+            const stockInput = document.getElementById('er-stock-input');
+            const buyInput = document.getElementById('er-buy-price');
+            const qtyInput = document.getElementById('er-hold-qty');
+            const cashInput = document.getElementById('er-add-cash');
+            if (stockInput) stockInput.value = name;
+            if (buyInput) buyInput.value = Math.round(avgPrice || 0).toLocaleString();
+            if (qtyInput) qtyInput.value = qty || 1;
+            if (cashInput && typeof cash === 'number') cashInput.value = Math.round(cash).toLocaleString();
+            switchTab('er');
+            setTimeout(() => {
+                if (typeof runEmergencyRoomCalculation === 'function') {
+                    runEmergencyRoomCalculation();
+                }
+            }, 80);
+        }
+
+        function syncKisToAccountManagement() {
+            const acc = loadKisPaperAccount();
+            saveKisPaperAccount(acc);
+            switchTab('account');
+        }
+
+        function updateAccountCashDirect(amount) {
+            const parsed = typeof amount === 'number'
+                ? amount
+                : parseInt(String(amount || '').replace(/[^0-9]/g, ''), 10);
+            if (isNaN(parsed) || parsed < 0) {
+                alert('올바른 예수금 금액(0원 이상)을 입력해 주세요.');
+                return;
+            }
+            const acc = loadKisPaperAccount();
+            requestSaveConfirmation({
+                candidateKey: `cash:${acc.cash}->${parsed}`,
+                title: '💰 주문가능 예수금 변경 확인',
+                label1: '변경 전 예수금',
+                value1: `${acc.cash.toLocaleString()}원`,
+                label2: '변경 후 예수금',
+                value2: `${parsed.toLocaleString()}원`,
+                onApprove: () => {
+                    const latest = loadKisPaperAccount();
+                    latest.cash = parsed;
+                    saveKisPaperAccount(latest);
+                    renderAccountManagementView();
+                }
+            });
+        }
+
+        async function addAccountHoldingDirect() {
+            const stockEl = document.getElementById('acc-add-stock');
+            const avgEl = document.getElementById('acc-add-avg');
+            const qtyEl = document.getElementById('acc-add-qty');
+            const stockQuery = (stockEl && stockEl.value || '').trim();
+            const qty = parseInt(qtyEl && qtyEl.value, 10);
+            const customAvg = parseInt(String((avgEl && avgEl.value) || '').replace(/[^0-9]/g, ''), 10);
+
+            if (!stockQuery) {
+                alert('추가할 종목명 또는 6자리 종목코드를 입력해 주세요.');
+                return;
+            }
+            if (isNaN(qty) || qty <= 0) {
+                alert('보유 수량(1주 이상)을 입력해 주세요.');
+                return;
+            }
+
+            let target = getLiveNumericPrice(stockQuery);
+            if (!target) {
+                try {
+                    const acData = await fetchJsonViaApi(`https://ac.stock.naver.com/ac?q=${encodeURIComponent(stockQuery)}&target=stock`);
+                    const item = (acData && acData.items && acData.items[0]) || null;
+                    if (item && item.code) {
+                        const basic = await fetchJsonViaApi(`https://m.stock.naver.com/api/stock/${item.code}/basic`);
+                        const closePrice = parseInt(String(basic?.closePrice || '0').replace(/[^0-9]/g, ''), 10) || 0;
+                        target = {
+                            name: basic?.stockName || item.name || stockQuery,
+                            code: item.code,
+                            price: closePrice
+                        };
+                        customStockCache[target.name] = {
+                            rank: '-',
+                            market: item.typeCode || basic?.stockExchangeName || 'KRX',
+                            name: target.name,
+                            code: target.code,
+                            price: basic?.closePrice || String(closePrice),
+                            change: basic?.compareToPreviousClosePrice || '0',
+                            rate: basic?.fluctuationsRatio || '0.00',
+                            sign: '-',
+                            marketValue: '-'
+                        };
+                        localStorage.setItem('custom_stock_cache', JSON.stringify(customStockCache));
+                    }
+                } catch (_) {}
+            }
+
+            const finalName = (target && target.name) || stockQuery;
+            const finalCode = (target && target.code) || '-';
+            const finalAvg = (!isNaN(customAvg) && customAvg > 0) ? customAvg : ((target && target.price) || 0);
+            if (finalAvg <= 0) {
+                alert('매수 평균단가(원)를 입력하거나 시세가 확인되는 종목명을 입력해 주세요.');
+                return;
+            }
+
+            requestSaveConfirmation({
+                candidateKey: `holding:${finalName}:${finalAvg}:${qty}`,
+                title: '💼 내 계좌 보유 종목 추가 확인',
+                label1: '종목명 · 추가 수량',
+                value1: `${finalName} (${finalCode}) · ${qty.toLocaleString()}주`,
+                label2: '매수평균가 · 총 반영액',
+                value2: `${finalAvg.toLocaleString()}원 · ${(finalAvg * qty).toLocaleString()}원`,
+                onApprove: () => {
+                    const acc = loadKisPaperAccount();
+                    const cur = acc.holdings[finalName] || { name: finalName, code: finalCode, qty: 0, avgPrice: 0 };
+                    const newQty = cur.qty + qty;
+                    const newAvg = Math.round(((cur.qty * cur.avgPrice) + (finalAvg * qty)) / newQty);
+                    acc.holdings[finalName] = { name: finalName, code: finalCode, qty: newQty, avgPrice: newAvg };
+                    saveKisPaperAccount(acc);
+                    renderAccountManagementView();
+                }
+            });
+        }
+
+        function removeAccountHoldingDirect(name) {
+            const acc = loadKisPaperAccount();
+            if (acc.holdings && acc.holdings[name]) {
+                delete acc.holdings[name];
+                saveKisPaperAccount(acc);
+                renderAccountManagementView();
+            }
+        }
+
+        function renderAccountManagementView() {
+            const container = document.getElementById('view-account');
+            if (!container) return;
+
+            const acc = loadKisPaperAccount();
+            const holdingKeys = Object.keys(acc.holdings || {});
+            let stockEvalSum = 0;
+            let stockCostSum = 0;
+
+            const holdingDetails = holdingKeys.map(name => {
+                const h = acc.holdings[name];
+                const live = getLiveNumericPrice(name);
+                const curPrice = (live && live.price) ? live.price : h.avgPrice;
+                const evalAmt = curPrice * h.qty;
+                const costAmt = h.avgPrice * h.qty;
+                stockEvalSum += evalAmt;
+                stockCostSum += costAmt;
+                return { name, h, curPrice, evalAmt, costAmt };
+            });
+
+            const totalAsset = acc.cash + stockEvalSum;
+            const totalProfit = stockEvalSum - stockCostSum;
+            const totalProfitRate = stockCostSum > 0 ? ((totalProfit / stockCostSum) * 100).toFixed(2) : '0.00';
+            const totalSign = totalProfit > 0 ? '▲' : (totalProfit < 0 ? '▼' : '-');
+            const totalColor = getColorClass(totalSign, totalProfitRate);
+            const cashRatio = totalAsset > 0 ? ((acc.cash / totalAsset) * 100).toFixed(1) : '100.0';
+            const stockRatio = totalAsset > 0 ? ((stockEvalSum / totalAsset) * 100).toFixed(1) : '0.0';
+
+            const rowsHtml = holdingDetails.map(({ name, h, curPrice, evalAmt, costAmt }) => {
+                const profit = evalAmt - costAmt;
+                const profitRate = costAmt > 0 ? ((profit / costAmt) * 100).toFixed(2) : '0.00';
+                const sign = profit > 0 ? '▲' : (profit < 0 ? '▼' : '-');
+                const colorClass = getColorClass(sign, profitRate);
+                const weight = totalAsset > 0 ? ((evalAmt / totalAsset) * 100).toFixed(1) : '0.0';
+                const safeName = name.replace(/'/g, "\\'");
+
+                return `<tr>
+                    <td style="text-align:left; cursor:pointer;" onclick="selectStock('${safeName}')">
+                        <strong>${name}</strong> <span style="font-size:11px;color:#94a3b8;">(${h.code})</span>
+                    </td>
+                    <td>${h.qty.toLocaleString()}주</td>
+                    <td>${h.avgPrice.toLocaleString()}원</td>
+                    <td><strong>${curPrice.toLocaleString()}원</strong></td>
+                    <td>${evalAmt.toLocaleString()}원 <span style="font-size:11px;color:#94a3b8;">(${weight}%)</span></td>
+                    <td class="${colorClass}">${sign} ${Math.abs(profit).toLocaleString()}원 (${profitRate}%)</td>
+                    <td style="white-space:nowrap;">
+                        <button type="button" class="user-small-btn" style="padding:4px 8px; font-size:11px; background:#dc2626; color:#fff; border:none;" onclick="openErWithHolding('${safeName}', ${h.avgPrice}, ${h.qty}, ${acc.cash})">🚨 응급실 진단</button>
+                        <button type="button" class="user-small-btn" style="padding:4px 8px; font-size:11px;" onclick="selectStock('${safeName}')">📊 리포트</button>
+                        <button type="button" class="user-small-btn" style="padding:4px 8px; font-size:11px; color:#fca5a5;" onclick="removeAccountHoldingDirect('${safeName}')">삭제</button>
+                    </td>
+                </tr>`;
+            }).join('');
+
+            container.innerHTML = `
+                <div class="sub-box" style="margin-bottom:18px; border-color:#38bdf8;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+                        <div>
+                            <div style="font-size:17px; font-weight:800; color:#38bdf8;">💼 내 계좌 관리 (포트폴리오 구성 · 직접 추가 · 응급실 연동)</div>
+                            <div style="font-size:12px; color:#94a3b8; margin-top:2px;">회원: <strong>👤 ${currentUser}</strong> · 예수금과 보유 종목을 직접 설정하거나 모의투자 내역과 자동 연동하여 응급실 정밀 진단을 받을 수 있습니다.</div>
+                        </div>
+                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                            <button type="button" class="user-small-btn" onclick="renderAccountManagementView()">🔄 계좌 새로고침</button>
+                            <button type="button" class="user-small-btn" style="background:#0284c7; color:#fff; border:none;" onclick="switchTab('kis-dart')">🏦 모의투자 탭 열기</button>
+                            <button type="button" class="user-small-btn" style="background:#dc2626; color:#fff; border:none;" onclick="switchTab('er')">🚨 응급실 바로가기</button>
+                        </div>
+                    </div>
+
+                    <div class="kis-stat-row-4">
+                        <div class="kis-stat-card">
+                            <div class="index-title">총 평가자산 (예수금+주식)</div>
+                            <div class="index-val" style="font-size:17px;">${totalAsset.toLocaleString()}원</div>
+                        </div>
+                        <div class="kis-stat-card">
+                            <div class="index-title">주문가능 예수금 (${cashRatio}%)</div>
+                            <div class="index-val" style="font-size:17px;">${acc.cash.toLocaleString()}원</div>
+                        </div>
+                        <div class="kis-stat-card">
+                            <div class="index-title">주식 평가액 (${stockRatio}%)</div>
+                            <div class="index-val" style="font-size:17px;">${stockEvalSum.toLocaleString()}원</div>
+                        </div>
+                        <div class="kis-stat-card">
+                            <div class="index-title">총 평가손익 (수익률)</div>
+                            <div class="index-val ${totalColor}" style="font-size:17px;">${totalSign} ${Math.abs(totalProfit).toLocaleString()}원 (${totalProfitRate}%)</div>
+                        </div>
+                    </div>
+
+                    <!-- 예수금 직접 설정 + 보유 종목 빠른 추가 -->
+                    <div style="background:#0b0f19; border:1px solid #334155; border-radius:10px; padding:12px; margin-bottom:14px; display:flex; flex-direction:column; gap:10px;">
+                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                            <strong style="font-size:13px; color:#38bdf8;">💰 내 예수금 설정:</strong>
+                            <input type="text" id="acc-cash-input" class="fav-quick-input" style="width:150px;" value="${acc.cash.toLocaleString()}" oninput="formatWonInput(this)" placeholder="예: 100,000,000">
+                            <button type="button" class="user-small-btn" style="background:#0284c7; color:#fff; border:none;" onclick="updateAccountCashDirect(document.getElementById('acc-cash-input').value)">예수금 적용</button>
+                            <button type="button" class="user-small-btn" onclick="updateAccountCashDirect(50000000)">5천만원</button>
+                            <button type="button" class="user-small-btn" onclick="updateAccountCashDirect(100000000)">1억원</button>
+                            <button type="button" class="user-small-btn" onclick="updateAccountCashDirect(500000000)">5억원</button>
+                            <button type="button" class="user-small-btn" onclick="updateAccountCashDirect(1000000000)">10억원</button>
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; border-top:1px dashed #334155; padding-top:10px;">
+                            <strong style="font-size:13px; color:#34d399;">⚡ 내 보유 주식 빠른 추가:</strong>
+                            <input type="text" id="acc-add-stock" class="fav-quick-input" style="width:160px;" placeholder="종목명/코드 (예: 삼성전자)">
+                            <input type="text" id="acc-add-avg" class="fav-quick-input" style="width:130px;" oninput="formatWonInput(this)" placeholder="매수평균가 (비우면 현재가)">
+                            <input type="number" id="acc-add-qty" class="fav-quick-input" style="width:90px;" value="10" min="1" placeholder="수량(주)">
+                            <button type="button" class="user-small-btn" style="background:#059669; color:#fff; border:none;" onclick="addAccountHoldingDirect()">+ 내 계좌에 추가</button>
+                        </div>
+                    </div>
+
+                    <div style="margin: 12px 0 16px;">
+                        <div style="display:flex; justify-content:space-between; font-size:12px; color:#94a3b8; margin-bottom:6px;">
+                            <span>자산 비중: 현금(예수금) ${cashRatio}%</span>
+                            <span>보유 주식 ${stockRatio}%</span>
+                        </div>
+                        <div style="height:10px; background:#1e293b; border-radius:999px; overflow:hidden; display:flex;">
+                            <div style="width:${cashRatio}%; background:#38bdf8;"></div>
+                            <div style="width:${stockRatio}%; background:#22c55e;"></div>
+                        </div>
+                    </div>
+
+                    <div class="all-table-box">
+                        <table class="table-view">
+                            <thead>
+                                <tr>
+                                    <th style="text-align:left;">보유 종목명</th>
+                                    <th>보유수량</th>
+                                    <th>매수평균가</th>
+                                    <th>실시간 현재가</th>
+                                    <th>평가금액 (비중)</th>
+                                    <th>평가손익 (수익률)</th>
+                                    <th>응급실 · 리포트 연동</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rowsHtml || '<tr><td colspan="7" style="text-align:center; padding:24px; color:#94a3b8;">보유 중인 종목이 없습니다. [모의투자 탭에서 종목 추가]를 눌러 모의 매수하면 내 계좌에 자동 연동됩니다.</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="account-branch-box"></div>
+                </div>
+            `;
+
+            const worstHolding = holdingDetails
+                .slice()
+                .sort((a, b) => (a.evalAmt - a.costAmt) - (b.evalAmt - b.costAmt))[0];
+            if (worstHolding && (worstHolding.evalAmt - worstHolding.costAmt) < 0) {
+                renderBranchActionBox('account-branch-box', {
+                    firstResult: `⚠️ 손실 종목 관리 필요 (${worstHolding.name})`,
+                    branchType: 'a',
+                    selectedAction: `현재 손실 폭이 가장 큰 '${worstHolding.name}'의 평단가 탈출 처방을 받아보세요.`,
+                    buttonText: `🚨 ${worstHolding.name} 응급실 진단`,
+                    onAction: () => openErWithHolding(worstHolding.name, worstHolding.h.avgPrice, worstHolding.h.qty, acc.cash)
+                });
+            } else {
+                renderBranchActionBox('account-branch-box', {
+                    firstResult: holdingDetails.length > 0 ? `✨ 계좌 수익/안정 구간 (${totalProfitRate}%)` : '💰 현금 100% 대기 상태',
+                    branchType: 'b',
+                    selectedAction: '실시간 급등주 레이더에서 새로운 투자 기회를 찾아보세요.',
+                    buttonText: '🚀 급등주 TOP 30 보기',
+                    onAction: () => { switchTab('radar'); switchRadarMode('gainers'); }
+                });
+            }
         }
 
         function renderKisDartView() {
@@ -4320,7 +5027,8 @@ window.UserActivityTracker = UserActivityTracker;
                             <div style="font-size:17px; font-weight:800; color:#38bdf8;">🏦 한국투자증권 KIS Developers 모의투자 시스템 (실시간 시세·잔고·주문)</div>
                             <div style="font-size:12px; color:#94a3b8; margin-top:2px;">현재 사용자: <strong>👤 ${currentUser}</strong> · 실제 돈을 쓰지 않고 전체 4,332개 상장 종목을 실시간 시세로 모의 매수/매도 테스트할 수 있습니다.</div>
                         </div>
-                        <div style="display:flex; gap:8px;">
+                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                            <button type="button" class="user-small-btn" style="background:#0284c7; color:#fff; border:none;" onclick="syncKisToAccountManagement()">💼 내 계좌 관리로 연동</button>
                             <button type="button" class="user-small-btn" onclick="configureKisDartKeys()">🔑 KIS/DART API키 설정</button>
                             <button type="button" class="user-small-btn" onclick="resetKisPaperAccount()">🔄 모의계좌 초기화</button>
                         </div>
@@ -4377,7 +5085,26 @@ window.UserActivityTracker = UserActivityTracker;
                     </p>
                     <ul class="news-list">${dartWatchHtml}</ul>
                 </div>
+                <div id="kis-branch-box"></div>
             `;
+
+            if (holdingKeys.length > 0) {
+                renderBranchActionBox('kis-branch-box', {
+                    firstResult: `💼 모의투자 보유 종목 ${holdingKeys.length}건 연동 중`,
+                    branchType: 'b',
+                    selectedAction: '내 계좌 관리 화면에서 전체 자산 비중과 응급실 진단을 확인해 보세요.',
+                    buttonText: '💼 내 계좌 관리로 이동',
+                    onAction: () => syncKisToAccountManagement()
+                });
+            } else {
+                renderBranchActionBox('kis-branch-box', {
+                    firstResult: '📌 아직 보유 중인 모의투자 종목이 없습니다',
+                    branchType: 'a',
+                    selectedAction: '추천 주도주에서 첫 모의매수 대상 종목을 살펴보세요.',
+                    buttonText: '🔥 추천 주도주 보기',
+                    onAction: () => switchTab('lead')
+                });
+            }
         }
 
         async function fetchJsonViaApi(targetUrl) {
@@ -4631,6 +5358,24 @@ window.UserActivityTracker = UserActivityTracker;
                 prescriptionText = `현재 수익 구간입니다. 물타기 대신 트레일링 스탑(분할 익절) 전략으로 수익금을 안전하게 확정 짓는 것을 권장합니다.`;
             }
             document.getElementById('er-ai-prescription-text').innerHTML = prescriptionText;
+
+            if (currentLossRate < 0) {
+                renderBranchActionBox('er-branch-box', {
+                    firstResult: `📉 현재 손실 구간 (${currentLossRate.toFixed(2)}%)`,
+                    branchType: 'a',
+                    selectedAction: `'${targetName}'의 최신 차트·DART 공시를 확인한 뒤 대응 여부를 결정해 보세요.`,
+                    buttonText: `📊 ${targetName} 리포트 열기`,
+                    onAction: () => selectStock(targetName)
+                });
+            } else {
+                renderBranchActionBox('er-branch-box', {
+                    firstResult: `✨ 현재 수익 구간 (+${currentLossRate.toFixed(2)}%)`,
+                    branchType: 'b',
+                    selectedAction: '수익권 유지 중입니다. 추천 주도주에서 추가 투자 기회를 살펴보세요.',
+                    buttonText: '🔥 추천 주도주 보기',
+                    onAction: () => switchTab('lead')
+                });
+            }
         }
 
         // ==========================================
@@ -4783,6 +5528,577 @@ window.UserActivityTracker = UserActivityTracker;
             }
         });
 
+        // 💬 말로 기능 실행하기 (기존 버튼 함수 매핑 레지스트리)
+        let nlModelConnected = false;
+        let pendingNlAction = null;
+
+        function hideNlStockPicker() {
+            const picker = document.getElementById('nl-stock-picker');
+            if (picker) picker.classList.remove('open');
+        }
+
+        function showNlStockPicker(action) {
+            pendingNlAction = action;
+            const picker = document.getElementById('nl-stock-picker');
+            const chips = document.getElementById('nl-stock-picker-chips');
+            if (!picker || !chips) return;
+            const candidates = [];
+            if (typeof currentReportStockName !== 'undefined' && currentReportStockName) {
+                candidates.push(currentReportStockName);
+            }
+            ['삼성전자', 'SK하이닉스', '현대차', 'NAVER', '카카오'].forEach(name => {
+                if (!candidates.includes(name)) candidates.push(name);
+            });
+            chips.innerHTML = candidates.slice(0, 5).map(name =>
+                `<button type="button" class="nl-stock-chip" data-stock="${name}">${name}</button>`
+            ).join('');
+            chips.querySelectorAll('.nl-stock-chip').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const stockName = btn.getAttribute('data-stock');
+                    const act = pendingNlAction;
+                    pendingNlAction = null;
+                    hideNlStockPicker();
+                    if (!stockName || !act) return;
+                    const opened = await openStockForCommand(stockName);
+                    if (opened) {
+                        const cmdText = (document.getElementById('nl-cmd-input')?.value || stockName);
+                        const res = act.run(cmdText);
+                        const modeTag = nlModelConnected ? 'Gemini 연결' : '모의 선택';
+                        applyNlFeedbackResult(res, modeTag, `${stockName} · ${act.label}`);
+                    }
+                });
+            });
+            picker.classList.add('open');
+        }
+
+        async function openStockForCommand(stockQuery) {
+            const searchInput = document.getElementById('search-input');
+            const searchBtn = document.getElementById('search-btn');
+            if (!searchInput || !searchBtn) return false;
+            searchInput.value = stockQuery;
+            searchBtn.click();
+            for (let i = 0; i < 20; i++) {
+                await new Promise(r => setTimeout(r, 150));
+                if (isReportOpen()) return true;
+            }
+            return isReportOpen();
+        }
+
+        function extractStockFromActionCommand(rawText, action) {
+            let cleaned = rawText;
+            if (action && Array.isArray(action.keywords)) {
+                action.keywords.forEach(kw => {
+                    cleaned = cleaned.replace(new RegExp(kw, 'gi'), ' ');
+                });
+            }
+            return extractStockQueryFromCommand(cleaned)
+                .replace(/(바꿔|전환|변경|추가|등록|해제|요청|실행|매수|매도|으로|로|좀|해줘|해 줘|줘)/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        async function detectNlModelStatus() {
+            const badge = document.getElementById('nl-model-status');
+            if (!badge) return;
+            try {
+                const cfg = await AuthManager.apiRequest('/api/config', 'GET');
+                nlModelConnected = Boolean(cfg && cfg.geminiConfigured);
+            } catch (_) {
+                nlModelConnected = false;
+            }
+            if (badge) badge.style.display = 'none';
+        }
+
+        function setNlFeedback(msg, kind = '') {
+            const el = document.getElementById('nl-cmd-feedback');
+            if (!el) return;
+            el.textContent = msg;
+            el.className = `nl-cmd-feedback ${kind}`.trim();
+        }
+
+        function isReportOpen() {
+            const card = document.getElementById('report-card');
+            return Boolean(card && (card.classList.contains('show') || card.style.display === 'block' || card.style.display === 'flex') && typeof currentReportStockName !== 'undefined' && currentReportStockName);
+        }
+
+        function extractStockQueryFromCommand(text) {
+            const codeMatch = text.match(/\b\d{6}\b/);
+            if (codeMatch) return codeMatch[0];
+            const cleaned = text
+                .replace(/(종목|주식|차트|리포트|상세|정보|현재가|주가|검색|조회|열어줘|열어|보여줘|보여|찾아줘|찾아|해줘|해 줘|줘|좀|을|를|이|가|은|는|에 대해|알려줘|알려)/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+            return cleaned;
+        }
+
+        let lastNlRefreshAt = 0;
+
+        function runTabAction(tab, label) {
+            if (currentActiveTab === tab) {
+                return { status: 'unchanged', message: `이미 '${label}' 화면을 보고 있어 중복 전환하지 않았습니다.` };
+            }
+            switchTab(tab);
+            if (currentActiveTab !== tab) {
+                return { status: 'blocked', message: `'${label}' 화면을 열려면 먼저 로그인이 필요합니다.` };
+            }
+            return { status: 'changed', message: `'${label}' 화면으로 새로 전환했습니다.` };
+        }
+
+        function runRadarAction(mode, label) {
+            if (currentActiveTab === 'radar' && currentRadarMode === mode) {
+                return { status: 'unchanged', message: `이미 '${label}' 목록을 보고 있어 중복 전환하지 않았습니다.` };
+            }
+            switchTab('radar');
+            switchRadarMode(mode);
+            return { status: 'changed', message: `'${label}' 목록을 새로 불러왔습니다.` };
+        }
+
+        function runChartAction(type, time, label) {
+            if (currentChartType === type && currentChartTime === time) {
+                return { status: 'unchanged', message: `'${currentReportStockName}'은(는) 이미 '${label}' 상태여서 중복 변경하지 않았습니다.` };
+            }
+            changeReportChartTime(type, time);
+            return { status: 'changed', message: `'${currentReportStockName}' 차트를 '${label}'(으)로 새로 변경했습니다.` };
+        }
+
+        function applyNlFeedbackResult(result, modeTag, fallbackLabel) {
+            if (!result || result === true) {
+                setNlFeedback(`✅ '${fallbackLabel}' 기능을 새로 실행했습니다.`, 'ok');
+                return;
+            }
+            if (result.status === 'unchanged') {
+                setNlFeedback(`ℹ️ ${result.message}`, 'info');
+            } else if (result.status === 'blocked') {
+                setNlFeedback(`⚠️ ${result.message}`, 'warn');
+            } else {
+                setNlFeedback(`✅ ${result.message || `'${fallbackLabel}' 실행 완료`}`, 'ok');
+            }
+        }
+
+        const NL_ACTION_REGISTRY = [
+            {
+                id: 'refresh',
+                label: '🔄 즉시/실시간 새로고침',
+                keywords: ['새로고침', '갱신', '리프레시', '최신화', '업데이트'],
+                run: () => {
+                    const now = Date.now();
+                    if (now - lastNlRefreshAt < 5000) {
+                        return { status: 'unchanged', message: '방금 시세를 새로고침하여 중복 요청하지 않았습니다.' };
+                    }
+                    lastNlRefreshAt = now;
+                    refreshTop50FromNaverRealtime(false);
+                    return { status: 'changed', message: '실시간 시세를 새로고침했습니다.' };
+                }
+            },
+            {
+                id: 'radar_gainers',
+                label: '🚀 실시간 급등주 TOP 30',
+                keywords: ['급등주', '상승률', '많이 오른'],
+                run: () => runRadarAction('gainers', '🚀 실시간 급등주 TOP 30')
+            },
+            {
+                id: 'radar_tradingValue',
+                label: '💰 거래대금 상위 TOP 30',
+                keywords: ['거래대금'],
+                run: () => runRadarAction('tradingValue', '💰 거래대금 상위 TOP 30')
+            },
+            {
+                id: 'radar_volume',
+                label: '🔥 거래량 폭증 TOP 30',
+                keywords: ['거래량', '폭증'],
+                run: () => runRadarAction('volume', '🔥 거래량 폭증 TOP 30')
+            },
+            {
+                id: 'radar_losers',
+                label: '📉 과대낙폭(반등주) TOP 30',
+                keywords: ['과대낙폭', '낙폭', '반등주', '많이 내린', '급락주'],
+                run: () => runRadarAction('losers', '📉 과대낙폭(반등주) TOP 30')
+            },
+            {
+                id: 'er_reset',
+                label: '계좌 진단 초기화',
+                keywords: ['진단 초기화', '응급실 초기화', '입력 초기화'],
+                run: () => { switchTab('er'); resetErFields(); return { status: 'changed', message: '계좌 응급실 입력값을 초기화했습니다.' }; }
+            },
+            {
+                id: 'er_calc',
+                label: '🚑 실시간 정밀 진단 및 탈출 처방 실행',
+                keywords: ['정밀 진단', '탈출 처방', '물타기 계산', '진단 실행'],
+                run: () => { switchTab('er'); runEmergencyRoomCalculation(); return { status: 'changed', message: '계좌 응급실 정밀 진단을 실행했습니다.' }; }
+            },
+            {
+                id: 'tab_account',
+                label: '💼 내 계좌 관리',
+                keywords: ['계좌 관리', '내 계좌 관리', '포트폴리오', '보유 종목'],
+                run: () => runTabAction('account', '💼 내 계좌 관리')
+            },
+            {
+                id: 'tab_er',
+                label: '🚨 계좌 응급실',
+                keywords: ['계좌 진단', '내 계좌', '응급실', '심폐소생'],
+                run: () => runTabAction('er', '🚨 계좌 응급실')
+            },
+            {
+                id: 'tab_lead',
+                label: '🔥 추천 주도주',
+                keywords: ['주도주', '상승 유망', '유망 종목'],
+                run: () => runTabAction('lead', '🔥 추천 주도주')
+            },
+            {
+                id: 'tab_risk',
+                label: '⚠️ 추천 위험주',
+                keywords: ['위험 종목', '주의 종목', '위험종목', '주의종목', '위험주'],
+                run: () => runTabAction('risk', '⚠️ 추천 위험주')
+            },
+            {
+                id: 'tab_all',
+                label: '시총 TOP 50 전체',
+                keywords: ['시총', 'top 50', 'top50', '전체 종목', '코스피'],
+                run: () => runTabAction('all', '📋 KOSPI 전체 종목 (시총 Top 50)')
+            },
+            {
+                id: 'tab_fav',
+                label: '⭐ 관심 종목',
+                keywords: ['관심종목 목록', '관심종목 보기', '내 관심', '즐겨찾기'],
+                run: () => runTabAction('fav', '⭐ 관심 종목')
+            },
+            {
+                id: 'tab_radar',
+                label: 'AI 테마 & 수급 레이더',
+                keywords: ['레이더', '수급'],
+                run: () => runTabAction('radar', '⚡ 장중 특징주 & 거래대금 급증 레이더')
+            },
+            {
+                id: 'tab_kis_dart',
+                label: 'KIS 모의투자 & DART 공시',
+                keywords: ['모의계좌', '모의투자', '공시', 'dart', 'kis'],
+                run: () => runTabAction('kis-dart', '🏦 KIS 모의투자 & DART 공시')
+            },
+            {
+                id: 'tab_arch',
+                label: '시스템 작동 방식',
+                keywords: ['아키텍처', '작동 방식', '시스템 구조', '연결 상태 점검'],
+                run: () => {
+                    const res = runTabAction('arch', '⚙️ 시스템 작동 방식');
+                    if (res.status === 'changed') checkArchLiveStatus();
+                    return res;
+                }
+            },
+            {
+                id: 'tab_home',
+                label: '홈 (지수·검색)',
+                keywords: ['홈으로', '메인 화면', '메인화면', '첫 화면'],
+                run: () => runTabAction('home', '🏠 홈 (지수·검색)')
+            },
+            {
+                id: 'chart_week',
+                label: '주봉 차트',
+                requiresStock: true,
+                keywords: ['주봉'],
+                run: () => runChartAction('candle', 'week', '주봉 차트')
+            },
+            {
+                id: 'chart_month',
+                label: '월봉 차트',
+                requiresStock: true,
+                keywords: ['월봉'],
+                run: () => runChartAction('candle', 'month', '월봉 차트')
+            },
+            {
+                id: 'chart_area',
+                label: '당일체결 차트',
+                requiresStock: true,
+                keywords: ['당일체결', '분봉', '체결 차트'],
+                run: () => runChartAction('area', 'day', '당일체결 차트')
+            },
+            {
+                id: 'chart_day',
+                label: '일봉 차트',
+                requiresStock: true,
+                keywords: ['일봉'],
+                run: () => runChartAction('candle', 'day', '일봉 차트')
+            },
+            {
+                id: 'report_fav',
+                label: '☆ 관심종목 추가/해제',
+                requiresStock: true,
+                keywords: ['관심종목 추가', '관심종목 해제', '관심종목 등록', '관심 추가', '관심 등록'],
+                run: (text) => {
+                    if (!requireAuth('관심 종목 추가')) {
+                        return { status: 'blocked', message: '관심종목 변경은 로그인 후 이용할 수 있습니다.' };
+                    }
+                    const isRemove = /해제|삭제|제거|빼/.test(text || '');
+                    const alreadyFav = favorites.includes(currentReportStockName);
+                    if (!isRemove && alreadyFav) {
+                        return { status: 'unchanged', message: `'${currentReportStockName}'은(는) 이미 관심종목에 등록되어 있어 중복 추가하지 않았습니다.` };
+                    }
+                    if (isRemove && !alreadyFav) {
+                        return { status: 'unchanged', message: `'${currentReportStockName}'은(는) 관심종목에 등록되어 있지 않습니다.` };
+                    }
+                    toggleCurrentReportFavorite();
+                    return {
+                        status: 'changed',
+                        message: isRemove
+                            ? `'${currentReportStockName}'을(를) 관심종목에서 해제했습니다.`
+                            : `'${currentReportStockName}'을(를) 관심종목에 새로 추가했습니다.`
+                    };
+                }
+            },
+            {
+                id: 'report_ai',
+                label: '✨ Gemini 실시간 AI 분석 요청',
+                requiresStock: true,
+                keywords: ['ai 분석', 'gemini 분석', '실시간 분석', '분석 요청'],
+                run: () => { runServerGeminiAnalysis(); return true; }
+            },
+            {
+                id: 'report_buy',
+                label: '🏦 KIS 모의매수',
+                requiresStock: true,
+                keywords: ['모의매수', '매수해', '사줘'],
+                run: () => { quickPaperOrderFromReport('BUY'); return true; }
+            },
+            {
+                id: 'report_sell',
+                label: '🏦 KIS 모의매도',
+                requiresStock: true,
+                keywords: ['모의매도', '매도해', '팔아줘'],
+                run: () => { quickPaperOrderFromReport('SELL'); return true; }
+            },
+            {
+                id: 'search_stock',
+                label: '종목 조회',
+                requiresStock: true,
+                keywords: ['종목 조회', '조회해', '조회', '검색해', '검색'],
+                run: () => true
+            },
+            {
+                id: 'report_close',
+                label: '리포트 닫기',
+                keywords: ['리포트 닫기', '창 닫기', '닫아줘'],
+                run: () => { closeReport(); return true; }
+            },
+            {
+                id: 'modal_auth',
+                label: '🔑 로그인 / 회원가입',
+                keywords: ['로그인', '회원가입'],
+                run: () => { openAuthModal(); return true; }
+            },
+            {
+                id: 'modal_profile',
+                label: '⚙️ 회원정보수정',
+                keywords: ['회원정보', '프로필 수정'],
+                run: () => { openProfileModal(); return true; }
+            },
+            {
+                id: 'modal_admin',
+                label: '🛡️ 보안통제실',
+                keywords: ['보안통제실', '관리자'],
+                run: () => { openAdminModal(); return true; }
+            }
+        ];
+
+        async function executeNaturalLanguageCommand(rawText) {
+            const text = (rawText || '').trim();
+            const waitingAction = pendingNlAction;
+            hideNlStockPicker();
+            pendingNlAction = null;
+            if (!text) {
+                setNlFeedback('⚠️ 실행할 문장을 입력하거나 아래 준비된 문장을 눌러 주세요.', 'warn');
+                return;
+            }
+            const lower = text.toLowerCase();
+            const modeTag = nlModelConnected ? 'Gemini 연결' : '모의 선택';
+
+            // 1. 매핑 표에서 키워드 우선 매칭
+            const matchedAction = NL_ACTION_REGISTRY.find(act =>
+                act.keywords.some(kw => lower.includes(kw.toLowerCase()))
+            );
+            if (!matchedAction && waitingAction) {
+                const replyStock = extractStockQueryFromCommand(text) || text;
+                const opened = await openStockForCommand(replyStock);
+                if (opened) {
+                    const res = waitingAction.run(text);
+                    applyNlFeedbackResult(res, modeTag, `${replyStock} · ${waitingAction.label}`);
+                } else {
+                    setNlFeedback(`⚠️ '${replyStock}' 종목을 찾지 못했습니다.`, 'warn');
+                }
+                return;
+            }
+            if (matchedAction) {
+                if (matchedAction.requiresStock) {
+                    const inlineStock = extractStockFromActionCommand(text, matchedAction);
+                    if (inlineStock) {
+                        if (matchedAction.id === 'search_stock' && isReportOpen() && norm(currentReportStockName) === norm(inlineStock)) {
+                            setNlFeedback(`ℹ️ '${currentReportStockName}' 리포트가 이미 열려 있어 중복 조회하지 않았습니다.`, 'info');
+                            return;
+                        }
+                        const opened = await openStockForCommand(inlineStock);
+                        if (opened) {
+                            const res = matchedAction.run(text);
+                            applyNlFeedbackResult(res, modeTag, matchedAction.label);
+                        } else {
+                            setNlFeedback(`⚠️ '${inlineStock}' 종목을 찾지 못했습니다.`, 'warn');
+                        }
+                        return;
+                    }
+                    if (!isReportOpen() || matchedAction.id === 'search_stock') {
+                        setNlFeedback(`ℹ️ '${matchedAction.label}'을 실행할 종목을 아래에서 선택해 주세요.`, 'info');
+                        showNlStockPicker(matchedAction);
+                        return;
+                    }
+                }
+                const res = matchedAction.run(text);
+                applyNlFeedbackResult(res, modeTag, matchedAction.label);
+                return;
+            }
+
+            // 2. 종목 조회 폴백 (예: "삼성전자 조회해 줘", "005930 검색")
+            const stockQuery = extractStockQueryFromCommand(text);
+            if (stockQuery) {
+                const searchInput = document.getElementById('search-input');
+                const searchBtn = document.getElementById('search-btn');
+                if (searchInput && searchBtn) {
+                    searchInput.value = stockQuery;
+                    searchBtn.click();
+                    setNlFeedback(`✅ '종목 조회' 버튼 기능으로 '${stockQuery}' 검색 실행`, 'ok');
+                    return;
+                }
+            }
+
+            setNlFeedback(`⚠️ '${text}'에 맞는 버튼 기능을 찾지 못했습니다. 위 예시 문장을 참고해 주세요.`, 'warn');
+        }
+
+        let pendingSaveCandidate = null;
+        let saveCandidateSeq = 0;
+        const approvedCandidateIds = new Set();
+        let lastApprovedFingerprint = '';
+        let lastApprovedAt = 0;
+
+        function closeSaveConfirmModal() {
+            const modal = document.getElementById('save-confirm-modal');
+            if (modal) modal.style.display = 'none';
+            pendingSaveCandidate = null;
+        }
+
+        function requestSaveConfirmation(opts) {
+            const modal = document.getElementById('save-confirm-modal');
+            if (!modal) {
+                if (opts && typeof opts.onApprove === 'function') opts.onApprove();
+                return;
+            }
+            const candidateId = opts.candidateId || `cand_${++saveCandidateSeq}`;
+            const fingerprint = opts.candidateKey || `${opts.title}:${opts.value1}:${opts.value2}`;
+            const isRecentDuplicate = (fingerprint === lastApprovedFingerprint) && (Date.now() - lastApprovedAt < 3000);
+            pendingSaveCandidate = {
+                id: candidateId,
+                fingerprint,
+                onApprove: opts.onApprove,
+                approved: false
+            };
+
+            document.getElementById('sc-title').textContent = opts.title || '저장 확인';
+            document.getElementById('sc-label-1').textContent = opts.label1 || '항목 1';
+            document.getElementById('sc-val-1').textContent = opts.value1 || '-';
+            document.getElementById('sc-label-2').textContent = opts.label2 || '항목 2';
+            document.getElementById('sc-val-2').textContent = opts.value2 || '-';
+
+            const noticeEl = document.getElementById('sc-notice');
+            if (approvedCandidateIds.has(candidateId) || isRecentDuplicate) {
+                noticeEl.textContent = 'ℹ️ 방금 승인한 동일 후보입니다. 중복 클릭으로 기록이 두 번 남지 않도록 보호됩니다.';
+                noticeEl.style.color = '#38bdf8';
+            } else {
+                noticeEl.textContent = '확인한 값만 기존 기록 위치에 저장됩니다. (새 거래는 언제든 추가 승인 가능)';
+                noticeEl.style.color = '#94a3b8';
+            }
+
+            modal.style.display = 'flex';
+        }
+
+        function initNlQuickRunner() {
+            const fabBtn = document.getElementById('nl-fab-btn');
+            const closeBtn = document.getElementById('nl-cmd-close-btn');
+            const runBtn = document.getElementById('nl-cmd-run-btn');
+            const cmdInput = document.getElementById('nl-cmd-input');
+            const scApproveBtn = document.getElementById('sc-approve-btn');
+            const scRejectBtn = document.getElementById('sc-reject-btn');
+
+            if (scApproveBtn) {
+                scApproveBtn.addEventListener('click', () => {
+                    if (!pendingSaveCandidate) {
+                        closeSaveConfirmModal();
+                        return;
+                    }
+                    const isRecentDuplicate = (pendingSaveCandidate.fingerprint === lastApprovedFingerprint) && (Date.now() - lastApprovedAt < 3000);
+                    if (pendingSaveCandidate.approved || approvedCandidateIds.has(pendingSaveCandidate.id) || isRecentDuplicate) {
+                        closeSaveConfirmModal();
+                        setNlFeedback('ℹ️ 같은 후보의 중복 승인을 막아 기록을 한 건만 유지했습니다.', 'info');
+                        return;
+                    }
+                    pendingSaveCandidate.approved = true;
+                    approvedCandidateIds.add(pendingSaveCandidate.id);
+                    lastApprovedFingerprint = pendingSaveCandidate.fingerprint;
+                    lastApprovedAt = Date.now();
+                    const fn = pendingSaveCandidate.onApprove;
+                    closeSaveConfirmModal();
+                    if (typeof fn === 'function') fn();
+                });
+            }
+
+            if (scRejectBtn) {
+                scRejectBtn.addEventListener('click', () => {
+                    closeSaveConfirmModal();
+                });
+            }
+
+            if (fabBtn) {
+                fabBtn.addEventListener('click', () => {
+                    const bar = document.getElementById('nl-command-bar');
+                    if (!bar) return;
+                    const isOpen = bar.classList.toggle('open');
+                    fabBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                    if (isOpen && cmdInput) cmdInput.focus();
+                });
+            }
+
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    const bar = document.getElementById('nl-command-bar');
+                    if (bar) bar.classList.remove('open');
+                    if (fabBtn) fabBtn.setAttribute('aria-expanded', 'false');
+                });
+            }
+
+            if (runBtn) {
+                runBtn.addEventListener('click', () => {
+                    executeNaturalLanguageCommand(cmdInput ? cmdInput.value : '');
+                });
+            }
+
+            if (cmdInput) {
+                cmdInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        executeNaturalLanguageCommand(e.target.value);
+                    }
+                });
+            }
+
+            document.querySelectorAll('#nl-preset-chips .nl-chip-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const cmd = btn.getAttribute('data-cmd') || btn.textContent;
+                    if (cmdInput) cmdInput.value = cmd;
+                    executeNaturalLanguageCommand(cmd);
+                });
+            });
+
+            detectNlModelStatus();
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initNlQuickRunner);
+        } else {
+            initNlQuickRunner();
+        }
         initPromise = init();
     </script>
 
@@ -5685,6 +7001,81 @@ window.UserActivityTracker = UserActivityTracker;
             <!-- 안내 박스 -->
             <div style="margin-top:18px; padding:12px 16px; background:rgba(124, 77, 255, 0.1); border:1px solid rgba(124, 77, 255, 0.3); border-radius:10px; font-size:11.5px; color:#d1b3ff; line-height:1.6;">
                 💡 <strong>보안 및 권한 안내:</strong> 회원이 가입 신청 시 입력한 <strong>이름, 생년월일, 연락처, 주소, 추천인</strong> 등의 인적사항은 최고관리자 전용 콘솔에서만 열람 가능하며, [승인하기]를 통해 정식 권한을 부여하거나 외부 조회 및 API 권한을 원격 차단할 수 있습니다.
+            </div>
+        </div>
+    </div>
+
+    <!-- 💬 우측 하단 고정 플로팅 [빠른 실행] 버튼 & 팝업 창 -->
+    <button type="button" id="nl-fab-btn" class="nl-fab-btn" aria-expanded="false" aria-controls="nl-command-bar">
+        <span>💬</span>
+        <span>빠른 실행</span>
+    </button>
+    <section id="nl-command-bar" class="nl-command-bar" aria-label="빠른 실행">
+        <div class="nl-cmd-header">
+            <div class="nl-cmd-title">
+                <span>💬 빠른 실행</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px;">
+                <span id="nl-model-status" class="nl-model-badge" style="display:none;"></span>
+                <button type="button" id="nl-cmd-close-btn" class="nl-cmd-close-btn" aria-label="닫기">✕</button>
+            </div>
+        </div>
+        <div class="nl-cmd-row">
+            <input type="text" id="nl-cmd-input" class="nl-cmd-input" placeholder="예: 급등주 보여줘 / 삼성전자 조회" />
+            <button type="button" id="nl-cmd-run-btn" class="nl-cmd-run-btn">실행</button>
+        </div>
+        <div class="nl-preset-chips" id="nl-preset-chips">
+            <div>
+                <div class="nl-group-title">📊 시세 · 화면</div>
+                <div class="nl-chip-grid">
+                    <button type="button" class="nl-chip-btn" data-cmd="시세 새로고침해줘">🔄 시세 새로고침</button>
+                    <button type="button" class="nl-chip-btn" data-cmd="오늘의 주도주 보여줘">🔥 추천 주도주</button>
+                    <button type="button" class="nl-chip-btn" data-cmd="급등주 TOP 30 보여줘">🚀 급등주 TOP 30</button>
+                    <button type="button" class="nl-chip-btn" data-cmd="시총 TOP 50 보여줘">📋 시총 TOP 50</button>
+                </div>
+            </div>
+            <div>
+                <div class="nl-group-title">💼 계좌 · 조회</div>
+                <div class="nl-chip-grid">
+                    <button type="button" class="nl-chip-btn" data-cmd="내 계좌 관리 보여줘">💼 내 계좌 관리</button>
+                    <button type="button" class="nl-chip-btn" data-cmd="내 계좌 진단해줘">🚨 계좌 진단</button>
+                    <button type="button" class="nl-chip-btn" data-cmd="조회해줘" style="grid-column: span 2;">🔍 종목 조회 (빠른 선택)</button>
+                </div>
+            </div>
+            <div>
+                <div class="nl-group-title">⚡ 리포트 제어</div>
+                <div class="nl-chip-grid">
+                    <button type="button" class="nl-chip-btn" data-cmd="주봉 차트로 바꿔줘">📈 주봉 차트</button>
+                    <button type="button" class="nl-chip-btn" data-cmd="AI 분석 요청해줘">✨ AI 분석 요청</button>
+                    <button type="button" class="nl-chip-btn" data-cmd="관심종목 추가해줘" style="grid-column: span 2;">⭐ 관심종목 추가</button>
+                </div>
+            </div>
+        </div>
+        <div id="nl-cmd-feedback" class="nl-cmd-feedback">준비된 문장을 누르거나 직접 입력해 실행하세요.</div>
+        <div id="nl-stock-picker" class="nl-stock-picker">
+            <div class="nl-stock-picker-label">종목을 먼저 선택하면 이어서 실행됩니다:</div>
+            <div id="nl-stock-picker-chips" class="nl-stock-picker-chips"></div>
+        </div>
+    </section>
+
+    <!-- 🛡️ 저장 전 확인 화면 모달 (저장 승인 / 저장 거절 & 중복 승인 방지) -->
+    <div id="save-confirm-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.72); z-index:99998; justify-content:center; align-items:center; backdrop-filter:blur(4px); padding:16px;">
+        <div style="width:100%; max-width:420px; background:#0f172a; border:1px solid rgba(56,189,248,0.5); border-radius:16px; padding:20px; box-shadow:0 20px 50px rgba(0,0,0,0.65); color:#f8fafc;">
+            <div id="sc-title" style="font-size:16px; font-weight:800; color:#38bdf8; margin-bottom:12px;">저장 확인</div>
+            <div style="background:rgba(30,41,59,0.85); border:1px solid #334155; border-radius:10px; padding:12px; display:flex; flex-direction:column; gap:8px; margin-bottom:12px;">
+                <div style="display:flex; justify-content:space-between; gap:10px; font-size:13px;">
+                    <span id="sc-label-1" style="color:#94a3b8;">항목 1</span>
+                    <strong id="sc-val-1" style="color:#f8fafc; text-align:right;">-</strong>
+                </div>
+                <div style="display:flex; justify-content:space-between; gap:10px; font-size:13px; border-top:1px dashed #334155; padding-top:8px;">
+                    <span id="sc-label-2" style="color:#94a3b8;">항목 2</span>
+                    <strong id="sc-val-2" style="color:#34d399; text-align:right;">-</strong>
+                </div>
+            </div>
+            <div id="sc-notice" style="font-size:12px; color:#94a3b8; min-height:18px; margin-bottom:14px;">확인한 값만 기존 기록 위치에 저장됩니다.</div>
+            <div style="display:flex; justify-content:flex-end; gap:8px;">
+                <button type="button" id="sc-reject-btn" class="user-small-btn" style="padding:8px 16px; background:#334155; color:#e2e8f0; border:none;">저장 거절</button>
+                <button type="button" id="sc-approve-btn" class="user-small-btn" style="padding:8px 16px; background:linear-gradient(135deg, #059669, #10b981); color:#fff; border:none; font-weight:700;">저장 승인</button>
             </div>
         </div>
     </div>
