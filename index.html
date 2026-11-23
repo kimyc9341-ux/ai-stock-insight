@@ -2987,6 +2987,7 @@ window.UserActivityTracker = UserActivityTracker;
                             <button type="button" class="arch-tab-btn" id="arch-sc-auth" onclick="archSelectScenario('auth')">🔐 로그인 · 보안통제</button>
                             <button type="button" class="arch-tab-btn" id="arch-sc-trade" onclick="archSelectScenario('trade')">🏦 모의투자 · 잔고동기화</button>
                             <button type="button" class="arch-tab-btn" id="arch-sc-ai" onclick="archSelectScenario('ai')">🤖 Gemini AI · DART</button>
+                            <button type="button" class="arch-tab-btn" id="arch-sc-routines" onclick="archSelectScenario('routines')">⚡ 3대 팀 루틴 · 빠른 실행</button>
                         </div>
                         <div class="arch-ctl">
                             <button type="button" class="arch-ctl-btn play" id="arch-play-btn" onclick="archTogglePlay()">▶ 재생</button>
@@ -4333,11 +4334,11 @@ window.UserActivityTracker = UserActivityTracker;
                     tracks: ['track-browser-local'],
                     from: 'browser',
                     to: 'local',
-                    label: 'API 권한 확인',
+                    label: '승인·권한 확인',
                     color: '#fbbf24',
-                    title: '1단계. 로그인 및 API키 제어 권한(`canUseApiKey`) 검사',
-                    desc: 'KIS 모의매수/매도 버튼 클릭 시 비로그인 여부와 관리자의 `API키 제어(활성/정지)` 상태를 먼저 검증해 정지된 계정의 주문을 차단합니다.',
-                    code: 'requireAuth() && AuthManager.canUseApiKey() → 예수금/보유수량 계산'
+                    title: '1단계. 로그인·API 권한 검사 및 저장 승인/거절 확인 화면',
+                    desc: '모의매수/매도, 내 계좌 보유 종목 추가, 예수금 변경, 관심종목 등록 시 `requestSaveConfirmation()`으로 값 2개를 먼저 확인하고 [저장 승인] 시에만 반영(3초 중복 클릭 차단)합니다.',
+                    code: 'requireAuth() && requestSaveConfirmation({ label1, value1, label2, value2, onApprove })'
                 },
                 {
                     nodes: ['browser', 'render', 'supabase'],
@@ -4390,22 +4391,22 @@ window.UserActivityTracker = UserActivityTracker;
                     tracks: ['track-render-naver'],
                     from: 'render',
                     to: 'naver',
-                    label: '시세·뉴스 수집',
+                    label: '병렬 데이터 수집',
                     color: '#4ade80',
-                    title: '2단계. Render 서버가 최신 시세 · 재무 · 뉴스 3종 수집',
-                    desc: '`stock_service.py`가 네이버 금융에서 실시간 주가, 연간 재무제표, 최신 뉴스 3건을 수집해 AI 분석 입력 데이터로 조합합니다.',
-                    code: 'stock_service.get_realtime_price() + get_financial_summary() + get_recent_news()'
+                    title: '2단계. Render 서버가 시세 · 재무 · 뉴스 3종 병렬 수집',
+                    desc: '`api_server.py`가 `ThreadPoolExecutor`로 네이버 금융 실시간 주가, 재무제표, 최신 뉴스 3건을 동시에 수집해 지연 시간을 줄입니다.',
+                    code: 'ThreadPoolExecutor(3) → get_realtime_price() + get_financial_summary() + get_recent_news()'
                 },
                 {
                     nodes: ['render', 'ai'],
                     tracks: ['track-render-ai'],
                     from: 'render',
                     to: 'ai',
-                    label: 'DART·Gemini 판독',
+                    label: 'Gemini 3.8·폴백',
                     color: '#fbbf24',
-                    title: '3단계. DART 공시 판독 및 Gemini / Smart Rules AI 리포트 생성',
-                    desc: 'Render 환경변수의 `GEMINI_API_KEY`·`DART_API_KEY`를 외부 노출 없이 사용해 공시 호재/악재와 맞춤형 투자 리포트를 생성합니다.',
-                    code: 'stock_service.analyze_with_gemini() + stock_service.get_dart_disclosures()'
+                    title: '3단계. DART 공시 판독 및 Gemini 3.8 Flash / Smart 폴백 생성',
+                    desc: 'Render 환경변수의 `GEMINI_API_KEY`·`DART_API_KEY`로 `gemini-3.8-flash`(10초 상한)를 호출하고, `503` 혼잡 시 `실시간 Smart 분석 엔진`으로 즉시 폴백합니다.',
+                    code: 'stock_service.analyze_with_gemini("gemini-3.8-flash", timeout=10) + buildDartAiInterpretation()'
                 },
                 {
                     nodes: ['render', 'browser'],
@@ -4415,8 +4416,54 @@ window.UserActivityTracker = UserActivityTracker;
                     label: '진단서 출력',
                     color: '#c084fc',
                     title: '4단계. 분석 결과 리포트 화면 즉시 반영',
-                    desc: '생성된 분석 텍스트와 분석 엔진 배지(`Gemini` 또는 `Smart Rules Engine`)가 리포트 카드에 실시간으로 표시됩니다.',
+                    desc: '생성된 분석 텍스트와 분석 엔진 배지(`Gemini` 또는 `실시간 Smart 분석 엔진`)가 리포트 카드에 실시간으로 표시됩니다.',
                     code: 'aiTextEl.innerText = res.analysis; badgeEl.innerText = res.source;'
+                }
+            ],
+            routines: [
+                {
+                    nodes: ['browser', 'local'],
+                    tracks: ['track-browser-local'],
+                    from: 'browser',
+                    to: 'local',
+                    label: '추천·리서치 팀',
+                    color: '#38bdf8',
+                    title: '1단계. 사용자 추천·리서치 팀 (Top 6 · 안정 대장주 · 위험주)',
+                    desc: '`getScoredMarketPool()`이 전체 4,332개 종목을 스캔해 홈 `AI Top 6` 리포트, 시총 50대 `안정 대장주 6`, 하락 경계 `추천 위험주 6`을 실시간 선별합니다.',
+                    code: 'renderDailyTop2Report() + renderLeadStocks6() + getRiskStocksMap()'
+                },
+                {
+                    nodes: ['browser', 'local'],
+                    tracks: ['track-browser-local'],
+                    from: 'browser',
+                    to: 'local',
+                    label: '빠른 실행·계좌팀',
+                    color: '#4ade80',
+                    title: '2단계. 개인 계좌 관리 팀 & 3×4 빠른 실행',
+                    desc: '`executeNaturalLanguageCommand()`가 한글 별칭(네이버→NAVER)을 해석해 버튼 기능을 실행하고 중복 요청을 막으며, `내 계좌 관리`에서 데일리 브리핑과 응급실을 연결합니다.',
+                    code: 'executeNaturalLanguageCommand() + renderAccountDailyBriefing() + openErWithHolding()'
+                },
+                {
+                    nodes: ['browser', 'render'],
+                    tracks: ['track-browser-render'],
+                    from: 'browser',
+                    to: 'render',
+                    label: '보안·자가점검 팀',
+                    color: '#fbbf24',
+                    title: '3단계. 보안·운영 관제 팀 (자가 점검 & 활동 요약)',
+                    desc: '`보안통제실` 오픈 시 `runAdminSelfHealingCheck()`가 Render 웜업/폴백 상태를 점검하고, `refreshAccountActivitySummary()`가 빈 기록 대기 및 `기존 결과`/`갱신됨`을 판별합니다.',
+                    code: 'runAdminSelfHealingCheck() + refreshAccountActivitySummary() + logQuickCommand()'
+                },
+                {
+                    nodes: ['browser', 'local'],
+                    tracks: ['track-browser-local'],
+                    from: 'browser',
+                    to: 'local',
+                    label: '대조·승인 저장',
+                    color: '#c084fc',
+                    title: '4단계. 원본 대조 후 승인 저장 (1건 유지)',
+                    desc: '`previewAndSaveActivitySummary()`가 보고서 건수와 원본 기록을 대조해 일치할 때만 저장 승인 모달을 열어 최종 보고서 1건을 기록합니다.',
+                    code: 'previewAndSaveActivitySummary() → requestSaveConfirmation() → localStorage'
                 }
             ]
         };
