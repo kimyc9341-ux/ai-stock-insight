@@ -5603,9 +5603,37 @@ window.UserActivityTracker = UserActivityTracker;
             }).join('');
         }
 
+        const STOCK_NAME_ALIASES = {
+            '네이버': 'NAVER',
+            '하이닉스': 'SK하이닉스',
+            '삼전': '삼성전자',
+            '현차': '현대차',
+            '현대자동차': '현대차',
+            '기아차': '기아',
+            '포스코': 'POSCO홀딩스',
+            '케이티': 'KT',
+            '에스케이': 'SK',
+            '엘지전자': 'LG전자',
+            '엘지에너지솔루션': 'LG에너지솔루션',
+            '엘지화학': 'LG화학'
+        };
+
+        function resolveStockAlias(raw) {
+            const cleaned = (raw || '').trim();
+            if (!cleaned) return '';
+            const compact = cleaned.replace(/\s+/g, '').toLowerCase();
+            for (const [alias, target] of Object.entries(STOCK_NAME_ALIASES)) {
+                if (compact === alias.replace(/\s+/g, '').toLowerCase()) {
+                    return target;
+                }
+            }
+            return cleaned;
+        }
+
         document.getElementById('search-btn').addEventListener('click', async () => {
-            const query = document.getElementById('search-input').value.trim();
-            if (!query) return;
+            const rawQuery = document.getElementById('search-input').value.trim();
+            if (!rawQuery) return;
+            const query = resolveStockAlias(rawQuery);
 
             // 📡 종목 검색창 입력 시 즉시 동기식 감사 로그 기록 및 통제실 실시간 반영
             if (window.UserActivityTracker) {
@@ -5728,6 +5756,8 @@ window.UserActivityTracker = UserActivityTracker;
         }
 
         function extractStockFromActionCommand(rawText, action) {
+            const direct = findKnownStockInText(rawText);
+            if (direct) return direct;
             let cleaned = rawText;
             if (action && Array.isArray(action.keywords)) {
                 action.keywords.forEach(kw => {
@@ -5735,7 +5765,7 @@ window.UserActivityTracker = UserActivityTracker;
                 });
             }
             return extractStockQueryFromCommand(cleaned)
-                .replace(/(바꿔|전환|변경|추가|등록|해제|요청|실행|매수|매도|으로|로|좀|해줘|해 줘|줘)/g, ' ')
+                .replace(/(바꿔줘|바꿔|전환해줘|전환|변경해줘|변경|추가해줘|추가|등록해줘|등록|해제해줘|해제|요청해줘|요청|실행해줘|실행|매수해줘|매수|매도해줘|매도|해줘|해 줘|줘|좀)/g, ' ')
                 .replace(/\s+/g, ' ')
                 .trim();
         }
@@ -5764,14 +5794,49 @@ window.UserActivityTracker = UserActivityTracker;
             return Boolean(card && (card.classList.contains('show') || card.style.display === 'block' || card.style.display === 'flex') && typeof currentReportStockName !== 'undefined' && currentReportStockName);
         }
 
+        function findKnownStockInText(text) {
+            const lowerNoSpace = (text || '').replace(/\s+/g, '').toLowerCase();
+            if (!lowerNoSpace) return '';
+
+            // 1. 한글 별칭(네이버→NAVER, 하이닉스→SK하이닉스 등) 우선 매칭
+            const aliasEntries = Object.entries(STOCK_NAME_ALIASES)
+                .sort((a, b) => b[0].length - a[0].length);
+            for (const [alias, target] of aliasEntries) {
+                if (lowerNoSpace.includes(alias.replace(/\s+/g, '').toLowerCase())) {
+                    return target;
+                }
+            }
+
+            // 2. 보유 종목 풀(KOSPI/KOSDAQ 등)에서 긴 이름 순으로 직접 매칭 (단어 내부 글자 훼손 방지)
+            const poolNames = [];
+            if (fullData && fullData.stocks) poolNames.push(...Object.keys(fullData.stocks));
+            if (typeof getKospiSearchPool === 'function') {
+                getKospiSearchPool().forEach(s => { if (s && s.name) poolNames.push(s.name); });
+            }
+            const uniqueNames = Array.from(new Set(poolNames))
+                .filter(n => n && n.length >= 2)
+                .sort((a, b) => b.length - a.length);
+            for (const name of uniqueNames) {
+                if (lowerNoSpace.includes(name.replace(/\s+/g, '').toLowerCase())) {
+                    return name;
+                }
+            }
+            return '';
+        }
+
         function extractStockQueryFromCommand(text) {
             const codeMatch = text.match(/\b\d{6}\b/);
             if (codeMatch) return codeMatch[0];
+
+            const direct = findKnownStockInText(text);
+            if (direct) return direct;
+
             const cleaned = text
-                .replace(/(종목|주식|차트|리포트|상세|정보|현재가|주가|검색|조회|열어줘|열어|보여줘|보여|찾아줘|찾아|해줘|해 줘|줘|좀|을|를|이|가|은|는|에 대해|알려줘|알려)/g, ' ')
+                .replace(/(에\s*대해|열어\s*줘|보여\s*줘|찾아\s*줘|알려\s*줘|검색해\s*줘|조회해\s*줘|검색해|조회해|해\s*줘|종목|주식|차트|리포트|상세|정보|현재가|주가|검색|조회|열어|보여|찾아|알려|줘|좀)/g, ' ')
+                .replace(/\S{2,}/g, w => w.replace(/(을|를|이|가|은|는|으로|로)$/, ''))
                 .replace(/\s+/g, ' ')
                 .trim();
-            return cleaned;
+            return resolveStockAlias(cleaned);
         }
 
         let lastNlRefreshAt = 0;
